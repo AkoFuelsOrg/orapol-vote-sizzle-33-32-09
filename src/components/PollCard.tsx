@@ -1,9 +1,11 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Loader2 } from 'lucide-react';
 import { Poll } from '../lib/types';
-import { usePollContext } from '../context/PollContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useSupabase } from '../context/SupabaseContext';
+import { toast } from 'sonner';
 
 interface PollCardProps {
   poll: Poll;
@@ -11,13 +13,69 @@ interface PollCardProps {
 }
 
 const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
-  const { votePoll } = usePollContext();
+  const { user } = useSupabase();
+  const [isVoting, setIsVoting] = React.useState(false);
   
-  const handleVote = (optionId: string, e: React.MouseEvent) => {
-    if (preview) return;
-    
+  const handleVote = async (optionId: string, e: React.MouseEvent) => {
+    if (preview || isVoting) return;
     e.preventDefault(); // Prevent navigation when clicking on an option
-    votePoll(poll.id, optionId);
+    
+    if (!user) {
+      toast.error("Please sign in to vote on polls");
+      return;
+    }
+    
+    if (poll.userVoted) {
+      toast.error("You've already voted on this poll");
+      return;
+    }
+    
+    try {
+      setIsVoting(true);
+      
+      // Insert the vote
+      const { error: voteError } = await supabase
+        .from('poll_votes')
+        .insert({
+          poll_id: poll.id,
+          user_id: user.id,
+          option_id: optionId
+        });
+      
+      if (voteError) throw voteError;
+      
+      // Update the poll options votes count
+      const updatedOptions = poll.options.map(option => {
+        if (option.id === optionId) {
+          return { ...option, votes: option.votes + 1 };
+        }
+        return option;
+      });
+      
+      // Update the poll's total votes in the database
+      const { error: updateError } = await supabase
+        .from('polls')
+        .update({ 
+          options: updatedOptions,
+          total_votes: poll.totalVotes + 1
+        })
+        .eq('id', poll.id);
+      
+      if (updateError) throw updateError;
+      
+      toast.success("Vote recorded successfully");
+      
+      // Update local state with userVoted property
+      poll.options = updatedOptions;
+      poll.totalVotes += 1;
+      poll.userVoted = optionId;
+      
+    } catch (error: any) {
+      console.error('Error voting on poll:', error);
+      toast.error(error.message || "Failed to record vote");
+    } finally {
+      setIsVoting(false);
+    }
   };
   
   const formatDate = (dateString: string) => {
@@ -67,12 +125,18 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
         </div>
       )}
       
-      <div className="space-y-2.5 mb-4">
+      <div className="space-y-2.5 mb-4 relative">
+        {isVoting && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
+        
         {poll.options.map((option) => (
           <button
             key={option.id}
             onClick={(e) => handleVote(option.id, e)}
-            disabled={!!poll.userVoted}
+            disabled={!!poll.userVoted || isVoting || !user}
             className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
               ${poll.userVoted === option.id 
                 ? 'border-primary bg-primary/5' 

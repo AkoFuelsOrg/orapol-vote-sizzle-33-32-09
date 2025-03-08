@@ -1,16 +1,19 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, ImagePlus } from 'lucide-react';
-import { usePollContext } from '../context/PollContext';
+import { X, Plus, ImagePlus, Loader2 } from 'lucide-react';
+import { useSupabase } from '../context/SupabaseContext';
 import Header from '../components/Header';
 import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
 
 const CreatePoll: React.FC = () => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
   const [imageUrl, setImageUrl] = useState('');
-  const { addPoll } = usePollContext();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useSupabase();
   const navigate = useNavigate();
   
   const handleAddOption = () => {
@@ -29,13 +32,53 @@ const CreatePoll: React.FC = () => {
     setOptions(newOptions);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const validOptions = options.filter(opt => opt.trim().length > 0);
-    if (question.trim() && validOptions.length >= 2) {
-      addPoll(question, validOptions, imageUrl);
+    if (!question.trim() || validOptions.length < 2) {
+      toast.error("Please provide a question and at least two options");
+      return;
+    }
+
+    if (!user) {
+      toast.error("You must be logged in to create a poll");
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // Format options for database storage
+      const formattedOptions = validOptions.map(text => ({
+        id: uuidv4(),
+        text,
+        votes: 0
+      }));
+
+      // Insert the new poll into Supabase
+      const { data, error } = await supabase
+        .from('polls')
+        .insert({
+          question: question.trim(),
+          options: formattedOptions,
+          user_id: user.id,
+          image: imageUrl || null
+        })
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Poll created successfully");
       navigate('/');
+    } catch (error: any) {
+      console.error('Error creating poll:', error);
+      toast.error(error.message || "Failed to create poll");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -161,9 +204,17 @@ const CreatePoll: React.FC = () => {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate"
+                disabled={isSubmitting}
+                className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
               >
-                Create Poll
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin mr-2" />
+                    Creating Poll...
+                  </>
+                ) : (
+                  'Create Poll'
+                )}
               </button>
             </div>
           </form>

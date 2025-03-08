@@ -1,20 +1,107 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { usePollContext } from '../context/PollContext';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import PollCard from '../components/PollCard';
 import CommentSection from '../components/CommentSection';
 import Header from '../components/Header';
+import { supabase } from '@/integrations/supabase/client';
+import { Poll } from '../lib/types';
+import { useSupabase } from '../context/SupabaseContext';
+import { toast } from 'sonner';
 
 const PollDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { getPollById } = usePollContext();
   const navigate = useNavigate();
+  const { user } = useSupabase();
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const poll = getPollById(id || '');
+  useEffect(() => {
+    if (id) {
+      fetchPollDetails(id);
+    }
+  }, [id, user]);
   
-  if (!poll) {
+  const fetchPollDetails = async (pollId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch the poll with author information
+      const { data: pollData, error: pollError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .eq('id', pollId)
+        .single();
+      
+      if (pollError) throw pollError;
+      
+      // Check if the user has voted on this poll
+      let userVoted = undefined;
+      
+      if (user) {
+        const { data: voteData } = await supabase
+          .from('poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (voteData) {
+          userVoted = voteData.option_id;
+        }
+      }
+      
+      // Format the poll for our application
+      const formattedPoll: Poll = {
+        id: pollData.id,
+        question: pollData.question,
+        options: pollData.options,
+        author: {
+          id: pollData.profiles.id,
+          name: pollData.profiles.username || 'Anonymous',
+          avatar: pollData.profiles.avatar_url || 'https://i.pravatar.cc/150'
+        },
+        createdAt: pollData.created_at,
+        totalVotes: pollData.total_votes || 0,
+        commentCount: pollData.comment_count || 0,
+        userVoted,
+        image: pollData.image
+      };
+      
+      setPoll(formattedPoll);
+    } catch (error: any) {
+      console.error('Error fetching poll details:', error);
+      setError(error.message || 'Failed to load poll');
+      toast.error('Failed to load poll details');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="pt-20 px-4 max-w-lg mx-auto flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+      </div>
+    );
+  }
+  
+  if (error || !poll) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
         <p className="text-lg mb-4">Poll not found</p>
