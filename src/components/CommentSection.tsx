@@ -58,20 +58,22 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
       
       if (error) throw error;
       
-      const formattedComment: Comment = {
-        id: data.id,
-        pollId,
-        content: data.content,
-        createdAt: data.created_at,
-        likes: data.likes || 0,
-        author: {
-          id: data.profiles.id,
-          name: data.profiles.username || 'Anonymous',
-          avatar: data.profiles.avatar_url || 'https://i.pravatar.cc/150'
-        }
-      };
-      
-      setComments(prev => [formattedComment, ...prev]);
+      if (data) {
+        const formattedComment: Comment = {
+          id: data.id,
+          pollId,
+          content: data.content,
+          createdAt: data.created_at,
+          likes: data.likes || 0,
+          author: {
+            id: data.profiles.id,
+            name: data.profiles.username || 'Anonymous',
+            avatar: data.profiles.avatar_url || 'https://i.pravatar.cc/150'
+          }
+        };
+        
+        setComments(prev => [formattedComment, ...prev]);
+      }
     } catch (error) {
       console.error('Error fetching new comment:', error);
     }
@@ -95,21 +97,23 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
       
       if (error) throw error;
       
-      const formattedComments: Comment[] = data.map(comment => ({
-        id: comment.id,
-        pollId,
-        content: comment.content,
-        createdAt: comment.created_at,
-        likes: comment.likes || 0,
-        author: {
-          id: comment.profiles.id,
-          name: comment.profiles.username || 'Anonymous',
-          avatar: comment.profiles.avatar_url || 'https://i.pravatar.cc/150'
-        }
-      }));
-      
-      setComments(formattedComments);
-    } catch (error) {
+      if (data) {
+        const formattedComments: Comment[] = data.map(comment => ({
+          id: comment.id,
+          pollId,
+          content: comment.content,
+          createdAt: comment.created_at,
+          likes: comment.likes || 0,
+          author: {
+            id: comment.profiles.id,
+            name: comment.profiles.username || 'Anonymous',
+            avatar: comment.profiles.avatar_url || 'https://i.pravatar.cc/150'
+          }
+        }));
+        
+        setComments(formattedComments);
+      }
+    } catch (error: any) {
       console.error('Error fetching comments:', error);
       toast.error('Failed to load comments');
     } finally {
@@ -165,10 +169,14 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
     }
     
     try {
+      // Find the current comment likes
+      const currentComment = comments.find(c => c.id === commentId);
+      if (!currentComment) return;
+      
       // Update the comment in the database
       const { error } = await supabase
         .from('comments')
-        .update({ likes: comments.find(c => c.id === commentId)?.likes + 1 || 1 })
+        .update({ likes: (currentComment.likes || 0) + 1 })
         .eq('id', commentId);
       
       if (error) throw error;
@@ -178,7 +186,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
         if (comment.id === commentId) {
           return {
             ...comment,
-            likes: comment.likes + 1
+            likes: (comment.likes || 0) + 1
           };
         }
         return comment;
