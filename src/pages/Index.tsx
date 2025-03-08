@@ -55,10 +55,12 @@ const Index: React.FC = () => {
     if (Array.isArray(jsonOptions)) {
       return jsonOptions.map(opt => {
         if (typeof opt === 'object' && opt !== null) {
+          // Use type assertion with optional chaining to safely access properties
+          const option = opt as Record<string, unknown>;
           return {
-            id: String(opt.id || ''),
-            text: String(opt.text || ''),
-            votes: Number(opt.votes || 0)
+            id: String(option?.id || ''),
+            text: String(option?.text || ''),
+            votes: Number(option?.votes || 0)
           };
         }
         return { id: '', text: '', votes: 0 };
