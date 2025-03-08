@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, ImagePlus } from 'lucide-react';
 import { usePollContext } from '../context/PollContext';
 import Header from '../components/Header';
+import { toast } from "sonner";
 
 const CreatePoll: React.FC = () => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
+  const [imageUrl, setImageUrl] = useState('');
   const { addPoll } = usePollContext();
   const navigate = useNavigate();
   
@@ -32,7 +34,7 @@ const CreatePoll: React.FC = () => {
     
     const validOptions = options.filter(opt => opt.trim().length > 0);
     if (question.trim() && validOptions.length >= 2) {
-      addPoll(question, validOptions);
+      addPoll(question, validOptions, imageUrl);
       navigate('/');
     }
   };
@@ -63,6 +65,56 @@ const CreatePoll: React.FC = () => {
                 maxLength={100}
                 required
               />
+            </div>
+            
+            <div>
+              <label htmlFor="image" className="block text-sm font-medium mb-2">
+                Add Image (Optional)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="image"
+                  type="text"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="Paste image URL here"
+                  className="flex-1 p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setImageUrl('')}
+                  className={`p-3 rounded-lg transition-colors ${
+                    imageUrl ? 'text-destructive hover:bg-destructive/10' : 'text-muted-foreground cursor-not-allowed'
+                  }`}
+                  disabled={!imageUrl}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              {imageUrl && (
+                <div className="mt-2 relative rounded-lg overflow-hidden border border-border">
+                  <img 
+                    src={imageUrl} 
+                    alt="Poll image preview" 
+                    className="w-full h-48 object-cover"
+                    onError={() => {
+                      toast.error("Invalid image URL");
+                      setImageUrl('');
+                    }}
+                  />
+                </div>
+              )}
+              {!imageUrl && (
+                <div 
+                  className="mt-2 flex items-center justify-center h-48 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors"
+                  onClick={() => document.getElementById('image')?.focus()}
+                >
+                  <div className="text-center text-muted-foreground">
+                    <ImagePlus className="mx-auto h-10 w-10 mb-2" />
+                    <p>Add an image to your poll</p>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div>

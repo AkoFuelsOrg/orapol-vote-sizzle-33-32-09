@@ -57,6 +57,16 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       
       <h3 className="text-lg font-semibold mb-4">{poll.question}</h3>
       
+      {poll.image && (
+        <div className="mb-4 rounded-lg overflow-hidden">
+          <img 
+            src={poll.image} 
+            alt={poll.question} 
+            className="w-full h-48 object-cover"
+          />
+        </div>
+      )}
+      
       <div className="space-y-2.5 mb-4">
         {poll.options.map((option) => (
           <button

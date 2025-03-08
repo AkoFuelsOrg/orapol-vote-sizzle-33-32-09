@@ -20,6 +20,7 @@ export interface Poll {
   totalVotes: number;
   commentCount: number;
   userVoted?: string; // ID of the option the user voted for
+  image?: string; // Optional image URL for the poll
 }
 
 export interface Comment {

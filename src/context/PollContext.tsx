@@ -8,7 +8,7 @@ interface PollContextType {
   polls: Poll[];
   comments: Comment[];
   currentUser: User;
-  addPoll: (question: string, options: string[]) => void;
+  addPoll: (question: string, options: string[], image?: string) => void;
   votePoll: (pollId: string, optionId: string) => void;
   addComment: (pollId: string, content: string) => void;
   likeComment: (commentId: string) => void;
@@ -34,7 +34,7 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const generateId = () => Math.random().toString(36).substring(2, 9);
 
   // Add a new poll
-  const addPoll = (question: string, optionTexts: string[]) => {
+  const addPoll = (question: string, optionTexts: string[], image?: string) => {
     if (!question || optionTexts.length < 2) {
       toast.error("Please provide a question and at least two options");
       return;
@@ -54,6 +54,7 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       totalVotes: 0,
       commentCount: 0,
+      image: image || undefined, // Add the image URL if provided
     };
 
     setPolls([newPoll, ...polls]);
