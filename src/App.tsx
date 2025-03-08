@@ -5,11 +5,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PollProvider } from "./context/PollContext";
+import { SupabaseProvider } from "./context/SupabaseContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Index from "./pages/Index";
 import CreatePoll from "./pages/CreatePoll";
 import PollDetail from "./pages/PollDetail";
 import Profile from "./pages/Profile";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,20 +20,37 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <PollProvider>
-        <Toaster />
-        <Sonner position="top-center" closeButton={true} />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/create" element={<CreatePoll />} />
-            <Route path="/poll/:id" element={<PollDetail />} />
-            <Route path="/profile" element={<Profile />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </PollProvider>
+      <BrowserRouter>
+        <SupabaseProvider>
+          <PollProvider>
+            <Toaster />
+            <Sonner position="top-center" closeButton={true} />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/create"
+                element={
+                  <ProtectedRoute>
+                    <CreatePoll />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/poll/:id" element={<PollDetail />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </PollProvider>
+        </SupabaseProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );
