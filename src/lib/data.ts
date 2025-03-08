@@ -140,7 +140,7 @@ export const initialComments: Comment[] = [
     id: '5',
     pollId: '2',
     author: users[0],
-    content: 'Netflix's library is still unmatched in terms of variety.',
+    content: 'Netflix\'s library is still unmatched in terms of variety.',
     createdAt: '2023-11-24T17:15:00Z',
     likes: 10,
   },
