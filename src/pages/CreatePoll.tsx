@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, ImagePlus, Loader2 } from 'lucide-react';
@@ -8,6 +7,7 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { PollOption } from '../lib/types';
+import { Json } from '@/integrations/supabase/types';
 
 const CreatePoll: React.FC = () => {
   const [question, setQuestion] = useState('');
@@ -63,7 +63,7 @@ const CreatePoll: React.FC = () => {
         .from('polls')
         .insert({
           question: question.trim(),
-          options: formattedOptions,
+          options: formattedOptions as unknown as Json,
           user_id: user.id,
           image: imageUrl || null
         })

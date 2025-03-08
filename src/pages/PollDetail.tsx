@@ -37,11 +37,16 @@ const PollDetail: React.FC = () => {
     }
     
     if (Array.isArray(jsonOptions)) {
-      return jsonOptions.map(opt => ({
-        id: opt.id || '',
-        text: opt.text || '',
-        votes: opt.votes || 0
-      }));
+      return jsonOptions.map(opt => {
+        if (typeof opt === 'object' && opt !== null) {
+          return {
+            id: String(opt.id || ''),
+            text: String(opt.text || ''),
+            votes: Number(opt.votes || 0)
+          };
+        }
+        return { id: '', text: '', votes: 0 };
+      });
     }
     
     return [];

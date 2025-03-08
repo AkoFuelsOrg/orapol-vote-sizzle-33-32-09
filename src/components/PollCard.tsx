@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2 } from 'lucide-react';
@@ -6,6 +5,7 @@ import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
+import { Json } from '@/integrations/supabase/types';
 
 interface PollCardProps {
   poll: Poll;
@@ -33,7 +33,6 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     try {
       setIsVoting(true);
       
-      // Insert the vote
       const { error: voteError } = await supabase
         .from('poll_votes')
         .insert({
@@ -44,7 +43,6 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       
       if (voteError) throw voteError;
       
-      // Update the poll options votes count
       const updatedOptions = poll.options.map(option => {
         if (option.id === optionId) {
           return { ...option, votes: option.votes + 1 };
@@ -52,11 +50,10 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
         return option;
       });
       
-      // Update the poll's total votes in the database
       const { error: updateError } = await supabase
         .from('polls')
         .update({ 
-          options: updatedOptions as any, // Cast to any to avoid type error with Supabase
+          options: updatedOptions as unknown as Json,
           total_votes: poll.totalVotes + 1
         })
         .eq('id', poll.id);
@@ -65,7 +62,6 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       
       toast.success("Vote recorded successfully");
       
-      // Update local state with userVoted property
       poll.options = updatedOptions;
       poll.totalVotes += 1;
       poll.userVoted = optionId;
@@ -88,7 +84,6 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     }).format(date);
   };
   
-  // Calculate percentages for each option
   const calculatePercentage = (votes: number) => {
     if (poll.totalVotes === 0) return 0;
     return Math.round((votes / poll.totalVotes) * 100);
@@ -151,7 +146,6 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
               </span>
             </div>
             
-            {/* Progress bar */}
             <div 
               className={`absolute top-0 left-0 h-full rounded-lg ${
                 poll.userVoted === option.id 
