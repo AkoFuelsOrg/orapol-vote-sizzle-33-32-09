@@ -1,0 +1,49 @@
+
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { MessageCircle, Plus, User } from 'lucide-react';
+
+const Header: React.FC = () => {
+  const location = useLocation();
+  
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 glass-card h-16 px-4 animate-fade-in">
+      <div className="max-w-lg mx-auto h-full flex items-center justify-between">
+        <Link to="/" className="flex items-center">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            Orapol
+          </h1>
+        </Link>
+        
+        <nav className="flex items-center space-x-1">
+          <Link 
+            to="/" 
+            className={`p-2.5 rounded-full transition-colors duration-200 ${
+              location.pathname === '/' ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
+            }`}
+          >
+            <MessageCircle size={20} />
+          </Link>
+          <Link 
+            to="/create" 
+            className={`p-2.5 rounded-full transition-colors duration-200 ${
+              location.pathname === '/create' ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
+            }`}
+          >
+            <Plus size={20} />
+          </Link>
+          <Link 
+            to="/profile" 
+            className={`p-2.5 rounded-full transition-colors duration-200 ${
+              location.pathname === '/profile' ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
+            }`}
+          >
+            <User size={20} />
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
