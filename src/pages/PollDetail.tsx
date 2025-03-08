@@ -6,9 +6,10 @@ import PollCard from '../components/PollCard';
 import CommentSection from '../components/CommentSection';
 import Header from '../components/Header';
 import { supabase } from '@/integrations/supabase/client';
-import { Poll } from '../lib/types';
+import { Poll, PollOption } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
+import { Json } from '@/integrations/supabase/types';
 
 const PollDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,28 @@ const PollDetail: React.FC = () => {
       fetchPollDetails(id);
     }
   }, [id, user]);
+  
+  // Function to convert JSON options from Supabase to PollOption type
+  const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
+    if (typeof jsonOptions === 'string') {
+      try {
+        return JSON.parse(jsonOptions);
+      } catch (error) {
+        console.error('Error parsing JSON options:', error);
+        return [];
+      }
+    }
+    
+    if (Array.isArray(jsonOptions)) {
+      return jsonOptions.map(opt => ({
+        id: opt.id || '',
+        text: opt.text || '',
+        votes: opt.votes || 0
+      }));
+    }
+    
+    return [];
+  };
   
   const fetchPollDetails = async (pollId: string) => {
     try {
@@ -67,7 +90,7 @@ const PollDetail: React.FC = () => {
       const formattedPoll: Poll = {
         id: pollData.id,
         question: pollData.question,
-        options: pollData.options,
+        options: convertJsonToPollOptions(pollData.options),
         author: {
           id: pollData.profiles.id,
           name: pollData.profiles.username || 'Anonymous',

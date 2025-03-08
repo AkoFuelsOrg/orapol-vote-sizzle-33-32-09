@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
+import { PollOption } from '../lib/types';
 
 const CreatePoll: React.FC = () => {
   const [question, setQuestion] = useState('');
@@ -51,7 +52,7 @@ const CreatePoll: React.FC = () => {
       setIsSubmitting(true);
 
       // Format options for database storage
-      const formattedOptions = validOptions.map(text => ({
+      const formattedOptions: PollOption[] = validOptions.map(text => ({
         id: uuidv4(),
         text,
         votes: 0

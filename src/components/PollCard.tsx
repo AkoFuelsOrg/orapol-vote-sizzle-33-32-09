@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2 } from 'lucide-react';
-import { Poll } from '../lib/types';
+import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
@@ -56,7 +56,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       const { error: updateError } = await supabase
         .from('polls')
         .update({ 
-          options: updatedOptions,
+          options: updatedOptions as any, // Cast to any to avoid type error with Supabase
           total_votes: poll.totalVotes + 1
         })
         .eq('id', poll.id);

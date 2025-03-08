@@ -6,8 +6,9 @@ import PollCard from '../components/PollCard';
 import Header from '../components/Header';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Poll } from '../lib/types';
+import { Poll, PollOption } from '../lib/types';
 import { toast } from 'sonner';
+import { Json } from '@/integrations/supabase/types';
 
 const Index: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -39,6 +40,28 @@ const Index: React.FC = () => {
     // Trigger animations after a small delay for a staggered effect
     setAnimateItems(true);
   }, [polls]);
+  
+  // Function to convert JSON options from Supabase to PollOption type
+  const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
+    if (typeof jsonOptions === 'string') {
+      try {
+        return JSON.parse(jsonOptions);
+      } catch (error) {
+        console.error('Error parsing JSON options:', error);
+        return [];
+      }
+    }
+    
+    if (Array.isArray(jsonOptions)) {
+      return jsonOptions.map(opt => ({
+        id: opt.id || '',
+        text: opt.text || '',
+        votes: opt.votes || 0
+      }));
+    }
+    
+    return [];
+  };
 
   const fetchPollWithDetails = async (pollId: string) => {
     try {
@@ -80,7 +103,7 @@ const Index: React.FC = () => {
       const formattedPoll: Poll = {
         id: pollData.id,
         question: pollData.question,
-        options: pollData.options,
+        options: convertJsonToPollOptions(pollData.options),
         author: {
           id: pollData.profiles.id,
           name: pollData.profiles.username || 'Anonymous',
@@ -150,7 +173,7 @@ const Index: React.FC = () => {
       const formattedPolls: Poll[] = data.map(poll => ({
         id: poll.id,
         question: poll.question,
-        options: poll.options,
+        options: convertJsonToPollOptions(poll.options),
         author: {
           id: poll.profiles.id,
           name: poll.profiles.username || 'Anonymous',
