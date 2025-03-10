@@ -3,7 +3,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Send, Smile, Image, FileText, Film, Paperclip } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Smile, Image, FileText, Paperclip } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -36,7 +36,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Get the other user's profile
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', userId],
     queryFn: async () => {
@@ -51,7 +50,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     }
   });
   
-  // Check if messaging is allowed
   const { data: messageAllowed } = useQuery({
     queryKey: ['can-message', user?.id, userId],
     queryFn: async () => {
@@ -74,14 +72,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     setCanMessage(!!messageAllowed);
   }, [messageAllowed]);
   
-  // Get the conversation history
   const { data: messages, isLoading: messagesLoading, refetch } = useQuery({
     queryKey: ['messages', user?.id, userId],
     queryFn: async () => {
       if (!user) return [];
       
-      // Get all messages where:
-      // (sender is current user AND receiver is other user) OR (sender is other user AND receiver is current user)
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -95,7 +90,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
         throw error;
       }
       
-      // Mark messages as read
       const unreadMessages = (data as Message[])
         .filter(msg => msg.receiver_id === user.id && !msg.read);
         
@@ -113,7 +107,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   });
   
   useEffect(() => {
-    // Set up subscription for real-time updates
     if (!user || !userId) return;
     
     const channel = supabase
@@ -133,12 +126,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     };
   }, [user, userId, refetch]);
   
-  // Scroll to bottom on new messages
   useEffect(() => {
     if (messages && messages.length > 0) {
       scrollToBottom();
       
-      // Mark messages as read
       const unreadMessages = messages
         .filter(msg => msg.receiver_id === user?.id && !msg.read);
         
@@ -159,20 +150,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   
-  // Handle emoji selection
   const handleEmojiSelect = (emoji: string) => {
     setNewMessage(prevMessage => prevMessage + emoji);
     setShowEmojiPicker(false);
   };
   
-  // Handle GIF selection
   const handleGifSelect = async (gifUrl: string) => {
     if (!user || !userId || !canMessage) return;
     
     setSending(true);
     
     try {
-      // Send the GIF as a message
       const { error } = await supabase
         .from('messages')
         .insert({
@@ -198,7 +186,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const handleFileSelect = (type: 'image' | 'video' | 'document') => {
     setAttachmentType(type);
     if (fileInputRef.current) {
-      // Set accepted file types based on the selected type
       switch (type) {
         case 'image':
           fileInputRef.current.accept = 'image/jpeg,image/png,image/jpg';
@@ -218,7 +205,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast.error("File is too large. Maximum size is 10MB.");
         return;
@@ -238,19 +224,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     if (!attachmentFile || !attachmentType || !user) return null;
     
     try {
-      // Create a unique file path using UUID
       const fileExt = attachmentFile.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
       
-      // Upload the file to Supabase Storage
       const { data, error } = await supabase.storage
         .from('chat_attachments')
         .upload(filePath, attachmentFile);
         
       if (error) throw error;
       
-      // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('chat_attachments')
         .getPublicUrl(filePath);
@@ -274,17 +257,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     try {
       let attachmentUrl = null;
       
-      // If there's an attachment, upload it first
       if (attachmentFile && attachmentType) {
         attachmentUrl = await uploadAttachment();
         if (!attachmentUrl && !newMessage.trim()) {
-          // If upload failed and there's no message text, stop
           setSending(false);
           return;
         }
       }
       
-      // Send the message with or without attachment
       const { error } = await supabase
         .from('messages')
         .insert({
@@ -308,7 +288,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     }
   };
   
-  // Helper function to format timestamps in a more compact way
   const formatMessageTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -318,7 +297,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
       return 'just now';
     } else if (diffMinutes < 60) {
       return `${diffMinutes}m ago`;
-    } else if (diffMinutes < 1440) { // Less than a day
+    } else if (diffMinutes < 1440) {
       const hours = Math.floor(diffMinutes / 60);
       return `${hours}h ago`;
     } else {
@@ -328,7 +307,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     }
   };
   
-  // Helper function to render attachment preview
   const renderAttachmentPreview = (url: string, type: string) => {
     switch (type) {
       case 'image':
@@ -515,34 +493,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 type="button" 
                 variant="outline"
                 size="sm"
-                onClick={() => handleFileSelect('video')}
+                onClick={() => handleFileSelect('image')}
                 className="flex-1 h-9 px-2 text-xs"
               >
-                <Film className="h-4 w-4 mr-1" /> Video
+                <Image className="h-4 w-4 mr-1" /> Image
               </Button>
             </div>
             
-            {/* Emoji Picker */}
-            {showEmojiPicker && (
-              <div className="absolute bottom-32 left-4 z-10">
-                <EmojiPicker 
-                  onSelectEmoji={handleEmojiSelect} 
-                  onClose={() => setShowEmojiPicker(false)} 
-                />
-              </div>
-            )}
+            <div className="absolute bottom-32 left-4 z-10">
+              <EmojiPicker 
+                onSelectEmoji={handleEmojiSelect} 
+                onClose={() => setShowEmojiPicker(false)} 
+              />
+            </div>
             
-            {/* GIF Selector */}
-            {showGifSelector && (
-              <div className="absolute bottom-32 left-4 z-10">
-                <GifSelector 
-                  onSelectGif={handleGifSelect} 
-                  onClose={() => setShowGifSelector(false)} 
-                />
-              </div>
-            )}
+            <div className="absolute bottom-32 left-4 z-10">
+              <GifSelector 
+                onSelectGif={handleGifSelect} 
+                onClose={() => setShowGifSelector(false)} 
+              />
+            </div>
             
-            {/* Hidden file input */}
             <input
               type="file"
               ref={fileInputRef}
