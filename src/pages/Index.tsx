@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -60,7 +59,8 @@ const Index: React.FC = () => {
           return {
             id: String(option?.id || ''),
             text: String(option?.text || ''),
-            votes: Number(option?.votes || 0)
+            votes: Number(option?.votes || 0),
+            imageUrl: option?.imageUrl as string | undefined
           };
         }
         return { id: '', text: '', votes: 0 };

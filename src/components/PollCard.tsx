@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2 } from 'lucide-react';
@@ -139,6 +140,16 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
                   ? 'border-border/50 hover:border-border' 
                   : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
           >
+            {option.imageUrl && (
+              <div className="mb-2 rounded-lg overflow-hidden h-24 w-full">
+                <img 
+                  src={option.imageUrl} 
+                  alt={option.text} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            
             <div className="flex justify-between items-center relative z-10">
               <span className="text-sm font-medium">{option.text}</span>
               <span className="text-xs font-medium">
