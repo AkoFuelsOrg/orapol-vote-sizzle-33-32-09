@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSupabase } from '../context/SupabaseContext';
 import { useBreakpoint } from '../hooks/use-mobile';
+import UserList from '../components/UserList';
 
 const Following: React.FC = () => {
   const { user } = useSupabase();
@@ -17,13 +18,13 @@ const Following: React.FC = () => {
           <CardTitle>People You're Following</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            Here you'll see all the users you follow.
-          </p>
-          <div className="mt-4">
-            {/* Placeholder for following list */}
-            <p>Coming soon: A list of all users you follow.</p>
-          </div>
+          {user ? (
+            <UserList userId={user.id} type="following" />
+          ) : (
+            <p className="text-muted-foreground">
+              Please sign in to see who you're following.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
