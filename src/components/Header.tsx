@@ -3,10 +3,11 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MessageCircle, Plus, User, LogOut } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 const Header: React.FC = () => {
   const location = useLocation();
-  const { user, signOut, loading } = useSupabase();
+  const { user, profile, signOut, loading } = useSupabase();
   
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-card h-16 px-4 animate-fade-in">
@@ -43,7 +44,19 @@ const Header: React.FC = () => {
                   location.pathname === '/profile' ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
                 }`}
               >
-                <User size={20} />
+                {profile?.avatar_url ? (
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage
+                      src={profile.avatar_url}
+                      alt={profile.username || user.email || "Profile"}
+                    />
+                    <AvatarFallback>
+                      <User size={20} />
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <User size={20} />
+                )}
               </Link>
               <button
                 onClick={() => signOut()}
