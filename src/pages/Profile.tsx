@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -7,6 +8,8 @@ import { Pencil, Upload, Loader2, UserCircle, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import UserList from '../components/UserList';
+import { supabase } from '../integrations/supabase/client';
+import { Poll, PollOption } from '../lib/types';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
@@ -16,17 +19,15 @@ const Profile: React.FC = () => {
   const [username, setUsername] = useState(profile?.username || '');
   const [uploading, setUploading] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
+  const [userPolls, setUserPolls] = useState<Poll[]>([]);
+  const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
+  const [isLoadingPolls, setIsLoadingPolls] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Filter polls created by the current user
-  const userPolls = user ? polls.filter(poll => poll.author.id === user.id) : [];
-  
-  // Find polls the user has voted on
-  const votedPolls = user ? polls.filter(poll => poll.userVoted) : [];
   
   useEffect(() => {
     if (user) {
       fetchFollowCounts();
+      fetchUserPolls();
     }
   }, [user]);
   
@@ -35,6 +36,125 @@ const Profile: React.FC = () => {
       const counts = await getFollowCounts(user.id);
       setFollowCounts(counts);
     }
+  };
+  
+  const fetchUserPolls = async () => {
+    if (!user) return;
+    
+    setIsLoadingPolls(true);
+    try {
+      // Fetch user's created polls
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (pollsError) throw pollsError;
+      
+      // Fetch polls the user has voted on
+      const { data: votesData, error: votesError } = await supabase
+        .from('poll_votes')
+        .select('poll_id, option_id')
+        .eq('user_id', user.id);
+        
+      if (votesError) throw votesError;
+      
+      // Get the list of poll IDs the user has voted on
+      const votedPollIds = votesData?.map(vote => vote.poll_id) || [];
+      
+      // Fetch the actual poll data for voted polls
+      const { data: votedPollsData, error: votedPollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .in('id', votedPollIds.length > 0 ? votedPollIds : ['no-polls'])
+        .order('created_at', { ascending: false });
+        
+      if (votedPollsError && votedPollIds.length > 0) throw votedPollsError;
+      
+      // Process polls data
+      setUserPolls(formatPollsData(pollsData || [], votesData || []));
+      setVotedPolls(formatPollsData(votedPollsData || [], votesData || []));
+    } catch (error) {
+      console.error('Error fetching user polls:', error);
+      toast.error('Failed to load your polls');
+    } finally {
+      setIsLoadingPolls(false);
+    }
+  };
+  
+  const formatPollsData = (pollsData: any[], votesData: any[]): Poll[] => {
+    if (!pollsData || pollsData.length === 0) return [];
+    
+    // Create a map of poll_id -> option_id for quick lookup
+    const userVotes: Record<string, string> = {};
+    votesData.forEach(vote => {
+      userVotes[vote.poll_id] = vote.option_id;
+    });
+    
+    return pollsData.map(poll => {
+      const options = convertJsonToPollOptions(poll.options);
+      return {
+        id: poll.id,
+        question: poll.question,
+        options,
+        author: {
+          id: poll.profiles?.id || '',
+          name: poll.profiles?.username || 'Anonymous',
+          avatar: poll.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles?.id || ''}`
+        },
+        createdAt: poll.created_at,
+        totalVotes: poll.total_votes || 0,
+        commentCount: poll.comment_count || 0,
+        userVoted: userVotes[poll.id],
+        image: poll.image
+      };
+    });
+  };
+  
+  const convertJsonToPollOptions = (jsonOptions: any): PollOption[] => {
+    if (typeof jsonOptions === 'string') {
+      try {
+        return JSON.parse(jsonOptions);
+      } catch (error) {
+        console.error('Error parsing JSON options:', error);
+        return [];
+      }
+    }
+    
+    if (Array.isArray(jsonOptions)) {
+      return jsonOptions.map(opt => {
+        if (typeof opt === 'object' && opt !== null) {
+          return {
+            id: String(opt.id || ''),
+            text: String(opt.text || ''),
+            votes: Number(opt.votes || 0),
+            imageUrl: opt.imageUrl
+          };
+        }
+        return { id: '', text: '', votes: 0 };
+      });
+    }
+    
+    return [];
   };
   
   const handleSaveProfile = async () => {
@@ -202,7 +322,11 @@ const Profile: React.FC = () => {
           </TabsList>
           
           <TabsContent value="polls" className="mt-0">
-            {userPolls.length > 0 ? (
+            {isLoadingPolls ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : userPolls.length > 0 ? (
               <div className="space-y-4">
                 {userPolls.map(poll => (
                   <PollCard key={poll.id} poll={poll} />
@@ -224,7 +348,11 @@ const Profile: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="voted" className="mt-0">
-            {votedPolls.length > 0 ? (
+            {isLoadingPolls ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : votedPolls.length > 0 ? (
               <div className="space-y-4">
                 {votedPolls.map(poll => (
                   <PollCard key={poll.id} poll={poll} />
