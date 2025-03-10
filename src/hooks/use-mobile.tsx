@@ -1,6 +1,8 @@
+
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
+const TABLET_BREAKPOINT = 1024
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
@@ -16,4 +18,37 @@ export function useIsMobile() {
   }, [])
 
   return !!isMobile
+}
+
+export function useBreakpoint() {
+  const [breakpoint, setBreakpoint] = React.useState<"mobile" | "tablet" | "desktop" | undefined>(
+    undefined
+  )
+
+  React.useEffect(() => {
+    const updateBreakpoint = () => {
+      const width = window.innerWidth
+      if (width < MOBILE_BREAKPOINT) {
+        setBreakpoint("mobile")
+      } else if (width < TABLET_BREAKPOINT) {
+        setBreakpoint("tablet")
+      } else {
+        setBreakpoint("desktop")
+      }
+    }
+
+    const mobileQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+    const tabletQuery = window.matchMedia(
+      `(min-width: ${MOBILE_BREAKPOINT}px) and (max-width: ${TABLET_BREAKPOINT - 1}px)`
+    )
+
+    updateBreakpoint()
+    window.addEventListener("resize", updateBreakpoint)
+
+    return () => {
+      window.removeEventListener("resize", updateBreakpoint)
+    }
+  }, [])
+
+  return breakpoint
 }

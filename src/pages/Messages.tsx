@@ -7,6 +7,8 @@ import Header from '../components/Header';
 import ConversationList from '../components/ConversationList';
 import ChatInterface from '../components/ChatInterface';
 import SplashScreen from '../components/SplashScreen';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 const Messages: React.FC = () => {
   const { id: conversationUserId } = useParams();
@@ -14,6 +16,8 @@ const Messages: React.FC = () => {
   const navigate = useNavigate();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(conversationUserId || null);
   const [showConversations, setShowConversations] = useState(!conversationUserId);
+  const breakpoint = useBreakpoint();
+  const isDesktop = breakpoint === "desktop";
   
   useEffect(() => {
     if (!loading && !user) {
@@ -23,8 +27,10 @@ const Messages: React.FC = () => {
   
   useEffect(() => {
     setSelectedUserId(conversationUserId || null);
-    setShowConversations(!conversationUserId);
-  }, [conversationUserId]);
+    if (!isDesktop) {
+      setShowConversations(!conversationUserId);
+    }
+  }, [conversationUserId, isDesktop]);
   
   const handleSelectConversation = (userId: string) => {
     navigate(`/messages/${userId}`);
@@ -40,6 +46,48 @@ const Messages: React.FC = () => {
   
   if (!user) {
     return null; // Will redirect via the first useEffect
+  }
+  
+  if (isDesktop) {
+    return (
+      <div className="flex flex-col min-h-screen pb-20">
+        <Header />
+        <div className="container max-w-6xl mx-auto px-4 pt-20 flex-1 flex flex-col">
+          <h1 className="text-2xl font-bold mb-6 animate-fade-in">Messages</h1>
+          
+          <div className="flex-1 rounded-lg overflow-hidden">
+            <ResizablePanelGroup 
+              direction="horizontal" 
+              className="min-h-[600px] rounded-lg border glass-card"
+            >
+              <ResizablePanel defaultSize={30} minSize={20}>
+                <div className="h-full p-4">
+                  <ConversationList 
+                    onSelectConversation={handleSelectConversation} 
+                    selectedUserId={selectedUserId}
+                  />
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={70}>
+                <div className="h-full">
+                  {selectedUserId ? (
+                    <ChatInterface 
+                      userId={selectedUserId} 
+                      onBack={undefined} 
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      Select a conversation to start messaging
+                    </div>
+                  )}
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   return (

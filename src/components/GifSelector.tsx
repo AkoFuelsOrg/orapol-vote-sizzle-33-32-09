@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Search, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 // Expanded collection of GIFs with reliable URLs
 const sampleGifs = [
@@ -70,6 +70,7 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisib
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [gifs, setGifs] = useState(sampleGifs);
+  const breakpoint = useBreakpoint();
 
   // Reset gifs when visibility changes
   useEffect(() => {
@@ -128,8 +129,10 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisib
 
   if (!isVisible) return null;
 
+  const isDesktop = breakpoint === "desktop" || breakpoint === "tablet";
+  
   return (
-    <div className="p-2 bg-background border rounded-lg shadow-lg w-full max-w-md">
+    <div className={`p-2 bg-background border rounded-lg shadow-lg w-full ${isDesktop ? 'max-w-xl' : 'max-w-md'}`}>
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-medium">Select GIF</h3>
         <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
@@ -154,7 +157,7 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisib
         </Button>
       </div>
       
-      <div className="grid grid-cols-2 gap-2 overflow-y-auto max-h-[300px]">
+      <div className={`grid ${isDesktop ? 'grid-cols-3' : 'grid-cols-2'} gap-2 overflow-y-auto ${isDesktop ? 'max-h-[400px]' : 'max-h-[300px]'}`}>
         {gifs.length > 0 ? (
           gifs.map((gif, index) => (
             <div 

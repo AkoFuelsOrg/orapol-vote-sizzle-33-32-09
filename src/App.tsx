@@ -9,6 +9,8 @@ import { SupabaseProvider } from "./context/SupabaseContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserProfile from "./pages/UserProfile";
 import AppLoader from "./components/AppLoader";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "./components/ui/resizable";
+import { useBreakpoint } from "./hooks/use-mobile";
 
 import Index from "./pages/Index";
 import CreatePoll from "./pages/CreatePoll";
@@ -20,6 +22,23 @@ import Messages from "./pages/Messages";
 
 const queryClient = new QueryClient();
 
+const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
+  const breakpoint = useBreakpoint();
+  const isDesktop = breakpoint === "desktop";
+  
+  if (!isDesktop) {
+    return <>{children}</>;
+  }
+  
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <div className="w-full max-w-7xl mx-auto px-4 py-2 flex">
+        <main className="flex-1">{children}</main>
+      </div>
+    </div>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -29,45 +48,47 @@ const App = () => (
             <Toaster />
             <Sonner position="top-center" closeButton={true} />
             <AppLoader>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route
-                  path="/create"
-                  element={
-                    <ProtectedRoute>
-                      <CreatePoll />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/poll/:id" element={<PollDetail />} />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/user/:id" element={<UserProfile />} />
-                <Route
-                  path="/messages"
-                  element={
-                    <ProtectedRoute>
-                      <Messages />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/messages/:id"
-                  element={
-                    <ProtectedRoute>
-                      <Messages />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <ResponsiveLayout>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route
+                    path="/create"
+                    element={
+                      <ProtectedRoute>
+                        <CreatePoll />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/poll/:id" element={<PollDetail />} />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/user/:id" element={<UserProfile />} />
+                  <Route
+                    path="/messages"
+                    element={
+                      <ProtectedRoute>
+                        <Messages />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/messages/:id"
+                    element={
+                      <ProtectedRoute>
+                        <Messages />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </ResponsiveLayout>
             </AppLoader>
           </PollProvider>
         </SupabaseProvider>

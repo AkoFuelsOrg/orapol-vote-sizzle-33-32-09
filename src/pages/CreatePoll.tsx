@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, ImagePlus, Loader2, Upload } from 'lucide-react';
@@ -9,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { PollOption } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 interface OptionWithImage {
   text: string;
@@ -27,6 +27,7 @@ const CreatePoll: React.FC = () => {
   const [uploadingOptionImage, setUploadingOptionImage] = useState<number | null>(null);
   const { user } = useSupabase();
   const navigate = useNavigate();
+  const breakpoint = useBreakpoint();
   
   const handleAddOption = () => {
     if (options.length >= 6) return;
@@ -132,7 +133,6 @@ const CreatePoll: React.FC = () => {
     try {
       setIsSubmitting(true);
 
-      // Format options for database storage
       const formattedOptions: PollOption[] = validOptions.map(opt => ({
         id: uuidv4(),
         text: opt.text.trim(),
@@ -140,7 +140,6 @@ const CreatePoll: React.FC = () => {
         imageUrl: opt.imageUrl || null
       }));
 
-      // Insert the new poll into Supabase
       const { data, error } = await supabase
         .from('polls')
         .insert({
@@ -165,11 +164,13 @@ const CreatePoll: React.FC = () => {
     }
   };
 
+  const isDesktop = breakpoint === "desktop";
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="pt-20 px-4 max-w-lg mx-auto pb-20">
+      <main className={`pt-20 px-4 ${isDesktop ? 'max-w-4xl' : 'max-w-lg'} mx-auto pb-20`}>
         <div className="mb-6 animate-fade-in">
           <h2 className="text-2xl font-bold">Create Poll</h2>
           <p className="text-muted-foreground">Ask a question and collect opinions</p>
@@ -177,176 +178,355 @@ const CreatePoll: React.FC = () => {
         
         <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 animate-scale-in">
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="question" className="block text-sm font-medium mb-2">
-                Your Question
-              </label>
-              <input
-                id="question"
-                type="text"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="What would you like to ask?"
-                className="w-full p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-                maxLength={100}
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Add Poll Image (Optional)
-              </label>
-              
-              {imageUrl ? (
-                <div className="mt-2 relative rounded-lg overflow-hidden border border-border">
-                  <img 
-                    src={imageUrl} 
-                    alt="Poll image preview" 
-                    className="w-full h-48 object-cover"
-                    onError={() => {
-                      toast.error("Invalid image");
-                      setImageUrl('');
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setImageUrl('')}
-                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex items-center justify-center h-48 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleUploadPollImage(e.target.files[0]);
-                      }
-                    }}
-                    disabled={uploadingPollImage}
-                  />
-                  <div className="text-center text-muted-foreground">
-                    {uploadingPollImage ? (
-                      <Loader2 className="mx-auto h-10 w-10 animate-spin" />
-                    ) : (
-                      <>
-                        <Upload className="mx-auto h-10 w-10 mb-2" />
-                        <p>Click to upload poll image</p>
-                      </>
-                    )}
+            {isDesktop ? (
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-5">
+                  <div>
+                    <label htmlFor="question" className="block text-sm font-medium mb-2">
+                      Your Question
+                    </label>
+                    <input
+                      id="question"
+                      type="text"
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      placeholder="What would you like to ask?"
+                      className="w-full p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                      maxLength={100}
+                      required
+                    />
                   </div>
-                </label>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Options
-              </label>
-              <div className="space-y-4">
-                {options.map((option, index) => (
-                  <div key={index} className="border border-border rounded-lg p-3">
-                    <div className="flex gap-2 mb-2">
-                      <input
-                        type="text"
-                        value={option.text}
-                        onChange={(e) => handleOptionChange(index, e.target.value)}
-                        placeholder={`Option ${index + 1}`}
-                        className="flex-1 p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-                        maxLength={50}
-                        required
-                      />
-                      {options.length > 2 && (
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Add Poll Image (Optional)
+                    </label>
+                    
+                    {imageUrl ? (
+                      <div className="mt-2 relative rounded-lg overflow-hidden border border-border">
+                        <img 
+                          src={imageUrl} 
+                          alt="Poll image preview" 
+                          className="w-full h-48 object-cover"
+                          onError={() => {
+                            toast.error("Invalid image");
+                            setImageUrl('');
+                          }}
+                        />
                         <button
                           type="button"
-                          onClick={() => handleRemoveOption(index)}
-                          className="p-3 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                          onClick={() => setImageUrl('')}
+                          className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
                         >
-                          <X size={20} />
+                          <X size={16} />
                         </button>
-                      )}
-                    </div>
-                    
-                    {/* Option image upload */}
-                    <div className="mt-2">
-                      {option.imageUrl ? (
-                        <div className="relative rounded-lg overflow-hidden border border-border">
-                          <img 
-                            src={option.imageUrl} 
-                            alt={`Option ${index + 1} image`} 
-                            className="w-full h-32 object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleOptionImageChange(index, '')}
-                            className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-                          >
-                            <X size={16} />
-                          </button>
+                      </div>
+                    ) : (
+                      <label className="flex items-center justify-center h-48 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleUploadPollImage(e.target.files[0]);
+                            }
+                          }}
+                          disabled={uploadingPollImage}
+                        />
+                        <div className="text-center text-muted-foreground">
+                          {uploadingPollImage ? (
+                            <Loader2 className="mx-auto h-10 w-10 animate-spin" />
+                          ) : (
+                            <>
+                              <Upload className="mx-auto h-10 w-10 mb-2" />
+                              <p>Click to upload poll image</p>
+                            </>
+                          )}
                         </div>
-                      ) : (
-                        <label className="flex items-center justify-center h-32 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                handleUploadOptionImage(index, e.target.files[0]);
-                              }
-                            }}
-                            disabled={uploadingOptionImage !== null}
-                          />
-                          <div className="text-center text-muted-foreground">
-                            {uploadingOptionImage === index ? (
-                              <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                            ) : (
-                              <>
-                                <Upload className="mx-auto h-6 w-6 mb-1" />
-                                <p className="text-sm">Click to upload image</p>
-                              </>
-                            )}
-                          </div>
-                        </label>
-                      )}
-                    </div>
+                      </label>
+                    )}
                   </div>
-                ))}
+                  
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={20} className="animate-spin mr-2" />
+                          Creating Poll...
+                        </>
+                      ) : (
+                        'Create Poll'
+                      )}
+                    </button>
+                  </div>
+                </div>
                 
-                {options.length < 6 && (
-                  <button
-                    type="button"
-                    onClick={handleAddOption}
-                    className="w-full p-3 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
-                  >
-                    <Plus size={18} className="mr-1.5" />
-                    <span>Add Option</span>
-                  </button>
-                )}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Options
+                  </label>
+                  <div className="space-y-4">
+                    {options.map((option, index) => (
+                      <div key={index} className="border border-border rounded-lg p-3">
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={option.text}
+                            onChange={(e) => handleOptionChange(index, e.target.value)}
+                            placeholder={`Option ${index + 1}`}
+                            className="flex-1 p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                            maxLength={50}
+                            required
+                          />
+                          {options.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveOption(index)}
+                              className="p-3 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                            >
+                              <X size={20} />
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Option image upload */}
+                        <div className="mt-2">
+                          {option.imageUrl ? (
+                            <div className="relative rounded-lg overflow-hidden border border-border">
+                              <img 
+                                src={option.imageUrl} 
+                                alt={`Option ${index + 1} image`} 
+                                className="w-full h-32 object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleOptionImageChange(index, '')}
+                                className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center h-32 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleUploadOptionImage(index, e.target.files[0]);
+                                  }
+                                }}
+                                disabled={uploadingOptionImage !== null}
+                              />
+                              <div className="text-center text-muted-foreground">
+                                {uploadingOptionImage === index ? (
+                                  <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Upload className="mx-auto h-6 w-6 mb-1" />
+                                    <p className="text-sm">Click to upload image</p>
+                                  </>
+                                )}
+                              </div>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {options.length < 6 && (
+                      <button
+                        type="button"
+                        onClick={handleAddOption}
+                        className="w-full p-3 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
+                      >
+                        <Plus size={18} className="mr-1.5" />
+                        <span>Add Option</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin mr-2" />
-                    Creating Poll...
-                  </>
-                ) : (
-                  'Create Poll'
-                )}
-              </button>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <label htmlFor="question" className="block text-sm font-medium mb-2">
+                    Your Question
+                  </label>
+                  <input
+                    id="question"
+                    type="text"
+                    value={question}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder="What would you like to ask?"
+                    className="w-full p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                    maxLength={100}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Add Poll Image (Optional)
+                  </label>
+                  
+                  {imageUrl ? (
+                    <div className="mt-2 relative rounded-lg overflow-hidden border border-border">
+                      <img 
+                        src={imageUrl} 
+                        alt="Poll image preview" 
+                        className="w-full h-48 object-cover"
+                        onError={() => {
+                          toast.error("Invalid image");
+                          setImageUrl('');
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl('')}
+                        className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center h-48 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleUploadPollImage(e.target.files[0]);
+                          }
+                        }}
+                        disabled={uploadingPollImage}
+                      />
+                      <div className="text-center text-muted-foreground">
+                        {uploadingPollImage ? (
+                          <Loader2 className="mx-auto h-10 w-10 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload className="mx-auto h-10 w-10 mb-2" />
+                            <p>Click to upload poll image</p>
+                          </>
+                        )}
+                      </div>
+                    </label>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Options
+                  </label>
+                  <div className="space-y-4">
+                    {options.map((option, index) => (
+                      <div key={index} className="border border-border rounded-lg p-3">
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            type="text"
+                            value={option.text}
+                            onChange={(e) => handleOptionChange(index, e.target.value)}
+                            placeholder={`Option ${index + 1}`}
+                            className="flex-1 p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                            maxLength={50}
+                            required
+                          />
+                          {options.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveOption(index)}
+                              className="p-3 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                            >
+                              <X size={20} />
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Option image upload */}
+                        <div className="mt-2">
+                          {option.imageUrl ? (
+                            <div className="relative rounded-lg overflow-hidden border border-border">
+                              <img 
+                                src={option.imageUrl} 
+                                alt={`Option ${index + 1} image`} 
+                                className="w-full h-32 object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleOptionImageChange(index, '')}
+                                className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center h-32 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleUploadOptionImage(index, e.target.files[0]);
+                                  }
+                                }}
+                                disabled={uploadingOptionImage !== null}
+                              />
+                              <div className="text-center text-muted-foreground">
+                                {uploadingOptionImage === index ? (
+                                  <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Upload className="mx-auto h-6 w-6 mb-1" />
+                                    <p className="text-sm">Click to upload image</p>
+                                  </>
+                                )}
+                              </div>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {options.length < 6 && (
+                      <button
+                        type="button"
+                        onClick={handleAddOption}
+                        className="w-full p-3 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
+                      >
+                        <Plus size={18} className="mr-1.5" />
+                        <span>Add Option</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin mr-2" />
+                        Creating Poll...
+                      </>
+                    ) : (
+                      'Create Poll'
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         </div>
       </main>
