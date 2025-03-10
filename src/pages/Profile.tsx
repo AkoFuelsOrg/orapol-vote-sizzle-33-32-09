@@ -1,19 +1,22 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
 import Header from '../components/Header';
 import { useSupabase } from '../context/SupabaseContext';
-import { Pencil, Upload, Loader2 } from 'lucide-react';
+import { Pencil, Upload, Loader2, UserCircle, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import UserList from '../components/UserList';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
-  const { user, profile, updateProfile, loading: profileLoading } = useSupabase();
+  const { user, profile, updateProfile, loading: profileLoading, getFollowCounts } = useSupabase();
   
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState(profile?.username || '');
   const [uploading, setUploading] = useState(false);
+  const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filter polls created by the current user
@@ -21,6 +24,19 @@ const Profile: React.FC = () => {
   
   // Find polls the user has voted on
   const votedPolls = polls.filter(poll => poll.userVoted);
+  
+  useEffect(() => {
+    if (user) {
+      fetchFollowCounts();
+    }
+  }, [user]);
+  
+  const fetchFollowCounts = async () => {
+    if (user) {
+      const counts = await getFollowCounts(user.id);
+      setFollowCounts(counts);
+    }
+  };
   
   const handleSaveProfile = async () => {
     if (!username.trim()) {
@@ -168,47 +184,80 @@ const Profile: React.FC = () => {
               <p className="text-sm text-muted-foreground">Polls</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold">{votedPolls.length}</p>
-              <p className="text-sm text-muted-foreground">Votes</p>
+              <p className="text-2xl font-bold">{followCounts.followers}</p>
+              <p className="text-sm text-muted-foreground">Followers</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">{followCounts.following}</p>
+              <p className="text-sm text-muted-foreground">Following</p>
             </div>
           </div>
         </div>
         
-        {userPolls.length > 0 && (
-          <div className="mb-8 animate-fade-in">
-            <h3 className="text-lg font-semibold mb-4">Your Polls</h3>
-            <div className="space-y-4">
-              {userPolls.map(poll => (
-                <PollCard key={poll.id} poll={poll} />
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {votedPolls.length > 0 && (
-          <div className="animate-fade-in">
-            <h3 className="text-lg font-semibold mb-4">Polls You Voted On</h3>
-            <div className="space-y-4">
-              {votedPolls.map(poll => (
-                <PollCard key={poll.id} poll={poll} />
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {userPolls.length === 0 && votedPolls.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground animate-fade-in">
-            <p className="mb-4">You haven't created or voted on any polls yet.</p>
-            <div className="inline-block">
-              <a 
-                href="/create" 
-                className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                Create Your First Poll
-              </a>
-            </div>
-          </div>
-        )}
+        <Tabs defaultValue="polls" className="w-full animate-fade-in">
+          <TabsList className="grid grid-cols-4 mb-4">
+            <TabsTrigger value="polls">My Polls</TabsTrigger>
+            <TabsTrigger value="voted">Voted</TabsTrigger>
+            <TabsTrigger value="followers">Followers</TabsTrigger>
+            <TabsTrigger value="following">Following</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="polls" className="mt-0">
+            {userPolls.length > 0 ? (
+              <div className="space-y-4">
+                {userPolls.map(poll => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">You haven't created any polls yet.</p>
+                <div className="inline-block">
+                  <a 
+                    href="/create" 
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Create Your First Poll
+                  </a>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="voted" className="mt-0">
+            {votedPolls.length > 0 ? (
+              <div className="space-y-4">
+                {votedPolls.map(poll => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>You haven't voted on any polls yet.</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="followers" className="mt-0">
+            {user ? (
+              <UserList userId={user.id} type="followers" />
+            ) : (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="following" className="mt-0">
+            {user ? (
+              <UserList userId={user.id} type="following" />
+            ) : (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

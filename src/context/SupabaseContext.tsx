@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -19,6 +18,10 @@ interface SupabaseContextType {
   signOut: () => Promise<void>;
   updateProfile: (data: ProfileUpdateData) => Promise<void>;
   loading: boolean;
+  followUser: (targetUserId: string) => Promise<void>;
+  unfollowUser: (targetUserId: string) => Promise<void>;
+  isFollowing: (targetUserId: string) => Promise<boolean>;
+  getFollowCounts: (userId: string) => Promise<{followers: number, following: number}>;
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
@@ -139,6 +142,111 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const followUser = async (targetUserId: string) => {
+    if (!user) throw new Error('User not authenticated');
+    if (user.id === targetUserId) {
+      toast.error("You cannot follow yourself");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Check if already following
+      const { data: existingFollow } = await supabase
+        .from('follows')
+        .select('*')
+        .eq('follower_id', user.id)
+        .eq('following_id', targetUserId)
+        .single();
+      
+      if (existingFollow) {
+        toast.info("You're already following this user");
+        return;
+      }
+      
+      // Create follow relationship
+      const { error } = await supabase
+        .from('follows')
+        .insert({
+          follower_id: user.id,
+          following_id: targetUserId
+        });
+        
+      if (error) throw error;
+      
+      toast.success("User followed successfully");
+    } catch (error: any) {
+      toast.error(error.message || 'Error following user');
+      console.error('Error following user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const unfollowUser = async (targetUserId: string) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', targetUserId);
+        
+      if (error) throw error;
+      
+      toast.success("User unfollowed");
+    } catch (error: any) {
+      toast.error(error.message || 'Error unfollowing user');
+      console.error('Error unfollowing user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const isFollowing = async (targetUserId: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data } = await supabase
+        .from('follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', targetUserId)
+        .single();
+        
+      return !!data;
+    } catch (error) {
+      return false;
+    }
+  };
+  
+  const getFollowCounts = async (userId: string): Promise<{followers: number, following: number}> => {
+    try {
+      const { count: followersCount, error: followersError } = await supabase
+        .from('follows')
+        .select('id', { count: 'exact', head: true })
+        .eq('following_id', userId);
+        
+      const { count: followingCount, error: followingError } = await supabase
+        .from('follows')
+        .select('id', { count: 'exact', head: true })
+        .eq('follower_id', userId);
+        
+      if (followersError) throw followersError;
+      if (followingError) throw followingError;
+      
+      return {
+        followers: followersCount || 0,
+        following: followingCount || 0
+      };
+    } catch (error) {
+      console.error('Error getting follow counts:', error);
+      return { followers: 0, following: 0 };
+    }
+  };
+
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -201,6 +309,10 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         signOut,
         updateProfile,
         loading,
+        followUser,
+        unfollowUser,
+        isFollowing,
+        getFollowCounts,
       }}
     >
       {children}
