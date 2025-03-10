@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import UserProfileCard from './UserProfileCard';
@@ -16,7 +15,9 @@ interface UserData {
 }
 
 interface FollowerData {
-  follower: {
+  follower_id: string;
+  following_id: string;
+  profiles: {
     id: string;
     username: string | null;
     avatar_url: string | null;
@@ -24,7 +25,9 @@ interface FollowerData {
 }
 
 interface FollowingData {
-  following: {
+  follower_id: string;
+  following_id: string;
+  profiles: {
     id: string;
     username: string | null;
     avatar_url: string | null;
@@ -48,36 +51,50 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
       if (type === 'followers') {
         const { data, error } = await supabase
           .from('follows')
-          .select('follower:profiles!follows_follower_id_fkey(id, username, avatar_url)')
+          .select(`
+            follower_id,
+            following_id,
+            profiles!follows_follower_id_fkey (
+              id,
+              username,
+              avatar_url
+            )
+          `)
           .eq('following_id', userId);
           
         if (error) throw error;
         
         if (data) {
-          // Explicitly type the data array and assert it's not null
-          const followerData = data as FollowerData[];
+          const followerData = data as unknown as FollowerData[];
           const userData: UserData[] = followerData.map(item => ({
-            id: item.follower.id,
-            username: item.follower.username,
-            avatar_url: item.follower.avatar_url
+            id: item.profiles.id,
+            username: item.profiles.username,
+            avatar_url: item.profiles.avatar_url
           }));
           setUsers(userData);
         }
       } else {
         const { data, error } = await supabase
           .from('follows')
-          .select('following:profiles!follows_following_id_fkey(id, username, avatar_url)')
+          .select(`
+            follower_id,
+            following_id,
+            profiles!follows_following_id_fkey (
+              id,
+              username,
+              avatar_url
+            )
+          `)
           .eq('follower_id', userId);
           
         if (error) throw error;
         
         if (data) {
-          // Explicitly type the data array and assert it's not null
-          const followingData = data as FollowingData[];
+          const followingData = data as unknown as FollowingData[];
           const userData: UserData[] = followingData.map(item => ({
-            id: item.following.id,
-            username: item.following.username,
-            avatar_url: item.following.avatar_url
+            id: item.profiles.id,
+            username: item.profiles.username,
+            avatar_url: item.profiles.avatar_url
           }));
           setUsers(userData);
         }
