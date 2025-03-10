@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2, ChevronDown, ChevronUp, X } from 'lucide-react';
@@ -110,7 +109,11 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   const cardContent = (
     <>
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+        <Link 
+          to={`/user/${poll.author.id}`}
+          className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+          onClick={(e) => e.stopPropagation()} // Prevent double-click handler from triggering
+        >
           <img 
             src={poll.author.avatar} 
             alt={poll.author.name} 
@@ -120,7 +123,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
             <p className="text-sm font-medium">{poll.author.name}</p>
             <p className="text-xs text-muted-foreground">{formatDate(poll.createdAt)}</p>
           </div>
-        </div>
+        </Link>
         <div className="pill bg-secondary text-secondary-foreground">
           {poll.totalVotes} votes
         </div>

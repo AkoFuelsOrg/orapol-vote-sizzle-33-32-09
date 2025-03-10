@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { PollProvider } from "./context/PollContext";
 import { SupabaseProvider } from "./context/SupabaseContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UserProfile from "./pages/UserProfile";
 
 import Index from "./pages/Index";
 import CreatePoll from "./pages/CreatePoll";
@@ -45,7 +45,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/user/:id" element={<UserProfile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </PollProvider>
