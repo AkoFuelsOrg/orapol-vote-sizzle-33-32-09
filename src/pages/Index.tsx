@@ -206,7 +206,7 @@ const Index: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Header />
       
-      <main className="pt-20 px-4 max-w-lg mx-auto">
+      <main className="pt-20 px-4 max-w-3xl mx-auto">
         <div className="mb-6 animate-fade-in">
           <h2 className="text-2xl font-bold">Discover Polls</h2>
           <p className="text-muted-foreground">Vote and share your opinion</p>

@@ -44,7 +44,7 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
         {isDesktop && <Sidebar />}
         {!isDesktop && <Header />}
         <div className={`flex-1 ${isDesktop ? 'ml-64' : ''} ${showRightChat ? 'mr-80' : ''}`}>
-          <div className={`w-full ${isDesktop ? 'max-w-5xl' : 'max-w-7xl'} mx-auto px-6 py-4 flex ${isDesktop ? 'mt-16' : ''}`}>
+          <div className={`w-full ${isDesktop ? 'max-w-6xl' : 'max-w-7xl'} mx-auto px-4 py-4 flex ${isDesktop ? 'mt-16' : ''}`}>
             <main className="flex-1">{children}</main>
           </div>
         </div>
