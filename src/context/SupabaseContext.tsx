@@ -129,6 +129,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Refresh the profile
       fetchProfile(user.id);
       
+      toast.success('Profile updated successfully');
     } catch (error: any) {
       toast.error(error.message || 'Error updating profile');
       console.error('Error updating profile:', error);
