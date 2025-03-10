@@ -70,17 +70,21 @@ const Notifications: React.FC = () => {
         .from('notifications')
         .select(`
           *,
-          user:related_user_id (
-            username,
-            avatar_url
-          )
+          user:profiles(username, avatar_url)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
       
-      setNotifications(data || []);
+      // Type assertion to ensure data conforms to Notification[] type
+      const typedData = data?.map(notification => ({
+        ...notification,
+        type: notification.type as 'follow' | 'comment' | 'vote' | 'system',
+        user: notification.user as Notification['user']
+      })) || [];
+      
+      setNotifications(typedData);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
       toast({
