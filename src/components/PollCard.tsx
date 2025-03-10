@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageCircle, Loader2, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -17,6 +18,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   const { user } = useSupabase();
   const [isVoting, setIsVoting] = React.useState(false);
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isImageExpanded, setIsImageExpanded] = React.useState(false);
   
   const handleVote = async (optionId: string, e: React.MouseEvent) => {
     if (preview || isVoting) return;
@@ -97,6 +99,13 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     setIsExpanded(!isExpanded);
     console.log("Double clicked, isExpanded set to:", !isExpanded); // Debug log
   };
+  
+  const handleImageDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsImageExpanded(!isImageExpanded);
+    console.log("Image double clicked, expanded:", !isImageExpanded);
+  };
 
   const cardContent = (
     <>
@@ -120,13 +129,37 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       <h3 className="text-lg font-semibold mb-4">{poll.question}</h3>
       
       {poll.image && (
-        <div className="mb-4 rounded-lg overflow-hidden">
-          <img 
-            src={poll.image} 
-            alt={poll.question} 
-            className="w-full h-48 object-cover"
-          />
-        </div>
+        <>
+          <div 
+            className="mb-4 rounded-lg overflow-hidden relative cursor-pointer"
+            onDoubleClick={handleImageDoubleClick}
+          >
+            <img 
+              src={poll.image} 
+              alt={poll.question} 
+              className="w-full h-48 object-cover"
+            />
+          </div>
+          
+          {isImageExpanded && (
+            <div 
+              className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+              onClick={() => setIsImageExpanded(false)}
+            >
+              <button 
+                className="absolute top-4 right-4 text-white bg-black/40 p-2 rounded-full hover:bg-black/60"
+                onClick={() => setIsImageExpanded(false)}
+              >
+                <X size={24} />
+              </button>
+              <img 
+                src={poll.image} 
+                alt={poll.question} 
+                className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+              />
+            </div>
+          )}
+        </>
       )}
       
       <Collapsible 
