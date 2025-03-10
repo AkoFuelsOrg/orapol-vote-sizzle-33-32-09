@@ -4,10 +4,17 @@ import { Link, useLocation } from 'react-router-dom';
 import { MessageCircle, Plus, User, LogOut, MessageSquare } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 const Header: React.FC = () => {
   const location = useLocation();
   const { user, profile, signOut, loading } = useSupabase();
+  const breakpoint = useBreakpoint();
+  
+  // Don't render header on desktop
+  if (breakpoint === "desktop") {
+    return null;
+  }
   
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-card h-16 px-4 animate-fade-in">

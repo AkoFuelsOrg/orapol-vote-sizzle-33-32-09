@@ -9,7 +9,7 @@ import { SupabaseProvider } from "./context/SupabaseContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserProfile from "./pages/UserProfile";
 import AppLoader from "./components/AppLoader";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "./components/ui/resizable";
+import Sidebar from "./components/Sidebar";
 import { useBreakpoint } from "./hooks/use-mobile";
 
 import Index from "./pages/Index";
@@ -32,8 +32,11 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <div className="w-full max-w-7xl mx-auto px-4 py-2 flex">
-        <main className="flex-1">{children}</main>
+      <Sidebar />
+      <div className="flex-1">
+        <div className="w-full max-w-7xl mx-auto px-6 py-4 flex">
+          <main className="flex-1">{children}</main>
+        </div>
       </div>
     </div>
   );
