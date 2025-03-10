@@ -80,7 +80,8 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisib
   }, [isVisible]);
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent form submission - this prevents page reload
+    
     setLoading(true);
     
     // Simple search functionality using the predefined map
@@ -136,17 +137,22 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisib
         </Button>
       </div>
       
-      <form onSubmit={handleSearch} className="flex gap-2 mb-3">
+      <div className="flex gap-2 mb-3">
         <Input
           placeholder="Search GIFs..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="flex-1"
         />
-        <Button type="submit" size="sm" disabled={loading}>
+        <Button 
+          type="button" 
+          size="sm" 
+          onClick={handleSearch} 
+          disabled={loading}
+        >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
         </Button>
-      </form>
+      </div>
       
       <div className="grid grid-cols-2 gap-2 overflow-y-auto max-h-[300px]">
         {gifs.length > 0 ? (
