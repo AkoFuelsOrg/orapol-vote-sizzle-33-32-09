@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -20,10 +19,10 @@ const Profile: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filter polls created by the current user
-  const userPolls = polls.filter(poll => poll.author.id === currentUser.id);
+  const userPolls = user ? polls.filter(poll => poll.author.id === user.id) : [];
   
   // Find polls the user has voted on
-  const votedPolls = polls.filter(poll => poll.userVoted);
+  const votedPolls = user ? polls.filter(poll => poll.userVoted) : [];
   
   useEffect(() => {
     if (user) {
