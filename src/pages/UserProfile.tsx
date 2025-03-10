@@ -5,7 +5,7 @@ import Header from '../components/Header';
 import PollCard from '../components/PollCard';
 import UserList from '../components/UserList';
 import { useSupabase } from '../context/SupabaseContext';
-import { ArrowLeft, Loader2, UserPlus, UserCheck } from 'lucide-react';
+import { ArrowLeft, Loader2, UserPlus, UserCheck, MessageSquare } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -20,6 +20,7 @@ const UserProfile: React.FC = () => {
   const [userIsFollowing, setUserIsFollowing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
+  const [canSendMessage, setCanSendMessage] = useState(false);
   
   useEffect(() => {
     if (id) {
@@ -27,6 +28,7 @@ const UserProfile: React.FC = () => {
       fetchUserPolls(id);
       checkFollowStatus();
       fetchFollowCounts();
+      checkCanMessage();
     }
   }, [id, user]);
   
@@ -165,6 +167,21 @@ const UserProfile: React.FC = () => {
     }
   };
   
+  const checkCanMessage = async () => {
+    if (user && id) {
+      try {
+        const { data, error } = await supabase
+          .rpc('can_message', { user_id_1: user.id, user_id_2: id });
+          
+        if (error) throw error;
+        setCanSendMessage(!!data);
+      } catch (error) {
+        console.error('Error checking messaging permission:', error);
+        setCanSendMessage(false);
+      }
+    }
+  };
+  
   const handleFollowAction = async () => {
     if (!user || !id) return;
     
@@ -177,6 +194,7 @@ const UserProfile: React.FC = () => {
       }
       await checkFollowStatus();
       await fetchFollowCounts();
+      await checkCanMessage();
     } finally {
       setActionLoading(false);
     }
@@ -238,31 +256,45 @@ const UserProfile: React.FC = () => {
               <h2 className="text-xl font-bold">{profile.username || 'Anonymous'}</h2>
             </div>
             
-            {user && user.id !== profile.id && (
-              <button
-                onClick={handleFollowAction}
-                disabled={actionLoading}
-                className={`mt-3 flex items-center space-x-1 px-4 py-2 rounded-full transition-colors ${
-                  userIsFollowing 
-                    ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                }`}
-              >
-                {actionLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : userIsFollowing ? (
-                  <>
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    <span>Following</span>
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    <span>Follow</span>
-                  </>
-                )}
-              </button>
-            )}
+            <div className="mt-3 flex space-x-2">
+              {user && user.id !== profile.id && (
+                <>
+                  <button
+                    onClick={handleFollowAction}
+                    disabled={actionLoading}
+                    className={`flex items-center space-x-1 px-4 py-2 rounded-full transition-colors ${
+                      userIsFollowing 
+                        ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    }`}
+                  >
+                    {actionLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : userIsFollowing ? (
+                      <>
+                        <UserCheck className="h-4 w-4 mr-1" />
+                        <span>Following</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        <span>Follow</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  {canSendMessage && (
+                    <Link
+                      to={`/messages/${id}`}
+                      className="flex items-center space-x-1 px-4 py-2 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      <span>Message</span>
+                    </Link>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           
           <div className="mt-6 flex space-x-6 justify-center">

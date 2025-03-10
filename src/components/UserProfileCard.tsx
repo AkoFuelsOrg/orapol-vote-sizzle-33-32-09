@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { User } from '@supabase/supabase-js';
-import { Loader2, UserCheck, UserPlus } from 'lucide-react';
+import { Loader2, UserCheck, UserPlus, MessageSquare } from 'lucide-react';
+import { supabase } from '../integrations/supabase/client';
 
 interface UserProfileCardProps {
   userId: string;
@@ -23,10 +24,12 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   const { user, followUser, unfollowUser, isFollowing, loading } = useSupabase();
   const [isFollowingUser, setIsFollowingUser] = useState<boolean>(false);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const [canMessage, setCanMessage] = useState<boolean>(false);
   
   useEffect(() => {
     if (user) {
       checkFollowingStatus();
+      checkCanMessage();
     }
   }, [user, userId]);
   
@@ -34,6 +37,21 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     if (user) {
       const following = await isFollowing(userId);
       setIsFollowingUser(following);
+    }
+  };
+  
+  const checkCanMessage = async () => {
+    if (user && userId) {
+      try {
+        const { data, error } = await supabase
+          .rpc('can_message', { user_id_1: user.id, user_id_2: userId });
+          
+        if (error) throw error;
+        setCanMessage(!!data);
+      } catch (error) {
+        console.error('Error checking messaging permission:', error);
+        setCanMessage(false);
+      }
     }
   };
   
@@ -49,6 +67,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         await followUser(userId);
       }
       await checkFollowingStatus();
+      await checkCanMessage();
     } finally {
       setActionLoading(false);
     }
@@ -84,31 +103,43 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         </div>
       </Link>
       
-      {showFollowButton && (
-        <button
-          onClick={handleFollowAction}
-          disabled={actionLoading}
-          className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
-            isFollowingUser 
-              ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
-              : 'bg-primary text-primary-foreground hover:bg-primary/90'
-          }`}
-        >
-          {actionLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isFollowingUser ? (
-            <>
-              <UserCheck className="h-4 w-4 mr-1" />
-              <span>Following</span>
-            </>
-          ) : (
-            <>
-              <UserPlus className="h-4 w-4 mr-1" />
-              <span>Follow</span>
-            </>
-          )}
-        </button>
-      )}
+      <div className="flex space-x-2">
+        {showFollowButton && (
+          <button
+            onClick={handleFollowAction}
+            disabled={actionLoading}
+            className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
+              isFollowingUser 
+                ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
+                : 'bg-primary text-primary-foreground hover:bg-primary/90'
+            }`}
+          >
+            {actionLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isFollowingUser ? (
+              <>
+                <UserCheck className="h-4 w-4 mr-1" />
+                <span>Following</span>
+              </>
+            ) : (
+              <>
+                <UserPlus className="h-4 w-4 mr-1" />
+                <span>Follow</span>
+              </>
+            )}
+          </button>
+        )}
+        
+        {canMessage && user && user.id !== userId && (
+          <Link 
+            to={`/messages/${userId}`}
+            className="flex items-center px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4 mr-1" />
+            <span>Message</span>
+          </Link>
+        )}
+      </div>
     </div>
   );
 };
