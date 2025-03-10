@@ -66,25 +66,42 @@ const Notifications: React.FC = () => {
     try {
       setLoading(true);
       
+      // Fetch notifications
       const { data, error } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          user:profiles(username, avatar_url)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
       
-      // Type assertion to ensure data conforms to Notification[] type
-      const typedData = data?.map(notification => ({
-        ...notification,
-        type: notification.type as 'follow' | 'comment' | 'vote' | 'system',
-        user: notification.user as Notification['user']
-      })) || [];
+      // For each notification with a related_user_id, fetch the user data
+      const notificationsWithUserData = await Promise.all(
+        (data || []).map(async (notification) => {
+          let userData = null;
+          
+          if (notification.related_user_id) {
+            // Fetch user profile data separately
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('id', notification.related_user_id)
+              .single();
+              
+            if (!profileError && profileData) {
+              userData = profileData;
+            }
+          }
+          
+          return {
+            ...notification,
+            type: notification.type as 'follow' | 'comment' | 'vote' | 'system',
+            user: userData
+          } as Notification;
+        })
+      );
       
-      setNotifications(typedData);
+      setNotifications(notificationsWithUserData);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
       toast({
