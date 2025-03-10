@@ -37,14 +37,14 @@ const Sidebar: React.FC = () => {
   ];
   
   return (
-    <div className="w-64 h-full bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 pt-16">
       <div className="p-6">
         <Link to="/" className="flex items-center">
           <h1 className="text-xl font-bold text-red-500">Orapol</h1>
         </Link>
       </div>
       
-      <nav className="flex-1 px-4 py-2">
+      <nav className="flex-1 px-4 py-2 overflow-y-auto">
         <ul className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
