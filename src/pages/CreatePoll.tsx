@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Plus, ImagePlus, Loader2 } from 'lucide-react';
+import { X, Plus, ImagePlus, Loader2, Upload } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import Header from '../components/Header';
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ const CreatePoll: React.FC = () => {
   ]);
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingPollImage, setUploadingPollImage] = useState(false);
   const [uploadingOptionImage, setUploadingOptionImage] = useState<number | null>(null);
   const { user } = useSupabase();
   const navigate = useNavigate();
@@ -47,6 +48,38 @@ const CreatePoll: React.FC = () => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], imageUrl };
     setOptions(newOptions);
+  };
+
+  const handleUploadPollImage = async (file: File) => {
+    if (!user) {
+      toast.error("You must be logged in to upload images");
+      return;
+    }
+
+    try {
+      setUploadingPollImage(true);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${uuidv4()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('poll_images')
+        .upload(fileName, file, { upsert: true });
+        
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage
+        .from('poll_images')
+        .getPublicUrl(fileName);
+        
+      setImageUrl(urlData.publicUrl);
+      toast.success("Poll image uploaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Error uploading image");
+      console.error('Error uploading poll image:', error);
+    } finally {
+      setUploadingPollImage(false);
+    }
   };
 
   const handleUploadOptionImage = async (index: number, file: File) => {
@@ -161,52 +194,53 @@ const CreatePoll: React.FC = () => {
             </div>
             
             <div>
-              <label htmlFor="image" className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2">
                 Add Poll Image (Optional)
               </label>
-              <div className="flex gap-2">
-                <input
-                  id="image"
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Paste image URL here"
-                  className="flex-1 p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-                />
-                <button 
-                  type="button"
-                  onClick={() => setImageUrl('')}
-                  className={`p-3 rounded-lg transition-colors ${
-                    imageUrl ? 'text-destructive hover:bg-destructive/10' : 'text-muted-foreground cursor-not-allowed'
-                  }`}
-                  disabled={!imageUrl}
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              {imageUrl && (
+              
+              {imageUrl ? (
                 <div className="mt-2 relative rounded-lg overflow-hidden border border-border">
                   <img 
                     src={imageUrl} 
                     alt="Poll image preview" 
                     className="w-full h-48 object-cover"
                     onError={() => {
-                      toast.error("Invalid image URL");
+                      toast.error("Invalid image");
                       setImageUrl('');
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl('')}
+                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
-              )}
-              {!imageUrl && (
-                <div 
-                  className="mt-2 flex items-center justify-center h-48 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors"
-                  onClick={() => document.getElementById('image')?.focus()}
-                >
+              ) : (
+                <label className="flex items-center justify-center h-48 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleUploadPollImage(e.target.files[0]);
+                      }
+                    }}
+                    disabled={uploadingPollImage}
+                  />
                   <div className="text-center text-muted-foreground">
-                    <ImagePlus className="mx-auto h-10 w-10 mb-2" />
-                    <p>Add an image to your poll</p>
+                    {uploadingPollImage ? (
+                      <Loader2 className="mx-auto h-10 w-10 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="mx-auto h-10 w-10 mb-2" />
+                        <p>Click to upload poll image</p>
+                      </>
+                    )}
                   </div>
-                </div>
+                </label>
               )}
             </div>
             
@@ -273,8 +307,8 @@ const CreatePoll: React.FC = () => {
                               <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                             ) : (
                               <>
-                                <ImagePlus className="mx-auto h-6 w-6 mb-1" />
-                                <p className="text-sm">Add image for this option (optional)</p>
+                                <Upload className="mx-auto h-6 w-6 mb-1" />
+                                <p className="text-sm">Click to upload image</p>
                               </>
                             )}
                           </div>
