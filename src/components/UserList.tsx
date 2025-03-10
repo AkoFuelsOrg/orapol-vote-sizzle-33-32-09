@@ -29,13 +29,11 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
     setError(null);
     
     try {
-      let query;
-      
       if (type === 'followers') {
         const { data, error } = await supabase
           .from('follows')
           .select(`
-            follower:profiles!follows_follower_id_fkey(
+            profiles!follows_follower_id_fkey (
               id,
               username,
               avatar_url
@@ -45,12 +43,18 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           
         if (error) throw error;
         
-        setUsers(data?.map(item => item.follower) || []);
+        const userData = data?.map(item => ({
+          id: item.profiles.id,
+          username: item.profiles.username,
+          avatar_url: item.profiles.avatar_url
+        })) || [];
+        
+        setUsers(userData);
       } else {
         const { data, error } = await supabase
           .from('follows')
           .select(`
-            following:profiles!follows_following_id_fkey(
+            profiles!follows_following_id_fkey (
               id,
               username,
               avatar_url
@@ -60,7 +64,13 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           
         if (error) throw error;
         
-        setUsers(data?.map(item => item.following) || []);
+        const userData = data?.map(item => ({
+          id: item.profiles.id,
+          username: item.profiles.username,
+          avatar_url: item.profiles.avatar_url
+        })) || [];
+        
+        setUsers(userData);
       }
     } catch (error: any) {
       console.error(`Error fetching ${type}:`, error);
