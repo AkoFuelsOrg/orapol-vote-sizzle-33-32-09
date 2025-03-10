@@ -37,6 +37,12 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   // Don't show right chat column on messages page
   const showRightChat = isDesktop && !location.pathname.startsWith('/messages');
   
+  // Check if current route is profile, user profile, or poll detail page
+  const isFullWidthPage = 
+    location.pathname === '/profile' || 
+    location.pathname.startsWith('/user/') || 
+    location.pathname.startsWith('/poll/');
+  
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <TopHeader />
@@ -44,7 +50,7 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
         {isDesktop && <Sidebar />}
         {!isDesktop && <Header />}
         <div className={`flex-1 ${isDesktop ? 'ml-64' : ''} ${showRightChat ? 'mr-80' : ''}`}>
-          <div className={`w-full ${isDesktop ? 'max-w-3xl' : 'max-w-7xl'} mx-auto px-4 py-4 flex ${isDesktop ? 'mt-16' : ''}`}>
+          <div className={`w-full ${isDesktop && !isFullWidthPage ? 'max-w-3xl' : 'max-w-7xl'} mx-auto px-4 py-4 flex ${isDesktop ? 'mt-16' : ''}`}>
             <main className="flex-1">{children}</main>
           </div>
         </div>
