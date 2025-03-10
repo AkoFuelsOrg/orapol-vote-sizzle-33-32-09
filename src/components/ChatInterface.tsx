@@ -10,17 +10,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import UserProfileCard from './UserProfileCard';
-
-interface Message {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  read: boolean;
-  created_at: string;
-  attachment_url?: string;
-  attachment_type?: 'image' | 'video' | 'document' | 'gif';
-}
+import { Message } from '../lib/types';
 
 interface Profile {
   id: string;
@@ -173,7 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
       // Set accepted file types based on the selected type
       switch (type) {
         case 'image':
-          fileInputRef.current.accept = 'image/*';
+          fileInputRef.current.accept = 'image/jpeg,image/png,image/jpg';
           break;
         case 'video':
           fileInputRef.current.accept = 'video/*';
@@ -191,8 +181,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   
   const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setAttachmentFile(e.target.files[0]);
-      toast.success(`${attachmentType} selected: ${e.target.files[0].name}`);
+      const file = e.target.files[0];
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File is too large. Maximum size is 10MB.");
+        return;
+      }
+      
+      setAttachmentFile(file);
+      toast.success(`${attachmentType} selected: ${file.name}`);
     }
   };
   
@@ -300,11 +298,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const renderAttachmentPreview = (url: string, type: string) => {
     switch (type) {
       case 'image':
+        return <img src={url} alt="Image attachment" className="max-w-full max-h-60 rounded-lg object-contain" />;
       case 'gif':
-        return <img src={url} alt="Image attachment" className="max-w-full max-h-64 rounded-lg" />;
+        return <img src={url} alt="GIF" className="max-w-full max-h-60 rounded-lg object-contain" />;
       case 'video':
         return (
-          <video controls className="max-w-full max-h-64 rounded-lg">
+          <video controls className="max-w-full max-h-60 rounded-lg">
             <source src={url} />
             Your browser does not support the video tag.
           </video>
@@ -313,7 +312,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
         return (
           <div className="flex items-center gap-2 p-2 border rounded-lg">
             <FileText className="h-5 w-5" />
-            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate">
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate max-w-[200px]">
               View Document
             </a>
           </div>
@@ -390,11 +389,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                         }`}
                       >
                         {message.attachment_url && message.attachment_type && (
-                          <div className="mb-2">
+                          <div className="mb-2 overflow-hidden">
                             {renderAttachmentPreview(message.attachment_url, message.attachment_type)}
                           </div>
                         )}
-                        <p>{message.content}</p>
+                        <p className="break-words">{message.content}</p>
                         <p className={`text-xs mt-1 ${isOutgoing ? 'text-primary-foreground/70' : 'text-secondary-foreground/70'}`}>
                           {formatMessageTime(message.created_at)}
                         </p>
@@ -444,13 +443,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
               </Button>
             </div>
             
-            <div className="flex space-x-2">
+            <div className="flex justify-between gap-1">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => handleFileSelect('image')}
-                className="flex-1"
+                className="flex-1 h-9 px-2 text-xs"
               >
                 <Image className="h-4 w-4 mr-1" /> Image
               </Button>
@@ -459,7 +458,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleFileSelect('gif')}
-                className="flex-1"
+                className="flex-1 h-9 px-2 text-xs"
               >
                 <Smile className="h-4 w-4 mr-1" /> GIF
               </Button>
@@ -468,7 +467,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleFileSelect('document')}
-                className="flex-1"
+                className="flex-1 h-9 px-2 text-xs"
               >
                 <FileText className="h-4 w-4 mr-1" /> Doc
               </Button>
@@ -477,7 +476,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleFileSelect('video')}
-                className="flex-1"
+                className="flex-1 h-9 px-2 text-xs"
               >
                 <Film className="h-4 w-4 mr-1" /> Video
               </Button>
