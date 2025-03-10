@@ -140,21 +140,23 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
                   ? 'border-border/50 hover:border-border' 
                   : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
           >
-            {option.imageUrl && (
-              <div className="mb-2 rounded-lg overflow-hidden h-24 w-full">
-                <img 
-                  src={option.imageUrl} 
-                  alt={option.text} 
-                  className="w-full h-full object-cover"
-                />
+            <div className="flex items-center space-x-3">
+              {option.imageUrl && (
+                <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden">
+                  <img 
+                    src={option.imageUrl} 
+                    alt={option.text} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center relative z-10 flex-1">
+                <span className="text-sm font-medium">{option.text}</span>
+                <span className="text-xs font-medium">
+                  {calculatePercentage(option.votes)}%
+                </span>
               </div>
-            )}
-            
-            <div className="flex justify-between items-center relative z-10">
-              <span className="text-sm font-medium">{option.text}</span>
-              <span className="text-xs font-medium">
-                {calculatePercentage(option.votes)}%
-              </span>
             </div>
             
             <div 
