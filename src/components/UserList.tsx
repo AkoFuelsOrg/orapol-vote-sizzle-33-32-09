@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import UserProfileCard from './UserProfileCard';
@@ -32,45 +31,35 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
       if (type === 'followers') {
         const { data, error } = await supabase
           .from('follows')
-          .select(`
-            profiles!follows_follower_id_fkey (
-              id,
-              username,
-              avatar_url
-            )
-          `)
+          .select('follower:profiles!follows_follower_id_fkey(id, username, avatar_url)')
           .eq('following_id', userId);
           
         if (error) throw error;
         
-        const userData = data?.map(item => ({
-          id: item.profiles.id,
-          username: item.profiles.username,
-          avatar_url: item.profiles.avatar_url
-        })) || [];
-        
-        setUsers(userData);
+        if (data) {
+          const userData: UserData[] = data.map(item => ({
+            id: item.follower.id,
+            username: item.follower.username,
+            avatar_url: item.follower.avatar_url
+          }));
+          setUsers(userData);
+        }
       } else {
         const { data, error } = await supabase
           .from('follows')
-          .select(`
-            profiles!follows_following_id_fkey (
-              id,
-              username,
-              avatar_url
-            )
-          `)
+          .select('following:profiles!follows_following_id_fkey(id, username, avatar_url)')
           .eq('follower_id', userId);
           
         if (error) throw error;
         
-        const userData = data?.map(item => ({
-          id: item.profiles.id,
-          username: item.profiles.username,
-          avatar_url: item.profiles.avatar_url
-        })) || [];
-        
-        setUsers(userData);
+        if (data) {
+          const userData: UserData[] = data.map(item => ({
+            id: item.following.id,
+            username: item.following.username,
+            avatar_url: item.following.avatar_url
+          }));
+          setUsers(userData);
+        }
       }
     } catch (error: any) {
       console.error(`Error fetching ${type}:`, error);
