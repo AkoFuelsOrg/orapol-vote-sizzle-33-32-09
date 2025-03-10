@@ -4,7 +4,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Smile, Image, FileText, Film, Paperclip } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -18,6 +18,8 @@ interface Message {
   content: string;
   read: boolean;
   created_at: string;
+  attachment_url?: string;
+  attachment_type?: 'image' | 'video' | 'document' | 'gif';
 }
 
 interface Profile {
@@ -36,7 +38,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const [newMessage, setNewMessage] = useState('');
   const [canMessage, setCanMessage] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentType, setAttachmentType] = useState<'image' | 'video' | 'document' | 'gif' | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Get the other user's profile
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -161,31 +167,159 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   
+  const handleFileSelect = (type: 'image' | 'video' | 'document' | 'gif') => {
+    setAttachmentType(type);
+    if (fileInputRef.current) {
+      // Set accepted file types based on the selected type
+      switch (type) {
+        case 'image':
+          fileInputRef.current.accept = 'image/*';
+          break;
+        case 'video':
+          fileInputRef.current.accept = 'video/*';
+          break;
+        case 'document':
+          fileInputRef.current.accept = '.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx';
+          break;
+        case 'gif':
+          fileInputRef.current.accept = 'image/gif';
+          break;
+      }
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setAttachmentFile(e.target.files[0]);
+      toast.success(`${attachmentType} selected: ${e.target.files[0].name}`);
+    }
+  };
+  
+  const removeAttachment = () => {
+    setAttachmentFile(null);
+    setAttachmentType(null);
+  };
+  
+  const uploadAttachment = async (): Promise<string | null> => {
+    if (!attachmentFile || !attachmentType || !user) return null;
+    
+    try {
+      // Create a unique file path using UUID
+      const fileExt = attachmentFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+      
+      // Upload the file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('chat_attachments')
+        .upload(filePath, attachmentFile);
+        
+      if (error) throw error;
+      
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat_attachments')
+        .getPublicUrl(filePath);
+        
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      toast.error(`Failed to upload file: ${error.message}`);
+      return null;
+    }
+  };
+  
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user || !userId || !canMessage) return;
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !attachmentFile) return;
     
     setSending(true);
     
     try {
+      let attachmentUrl = null;
+      
+      // If there's an attachment, upload it first
+      if (attachmentFile && attachmentType) {
+        attachmentUrl = await uploadAttachment();
+        if (!attachmentUrl && !newMessage.trim()) {
+          // If upload failed and there's no message text, stop
+          setSending(false);
+          return;
+        }
+      }
+      
+      // Send the message with or without attachment
       const { error } = await supabase
         .from('messages')
         .insert({
           sender_id: user.id,
           receiver_id: userId,
-          content: newMessage.trim(),
+          content: newMessage.trim() || (attachmentFile ? `Sent ${attachmentType}` : ''),
+          attachment_url: attachmentUrl,
+          attachment_type: attachmentUrl ? attachmentType : null,
         });
         
       if (error) throw error;
       
       setNewMessage('');
+      setAttachmentFile(null);
+      setAttachmentType(null);
+      setShowAttachmentOptions(false);
       refetch();
     } catch (error: any) {
       toast.error(`Failed to send message: ${error.message}`);
     } finally {
       setSending(false);
+    }
+  };
+  
+  // Helper function to format timestamps in a more compact way
+  const formatMessageTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffMinutes < 1) {
+      return 'just now';
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffMinutes < 1440) { // Less than a day
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours}h ago`;
+    } else {
+      const days = Math.floor(diffMinutes / 1440);
+      if (days === 1) return 'yesterday';
+      return `${days}d ago`;
+    }
+  };
+  
+  // Helper function to render attachment preview
+  const renderAttachmentPreview = (url: string, type: string) => {
+    switch (type) {
+      case 'image':
+      case 'gif':
+        return <img src={url} alt="Image attachment" className="max-w-full max-h-64 rounded-lg" />;
+      case 'video':
+        return (
+          <video controls className="max-w-full max-h-64 rounded-lg">
+            <source src={url} />
+            Your browser does not support the video tag.
+          </video>
+        );
+      case 'document':
+        return (
+          <div className="flex items-center gap-2 p-2 border rounded-lg">
+            <FileText className="h-5 w-5" />
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate">
+              View Document
+            </a>
+          </div>
+        );
+      default:
+        return <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Attachment</a>;
     }
   };
   
@@ -209,26 +343,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
       </div>
     );
   }
-  
-  // Helper function to format timestamps in a more compact way
-  const formatMessageTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
-    if (diffMinutes < 1) {
-      return 'just now';
-    } else if (diffMinutes < 60) {
-      return `${diffMinutes}m ago`;
-    } else if (diffMinutes < 1440) { // Less than a day
-      const hours = Math.floor(diffMinutes / 60);
-      return `${hours}h ago`;
-    } else {
-      const days = Math.floor(diffMinutes / 1440);
-      if (days === 1) return 'yesterday';
-      return `${days}d ago`;
-    }
-  };
   
   return (
     <div className="flex flex-col h-[70vh]">
@@ -275,6 +389,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                             : 'bg-secondary text-secondary-foreground'
                         }`}
                       >
+                        {message.attachment_url && message.attachment_type && (
+                          <div className="mb-2">
+                            {renderAttachmentPreview(message.attachment_url, message.attachment_type)}
+                          </div>
+                        )}
                         <p>{message.content}</p>
                         <p className={`text-xs mt-1 ${isOutgoing ? 'text-primary-foreground/70' : 'text-secondary-foreground/70'}`}>
                           {formatMessageTime(message.created_at)}
@@ -292,18 +411,85 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
             )}
           </ScrollArea>
           
-          <form onSubmit={handleSendMessage} className="border-t p-3 flex space-x-2">
-            <Input
-              type="text"
-              placeholder="Type a message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1"
-              disabled={sending}
+          <form onSubmit={handleSendMessage} className="border-t p-3 space-y-2">
+            {attachmentFile && (
+              <div className="flex items-center justify-between p-2 bg-secondary/20 rounded-lg">
+                <div className="flex items-center space-x-2 truncate">
+                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm truncate">{attachmentFile.name}</span>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={removeAttachment}
+                  className="h-6 px-2"
+                >
+                  Remove
+                </Button>
+              </div>
+            )}
+            
+            <div className="flex space-x-2">
+              <Input
+                type="text"
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1"
+                disabled={sending}
+              />
+              <Button type="submit" size="icon" disabled={sending || (!newMessage.trim() && !attachmentFile)}>
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleFileSelect('image')}
+                className="flex-1"
+              >
+                <Image className="h-4 w-4 mr-1" /> Image
+              </Button>
+              <Button
+                type="button" 
+                variant="outline"
+                size="sm"
+                onClick={() => handleFileSelect('gif')}
+                className="flex-1"
+              >
+                <Smile className="h-4 w-4 mr-1" /> GIF
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleFileSelect('document')}
+                className="flex-1"
+              >
+                <FileText className="h-4 w-4 mr-1" /> Doc
+              </Button>
+              <Button
+                type="button" 
+                variant="outline"
+                size="sm"
+                onClick={() => handleFileSelect('video')}
+                className="flex-1"
+              >
+                <Film className="h-4 w-4 mr-1" /> Video
+              </Button>
+            </div>
+            
+            {/* Hidden file input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAttachmentChange}
+              className="hidden"
             />
-            <Button type="submit" size="icon" disabled={sending || !newMessage.trim()}>
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
           </form>
         </>
       )}
