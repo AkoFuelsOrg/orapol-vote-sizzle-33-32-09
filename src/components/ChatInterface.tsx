@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -87,7 +86,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
         .from('messages')
         .select('*')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .or(`sender_id.eq.${userId},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: true });
         
       if (error) throw error;
@@ -205,6 +204,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     );
   }
   
+  // Helper function to format timestamps in a more compact way
+  const formatMessageTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffMinutes < 1) {
+      return 'just now';
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffMinutes < 1440) { // Less than a day
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours}h ago`;
+    } else {
+      const days = Math.floor(diffMinutes / 1440);
+      if (days === 1) return 'yesterday';
+      return `${days}d ago`;
+    }
+  };
+  
   return (
     <div className="flex flex-col h-[70vh]">
       <div className="flex items-center space-x-2 p-3 border-b">
@@ -252,7 +271,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                       >
                         <p>{message.content}</p>
                         <p className={`text-xs mt-1 ${isOutgoing ? 'text-primary-foreground/70' : 'text-secondary-foreground/70'}`}>
-                          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                          {formatMessageTime(message.created_at)}
                         </p>
                       </div>
                     </div>
