@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -9,6 +10,7 @@ import { ArrowLeft, Loader2, UserPlus, UserCheck, MessageSquare } from 'lucide-r
 import { Poll, PollOption } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
 
 const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -256,60 +258,58 @@ const UserProfile: React.FC = () => {
               <h2 className="text-xl font-bold">{profile.username || 'Anonymous'}</h2>
             </div>
             
-            <div className="mt-3 flex space-x-2">
-              {user && user.id !== profile.id && (
-                <>
-                  <button
-                    onClick={handleFollowAction}
-                    disabled={actionLoading}
-                    className={`flex items-center space-x-1 px-4 py-2 rounded-full transition-colors ${
-                      userIsFollowing 
-                        ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
-                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    }`}
+            <div className="mt-6 flex space-x-6 justify-center">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{polls.length}</p>
+                <p className="text-sm text-muted-foreground">Polls</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.followers}</p>
+                <p className="text-sm text-muted-foreground">Followers</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.following}</p>
+                <p className="text-sm text-muted-foreground">Following</p>
+              </div>
+            </div>
+            
+            {user && user.id !== profile.id && (
+              <div className="mt-4 flex space-x-3 w-full max-w-xs">
+                <Button
+                  onClick={handleFollowAction}
+                  disabled={actionLoading}
+                  variant={userIsFollowing ? "secondary" : "default"}
+                  className="flex-1"
+                >
+                  {actionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : userIsFollowing ? (
+                    <>
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </Button>
+                
+                {canSendMessage && (
+                  <Button
+                    asChild
+                    variant="secondary"
+                    className="flex-1"
                   >
-                    {actionLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : userIsFollowing ? (
-                      <>
-                        <UserCheck className="h-4 w-4 mr-1" />
-                        <span>Following</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        <span>Follow</span>
-                      </>
-                    )}
-                  </button>
-                  
-                  {canSendMessage && (
-                    <Link
-                      to={`/messages/${id}`}
-                      className="flex items-center space-x-1 px-4 py-2 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-                    >
+                    <Link to={`/messages/${id}`}>
                       <MessageSquare className="h-4 w-4 mr-1" />
                       <span>Message</span>
                     </Link>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-          
-          <div className="mt-6 flex space-x-6 justify-center">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{polls.length}</p>
-              <p className="text-sm text-muted-foreground">Polls</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{followCounts.followers}</p>
-              <p className="text-sm text-muted-foreground">Followers</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{followCounts.following}</p>
-              <p className="text-sm text-muted-foreground">Following</p>
-            </div>
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
         

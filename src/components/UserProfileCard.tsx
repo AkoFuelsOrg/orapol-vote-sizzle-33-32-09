@@ -5,6 +5,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { User } from '@supabase/supabase-js';
 import { Loader2, UserCheck, UserPlus, MessageSquare } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
+import { Button } from './ui/button';
 
 interface UserProfileCardProps {
   userId: string;
@@ -90,8 +91,8 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   }
   
   return (
-    <div className="flex items-center justify-between p-3 border border-border/50 rounded-lg bg-white">
-      <Link to={`/user/${userId}`} className="flex items-center space-x-3">
+    <div className="flex flex-col p-3 border border-border/50 rounded-lg bg-white">
+      <Link to={`/user/${userId}`} className="flex items-center space-x-3 mb-3">
         <img 
           src={avatarUrl || `https://i.pravatar.cc/150?u=${userId}`} 
           alt={username} 
@@ -103,43 +104,47 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         </div>
       </Link>
       
-      <div className="flex space-x-2">
-        {showFollowButton && (
-          <button
-            onClick={handleFollowAction}
-            disabled={actionLoading}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
-              isFollowingUser 
-                ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' 
-                : 'bg-primary text-primary-foreground hover:bg-primary/90'
-            }`}
-          >
-            {actionLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isFollowingUser ? (
-              <>
-                <UserCheck className="h-4 w-4 mr-1" />
-                <span>Following</span>
-              </>
-            ) : (
-              <>
-                <UserPlus className="h-4 w-4 mr-1" />
-                <span>Follow</span>
-              </>
-            )}
-          </button>
-        )}
-        
-        {canMessage && user && user.id !== userId && (
-          <Link 
-            to={`/messages/${userId}`}
-            className="flex items-center px-3 py-1.5 rounded-full text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
-          >
-            <MessageSquare className="h-4 w-4 mr-1" />
-            <span>Message</span>
-          </Link>
-        )}
-      </div>
+      {(showFollowButton || (canMessage && user && user.id !== userId)) && (
+        <div className="flex space-x-2 mt-1">
+          {showFollowButton && (
+            <Button
+              onClick={handleFollowAction}
+              disabled={actionLoading}
+              variant={isFollowingUser ? "secondary" : "default"}
+              size="sm"
+              className="flex-1"
+            >
+              {actionLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isFollowingUser ? (
+                <>
+                  <UserCheck className="h-4 w-4 mr-1" />
+                  <span>Following</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  <span>Follow</span>
+                </>
+              )}
+            </Button>
+          )}
+          
+          {canMessage && user && user.id !== userId && (
+            <Button 
+              asChild
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+            >
+              <Link to={`/messages/${userId}`}>
+                <MessageSquare className="h-4 w-4 mr-1" />
+                <span>Message</span>
+              </Link>
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
