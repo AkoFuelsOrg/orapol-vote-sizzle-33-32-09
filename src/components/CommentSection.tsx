@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Heart, Send, Loader2 } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
@@ -107,7 +106,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
           author: {
             id: comment.profiles.id,
             name: comment.profiles.username || 'Anonymous',
-            avatar: comment.profiles.avatar_url || 'https://i.pravatar.cc/150'
+            avatar: comment.profiles.avatar_url || 'https://i.pravatar.cc/150?u=' + comment.profiles.id
           }
         }));
         
@@ -216,7 +215,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
         <form onSubmit={handleSubmitComment} className="mb-6">
           <div className="flex space-x-2">
             <img 
-              src={user.user_metadata?.avatar_url || 'https://i.pravatar.cc/150?u=' + user.id} 
+              src={user.user_metadata?.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
               alt="Your avatar" 
               className="w-8 h-8 rounded-full border border-border/50 object-cover shrink-0"
             />
@@ -264,7 +263,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
           {comments.map((comment) => (
             <div key={comment.id} className="flex space-x-3">
               <img 
-                src={comment.author.avatar} 
+                src={comment.author.avatar || `https://i.pravatar.cc/150?u=${comment.author.id}`} 
                 alt={comment.author.name} 
                 className="w-8 h-8 rounded-full border border-border/50 object-cover shrink-0 mt-1"
               />
