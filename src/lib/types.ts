@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -31,4 +30,11 @@ export interface Comment {
   content: string;
   createdAt: string;
   likes: number;
+}
+
+export interface Follow {
+  id: string;
+  follower_id: string;
+  following_id: string;
+  created_at: string;
 }

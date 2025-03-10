@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import UserProfileCard from './UserProfileCard';
@@ -30,11 +29,10 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
       let query;
       
       if (type === 'followers') {
-        // Get users who follow the specified user
-        query = supabase
+        query = await supabase
           .from('follows')
           .select(`
-            follower:follower_id(
+            follower:profiles!follows_follower_id_fkey(
               id,
               username,
               avatar_url
@@ -42,11 +40,10 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           `)
           .eq('following_id', userId);
       } else {
-        // Get users whom the specified user follows
-        query = supabase
+        query = await supabase
           .from('follows')
           .select(`
-            following:following_id(
+            following:profiles!follows_following_id_fkey(
               id,
               username,
               avatar_url
@@ -55,7 +52,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           .eq('follower_id', userId);
       }
       
-      const { data, error } = await query;
+      const { data, error } = query;
       
       if (error) throw error;
       

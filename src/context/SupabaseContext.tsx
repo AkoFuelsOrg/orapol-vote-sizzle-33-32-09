@@ -42,7 +42,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -53,7 +52,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -94,19 +92,16 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       let avatarUrl = profile?.avatar_url;
       
-      // If there's a file, upload it first
       if (data.file) {
         const fileExt = data.file.name.split('.').pop();
         const filePath = `${user.id}/${Math.random().toString(36).substring(2)}.${fileExt}`;
         
-        // Upload the file to Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(filePath, data.file, { upsert: true });
           
         if (uploadError) throw uploadError;
         
-        // Get the public URL
         const { data: urlData } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
@@ -114,7 +109,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         avatarUrl = urlData.publicUrl;
       }
       
-      // Update the profile in the database
       const updates = {
         id: user.id,
         updated_at: new Date().toISOString(),
@@ -129,7 +123,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
       if (updateError) throw updateError;
       
-      // Refresh the profile
       fetchProfile(user.id);
       
       toast.success('Profile updated successfully');
@@ -151,20 +144,18 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     setLoading(true);
     try {
-      // Check if already following
       const { data: existingFollow } = await supabase
         .from('follows')
         .select('*')
         .eq('follower_id', user.id)
         .eq('following_id', targetUserId)
-        .single();
+        .maybeSingle();
       
       if (existingFollow) {
         toast.info("You're already following this user");
         return;
       }
       
-      // Create follow relationship
       const { error } = await supabase
         .from('follows')
         .insert({
@@ -182,7 +173,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(false);
     }
   };
-  
+
   const unfollowUser = async (targetUserId: string) => {
     if (!user) throw new Error('User not authenticated');
     
@@ -204,7 +195,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(false);
     }
   };
-  
+
   const isFollowing = async (targetUserId: string): Promise<boolean> => {
     if (!user) return false;
     
@@ -221,7 +212,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return false;
     }
   };
-  
+
   const getFollowCounts = async (userId: string): Promise<{followers: number, following: number}> => {
     try {
       const { count: followersCount, error: followersError } = await supabase
