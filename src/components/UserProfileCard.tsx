@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
-import { User } from '@supabase/supabase-js';
 import { Loader2, UserCheck, UserPlus, MessageSquare } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
 import { Button } from './ui/button';
+import UnfollowDialog from './UnfollowDialog';
 
 interface UserProfileCardProps {
   userId: string;
@@ -26,6 +25,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   const [isFollowingUser, setIsFollowingUser] = useState<boolean>(false);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [canMessage, setCanMessage] = useState<boolean>(false);
+  const [showUnfollowDialog, setShowUnfollowDialog] = useState<boolean>(false);
   
   useEffect(() => {
     if (user) {
@@ -60,13 +60,14 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     if (!user) return;
     if (userId === user.id) return;
     
+    if (isFollowingUser) {
+      setShowUnfollowDialog(true);
+      return;
+    }
+    
     setActionLoading(true);
     try {
-      if (isFollowingUser) {
-        await unfollowUser(userId);
-      } else {
-        await followUser(userId);
-      }
+      await followUser(userId);
       await checkFollowingStatus();
       await checkCanMessage();
     } finally {
@@ -74,7 +75,20 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     }
   };
   
-  // Don't show follow button for own profile
+  const handleUnfollow = async () => {
+    if (!user) return;
+    
+    setActionLoading(true);
+    try {
+      await unfollowUser(userId);
+      await checkFollowingStatus();
+      await checkCanMessage();
+    } finally {
+      setActionLoading(false);
+      setShowUnfollowDialog(false);
+    }
+  };
+  
   const showFollowButton = !hideFollowButton && user && user.id !== userId;
   
   if (minimal) {
@@ -145,6 +159,13 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           )}
         </div>
       )}
+      
+      <UnfollowDialog
+        username={username}
+        isOpen={showUnfollowDialog}
+        onClose={() => setShowUnfollowDialog(false)}
+        onConfirm={handleUnfollow}
+      />
     </div>
   );
 };
