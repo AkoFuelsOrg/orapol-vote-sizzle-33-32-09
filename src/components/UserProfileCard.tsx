@@ -65,7 +65,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           alt={username} 
           className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
         />
-        <span className="font-medium">{username || 'Anonymous'}</span>
+        <span className="font-medium text-red-500">{username || 'Anonymous'}</span>
       </Link>
     );
   }
@@ -79,7 +79,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           className="w-10 h-10 rounded-full border-2 border-red-500 object-cover"
         />
         <div>
-          <p className="font-medium">{username || 'Anonymous'}</p>
+          <p className="font-medium text-red-500">{username || 'Anonymous'}</p>
           <p className="text-xs text-muted-foreground">View profile</p>
         </div>
       </Link>

@@ -120,7 +120,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
             className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
           />
           <div>
-            <p className="text-sm font-medium">{poll.author.name}</p>
+            <p className="text-sm font-medium text-red-500">{poll.author.name}</p>
             <p className="text-xs text-muted-foreground">{formatDate(poll.createdAt)}</p>
           </div>
         </Link>
