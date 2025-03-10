@@ -12,7 +12,7 @@ const Header: React.FC = () => {
     <header className="fixed top-0 left-0 right-0 z-50 glass-card h-16 px-4 animate-fade-in">
       <div className="max-w-lg mx-auto h-full flex items-center justify-between">
         <Link to="/" className="flex items-center">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold text-red-500">
             Orapol
           </h1>
         </Link>

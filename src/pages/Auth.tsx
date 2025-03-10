@@ -41,7 +41,7 @@ const Auth: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">
+          <h1 className="text-2xl font-bold text-red-500 mb-2">
             Orapol
           </h1>
           <p className="text-muted-foreground">
