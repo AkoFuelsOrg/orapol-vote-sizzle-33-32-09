@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import UserProfileCard from './UserProfileCard';
@@ -12,6 +13,22 @@ interface UserData {
   id: string;
   username: string | null;
   avatar_url: string | null;
+}
+
+interface FollowerData {
+  follower: {
+    id: string;
+    username: string | null;
+    avatar_url: string | null;
+  };
+}
+
+interface FollowingData {
+  following: {
+    id: string;
+    username: string | null;
+    avatar_url: string | null;
+  };
 }
 
 const UserList: React.FC<UserListProps> = ({ userId, type }) => {
@@ -37,7 +54,9 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         if (error) throw error;
         
         if (data) {
-          const userData: UserData[] = data.map(item => ({
+          // Explicitly type the data array and assert it's not null
+          const followerData = data as FollowerData[];
+          const userData: UserData[] = followerData.map(item => ({
             id: item.follower.id,
             username: item.follower.username,
             avatar_url: item.follower.avatar_url
@@ -53,7 +72,9 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         if (error) throw error;
         
         if (data) {
-          const userData: UserData[] = data.map(item => ({
+          // Explicitly type the data array and assert it's not null
+          const followingData = data as FollowingData[];
+          const userData: UserData[] = followingData.map(item => ({
             id: item.following.id,
             username: item.following.username,
             avatar_url: item.following.avatar_url
