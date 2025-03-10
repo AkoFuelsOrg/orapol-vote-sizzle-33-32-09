@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import UserProfile from "./pages/UserProfile";
 import AppLoader from "./components/AppLoader";
 import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
 import { useBreakpoint } from "./hooks/use-mobile";
 
 import Index from "./pages/Index";
@@ -19,6 +20,10 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
+import VotedPolls from "./pages/VotedPolls";
+import Followers from "./pages/Followers";
+import Following from "./pages/Following";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -26,13 +31,10 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
   
-  if (!isDesktop) {
-    return <>{children}</>;
-  }
-  
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
+      {isDesktop && <Sidebar />}
+      {!isDesktop && <Header />}
       <div className="flex-1">
         <div className="w-full max-w-7xl mx-auto px-6 py-4 flex">
           <main className="flex-1">{children}</main>
@@ -86,6 +88,38 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Messages />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/voted-polls"
+                    element={
+                      <ProtectedRoute>
+                        <VotedPolls />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/followers"
+                    element={
+                      <ProtectedRoute>
+                        <Followers />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/following"
+                    element={
+                      <ProtectedRoute>
+                        <Following />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/notifications"
+                    element={
+                      <ProtectedRoute>
+                        <Notifications />
                       </ProtectedRoute>
                     }
                   />

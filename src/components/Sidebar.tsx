@@ -1,7 +1,17 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageCircle, Plus, User, LogOut, MessageSquare } from 'lucide-react';
+import { 
+  MessageCircle, 
+  Plus, 
+  User, 
+  LogOut, 
+  MessageSquare,
+  ThumbsUp,
+  Users,
+  UserCheck, 
+  Bell
+} from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { cn } from '@/lib/utils';
@@ -13,7 +23,11 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { path: '/', label: 'Polls', icon: MessageCircle },
     ...(user && !loading ? [
+      { path: '/voted-polls', label: 'Voted Polls', icon: ThumbsUp },
+      { path: '/followers', label: 'Followers', icon: Users },
+      { path: '/following', label: 'Following', icon: UserCheck },
       { path: '/messages', label: 'Messages', icon: MessageSquare },
+      { path: '/notifications', label: 'Notifications', icon: Bell },
       { path: '/create', label: 'Create Poll', icon: Plus },
       { path: '/profile', label: 'Profile', icon: User },
     ] : []),
@@ -61,7 +75,11 @@ const Sidebar: React.FC = () => {
                   className={cn(
                     "flex items-center w-full px-4 py-3 rounded-lg transition-colors",
                     location.pathname === item.path || 
-                    (item.path === '/messages' && location.pathname.startsWith('/messages'))
+                    (item.path === '/messages' && location.pathname.startsWith('/messages')) ||
+                    (item.path === '/followers' && location.pathname === '/followers') ||
+                    (item.path === '/following' && location.pathname === '/following') ||
+                    (item.path === '/notifications' && location.pathname === '/notifications') ||
+                    (item.path === '/voted-polls' && location.pathname === '/voted-polls')
                       ? "bg-secondary text-primary" 
                       : "text-primary/70 hover:text-primary hover:bg-secondary/70"
                   )}
