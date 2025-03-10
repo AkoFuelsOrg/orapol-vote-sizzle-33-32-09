@@ -92,7 +92,6 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
-    if (preview) return;
     e.preventDefault(); // Prevent navigation when double-clicking
     e.stopPropagation(); // Stop event propagation
     setIsExpanded(!isExpanded);
@@ -252,25 +251,22 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     </>
   );
 
-  return preview ? (
+  return (
     <div 
-      className="bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in"
+      className={`bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in ${!preview ? 'block' : ''}`}
       onDoubleClick={handleDoubleClick}
     >
-      {cardContent}
-    </div>
-  ) : (
-    <div
-      className="block bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in"
-      onDoubleClick={handleDoubleClick}
-    >
-      <Link 
-        to={`/poll/${poll.id}`}
-        onClick={(e) => e.stopPropagation()} // Prevent double-click from triggering navigation
-        className="block"
-      >
-        {cardContent}
-      </Link>
+      {!preview ? (
+        <Link 
+          to={`/poll/${poll.id}`}
+          onClick={(e) => e.stopPropagation()} // Prevent double-click from triggering navigation
+          className="block"
+        >
+          {cardContent}
+        </Link>
+      ) : (
+        cardContent
+      )}
     </div>
   );
 };
