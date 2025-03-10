@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { MessageCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 
 interface PollCardProps {
   poll: Poll;
@@ -16,6 +17,7 @@ interface PollCardProps {
 const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   const { user } = useSupabase();
   const [isVoting, setIsVoting] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
   
   const handleVote = async (optionId: string, e: React.MouseEvent) => {
     if (preview || isVoting) return;
@@ -90,6 +92,12 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     return Math.round((votes / poll.totalVotes) * 100);
   };
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (preview) return;
+    e.preventDefault(); // Prevent navigation when double-clicking
+    setIsExpanded(!isExpanded);
+  };
+
   const cardContent = (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -121,55 +129,167 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
         </div>
       )}
       
-      <div className="space-y-2.5 mb-4 relative">
-        {isVoting && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded} className="w-full">
+        <div className="space-y-2.5 mb-4 relative">
+          {isVoting && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          )}
+          
+          {isExpanded ? (
+            // Show all options when expanded
+            poll.options.map((option) => (
+              <button
+                key={option.id}
+                onClick={(e) => handleVote(option.id, e)}
+                disabled={!!poll.userVoted || isVoting || !user}
+                className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
+                  ${poll.userVoted === option.id 
+                    ? 'border-primary bg-primary/5' 
+                    : poll.userVoted 
+                      ? 'border-border/50 hover:border-border' 
+                      : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
+              >
+                <div className="flex items-center space-x-3">
+                  {option.imageUrl && (
+                    <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden">
+                      <img 
+                        src={option.imageUrl} 
+                        alt={option.text} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center relative z-10 flex-1">
+                    <span className="text-sm font-medium">{option.text}</span>
+                    <span className="text-xs font-medium">
+                      {calculatePercentage(option.votes)}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div 
+                  className={`absolute top-0 left-0 h-full rounded-lg ${
+                    poll.userVoted === option.id 
+                      ? 'bg-primary/10' 
+                      : 'bg-secondary/60'
+                  } transition-all duration-300`}
+                  style={{ width: `${calculatePercentage(option.votes)}%` }}
+                />
+              </button>
+            ))
+          ) : (
+            // Show only first 2 options when collapsed
+            poll.options.slice(0, 2).map((option) => (
+              <button
+                key={option.id}
+                onClick={(e) => handleVote(option.id, e)}
+                disabled={!!poll.userVoted || isVoting || !user}
+                className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
+                  ${poll.userVoted === option.id 
+                    ? 'border-primary bg-primary/5' 
+                    : poll.userVoted 
+                      ? 'border-border/50 hover:border-border' 
+                      : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
+              >
+                <div className="flex items-center space-x-3">
+                  {option.imageUrl && (
+                    <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden">
+                      <img 
+                        src={option.imageUrl} 
+                        alt={option.text} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center relative z-10 flex-1">
+                    <span className="text-sm font-medium">{option.text}</span>
+                    <span className="text-xs font-medium">
+                      {calculatePercentage(option.votes)}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div 
+                  className={`absolute top-0 left-0 h-full rounded-lg ${
+                    poll.userVoted === option.id 
+                      ? 'bg-primary/10' 
+                      : 'bg-secondary/60'
+                  } transition-all duration-300`}
+                  style={{ width: `${calculatePercentage(option.votes)}%` }}
+                />
+              </button>
+            ))
+          )}
+        </div>
+        
+        {poll.options.length > 2 && (
+          <CollapsibleContent className="space-y-2.5">
+            {poll.options.slice(2).map((option) => (
+              <button
+                key={option.id}
+                onClick={(e) => handleVote(option.id, e)}
+                disabled={!!poll.userVoted || isVoting || !user}
+                className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
+                  ${poll.userVoted === option.id 
+                    ? 'border-primary bg-primary/5' 
+                    : poll.userVoted 
+                      ? 'border-border/50 hover:border-border' 
+                      : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
+              >
+                <div className="flex items-center space-x-3">
+                  {option.imageUrl && (
+                    <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden">
+                      <img 
+                        src={option.imageUrl} 
+                        alt={option.text} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center relative z-10 flex-1">
+                    <span className="text-sm font-medium">{option.text}</span>
+                    <span className="text-xs font-medium">
+                      {calculatePercentage(option.votes)}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div 
+                  className={`absolute top-0 left-0 h-full rounded-lg ${
+                    poll.userVoted === option.id 
+                      ? 'bg-primary/10' 
+                      : 'bg-secondary/60'
+                  } transition-all duration-300`}
+                  style={{ width: `${calculatePercentage(option.votes)}%` }}
+                />
+              </button>
+            ))}
+          </CollapsibleContent>
         )}
         
-        {poll.options.map((option) => (
-          <button
-            key={option.id}
-            onClick={(e) => handleVote(option.id, e)}
-            disabled={!!poll.userVoted || isVoting || !user}
-            className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
-              ${poll.userVoted === option.id 
-                ? 'border-primary bg-primary/5' 
-                : poll.userVoted 
-                  ? 'border-border/50 hover:border-border' 
-                  : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
-          >
-            <div className="flex items-center space-x-3">
-              {option.imageUrl && (
-                <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden">
-                  <img 
-                    src={option.imageUrl} 
-                    alt={option.text} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center relative z-10 flex-1">
-                <span className="text-sm font-medium">{option.text}</span>
-                <span className="text-xs font-medium">
-                  {calculatePercentage(option.votes)}%
-                </span>
-              </div>
-            </div>
-            
-            <div 
-              className={`absolute top-0 left-0 h-full rounded-lg ${
-                poll.userVoted === option.id 
-                  ? 'bg-primary/10' 
-                  : 'bg-secondary/60'
-              } transition-all duration-300`}
-              style={{ width: `${calculatePercentage(option.votes)}%` }}
-            />
-          </button>
-        ))}
-      </div>
+        {poll.options.length > 2 && !isExpanded && (
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center justify-center p-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <span>Show more options</span>
+              <ChevronDown className="ml-1 h-4 w-4" />
+            </button>
+          </CollapsibleTrigger>
+        )}
+        
+        {poll.options.length > 2 && isExpanded && (
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center justify-center p-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <span>Show less</span>
+              <ChevronUp className="ml-1 h-4 w-4" />
+            </button>
+          </CollapsibleTrigger>
+        )}
+      </Collapsible>
       
       <div className="flex items-center">
         <MessageCircle size={15} className="mr-1 text-muted-foreground" />
@@ -186,6 +306,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     <Link 
       to={`/poll/${poll.id}`}
       className="block bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in"
+      onDoubleClick={handleDoubleClick}
     >
       {cardContent}
     </Link>
