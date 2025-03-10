@@ -9,6 +9,7 @@ export interface PollOption {
   id: string;
   text: string;
   votes: number;
+  imageUrl?: string | null; // Added imageUrl field for option images
 }
 
 export interface Poll {

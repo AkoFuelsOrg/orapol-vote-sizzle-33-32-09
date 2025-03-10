@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -25,7 +24,6 @@ const PollDetail: React.FC = () => {
     }
   }, [id, user]);
   
-  // Function to convert JSON options from Supabase to PollOption type
   const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
       try {
@@ -39,12 +37,12 @@ const PollDetail: React.FC = () => {
     if (Array.isArray(jsonOptions)) {
       return jsonOptions.map(opt => {
         if (typeof opt === 'object' && opt !== null) {
-          // Use type assertion with optional chaining to safely access properties
           const option = opt as Record<string, unknown>;
           return {
             id: String(option?.id || ''),
             text: String(option?.text || ''),
-            votes: Number(option?.votes || 0)
+            votes: Number(option?.votes || 0),
+            imageUrl: option?.imageUrl as string | undefined
           };
         }
         return { id: '', text: '', votes: 0 };
@@ -59,7 +57,6 @@ const PollDetail: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Fetch the poll with author information
       const { data: pollData, error: pollError } = await supabase
         .from('polls')
         .select(`
@@ -77,7 +74,6 @@ const PollDetail: React.FC = () => {
       
       if (pollError) throw pollError;
       
-      // Check if the user has voted on this poll
       let userVoted = undefined;
       
       if (user) {
@@ -93,7 +89,6 @@ const PollDetail: React.FC = () => {
         }
       }
       
-      // Format the poll for our application
       const formattedPoll: Poll = {
         id: pollData.id,
         question: pollData.question,

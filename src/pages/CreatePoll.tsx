@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, ImagePlus, Loader2 } from 'lucide-react';
@@ -9,17 +10,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { PollOption } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 
+interface OptionWithImage {
+  text: string;
+  imageUrl: string;
+}
+
 const CreatePoll: React.FC = () => {
   const [question, setQuestion] = useState('');
-  const [options, setOptions] = useState(['', '']);
+  const [options, setOptions] = useState<OptionWithImage[]>([
+    { text: '', imageUrl: '' },
+    { text: '', imageUrl: '' }
+  ]);
   const [imageUrl, setImageUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingOptionImage, setUploadingOptionImage] = useState<number | null>(null);
   const { user } = useSupabase();
   const navigate = useNavigate();
   
   const handleAddOption = () => {
     if (options.length >= 6) return;
-    setOptions([...options, '']);
+    setOptions([...options, { text: '', imageUrl: '' }]);
   };
 
   const handleRemoveOption = (index: number) => {
@@ -29,14 +39,52 @@ const CreatePoll: React.FC = () => {
 
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...options];
-    newOptions[index] = value;
+    newOptions[index] = { ...newOptions[index], text: value };
     setOptions(newOptions);
+  };
+
+  const handleOptionImageChange = (index: number, imageUrl: string) => {
+    const newOptions = [...options];
+    newOptions[index] = { ...newOptions[index], imageUrl };
+    setOptions(newOptions);
+  };
+
+  const handleUploadOptionImage = async (index: number, file: File) => {
+    if (!user) {
+      toast.error("You must be logged in to upload images");
+      return;
+    }
+
+    try {
+      setUploadingOptionImage(index);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${uuidv4()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('option_images')
+        .upload(fileName, file, { upsert: true });
+        
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage
+        .from('option_images')
+        .getPublicUrl(fileName);
+        
+      handleOptionImageChange(index, urlData.publicUrl);
+      toast.success("Image uploaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Error uploading image");
+      console.error('Error uploading image:', error);
+    } finally {
+      setUploadingOptionImage(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validOptions = options.filter(opt => opt.trim().length > 0);
+    const validOptions = options.filter(opt => opt.text.trim().length > 0);
     if (!question.trim() || validOptions.length < 2) {
       toast.error("Please provide a question and at least two options");
       return;
@@ -52,10 +100,11 @@ const CreatePoll: React.FC = () => {
       setIsSubmitting(true);
 
       // Format options for database storage
-      const formattedOptions: PollOption[] = validOptions.map(text => ({
+      const formattedOptions: PollOption[] = validOptions.map(opt => ({
         id: uuidv4(),
-        text,
-        votes: 0
+        text: opt.text.trim(),
+        votes: 0,
+        imageUrl: opt.imageUrl || null
       }));
 
       // Insert the new poll into Supabase
@@ -113,7 +162,7 @@ const CreatePoll: React.FC = () => {
             
             <div>
               <label htmlFor="image" className="block text-sm font-medium mb-2">
-                Add Image (Optional)
+                Add Poll Image (Optional)
               </label>
               <div className="flex gap-2">
                 <input
@@ -165,27 +214,73 @@ const CreatePoll: React.FC = () => {
               <label className="block text-sm font-medium mb-2">
                 Options
               </label>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {options.map((option, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={option}
-                      onChange={(e) => handleOptionChange(index, e.target.value)}
-                      placeholder={`Option ${index + 1}`}
-                      className="flex-1 p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-                      maxLength={50}
-                      required
-                    />
-                    {options.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveOption(index)}
-                        className="p-3 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                      >
-                        <X size={20} />
-                      </button>
-                    )}
+                  <div key={index} className="border border-border rounded-lg p-3">
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={option.text}
+                        onChange={(e) => handleOptionChange(index, e.target.value)}
+                        placeholder={`Option ${index + 1}`}
+                        className="flex-1 p-3 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                        maxLength={50}
+                        required
+                      />
+                      {options.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveOption(index)}
+                          className="p-3 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                        >
+                          <X size={20} />
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Option image upload */}
+                    <div className="mt-2">
+                      {option.imageUrl ? (
+                        <div className="relative rounded-lg overflow-hidden border border-border">
+                          <img 
+                            src={option.imageUrl} 
+                            alt={`Option ${index + 1} image`} 
+                            className="w-full h-32 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleOptionImageChange(index, '')}
+                            className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center h-32 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleUploadOptionImage(index, e.target.files[0]);
+                              }
+                            }}
+                            disabled={uploadingOptionImage !== null}
+                          />
+                          <div className="text-center text-muted-foreground">
+                            {uploadingOptionImage === index ? (
+                              <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                            ) : (
+                              <>
+                                <ImagePlus className="mx-auto h-6 w-6 mb-1" />
+                                <p className="text-sm">Add image for this option (optional)</p>
+                              </>
+                            )}
+                          </div>
+                        </label>
+                      )}
+                    </div>
                   </div>
                 ))}
                 
