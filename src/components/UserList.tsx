@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import UserProfileCard from './UserProfileCard';
@@ -25,11 +26,13 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
   
   const fetchUsers = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
       let query;
       
       if (type === 'followers') {
-        query = await supabase
+        const { data, error } = await supabase
           .from('follows')
           .select(`
             follower:profiles!follows_follower_id_fkey(
@@ -39,8 +42,12 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
             )
           `)
           .eq('following_id', userId);
+          
+        if (error) throw error;
+        
+        setUsers(data?.map(item => item.follower) || []);
       } else {
-        query = await supabase
+        const { data, error } = await supabase
           .from('follows')
           .select(`
             following:profiles!follows_following_id_fkey(
@@ -50,22 +57,11 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
             )
           `)
           .eq('follower_id', userId);
+          
+        if (error) throw error;
+        
+        setUsers(data?.map(item => item.following) || []);
       }
-      
-      const { data, error } = query;
-      
-      if (error) throw error;
-      
-      const userData = data.map(item => {
-        const user = type === 'followers' ? item.follower : item.following;
-        return {
-          id: user.id,
-          username: user.username,
-          avatar_url: user.avatar_url
-        };
-      });
-      
-      setUsers(userData);
     } catch (error: any) {
       console.error(`Error fetching ${type}:`, error);
       setError(error.message);
