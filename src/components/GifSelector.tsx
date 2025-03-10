@@ -4,26 +4,31 @@ import { X, Search, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
-// Sample GIFs - in a real app, these would come from an API like GIPHY or Tenor
+// Updated GIFs with working URLs
 const sampleGifs = [
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGRmcGpvemZjbnEwaXk0bzNlZGY1bzd2ZXZ3dWU1Y2Y1enZ1bG45eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5xtDarIHieSQaA1HmBW/giphy.gif',
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExa2prNGF1ZjRueDZhd2hnajhzMGJmdnVnempveWJpb2lxM3RsM2ZyMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKMVGGPNJBl9EK4/giphy.gif',
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ2NxdHd0Nmw2Z2Y3czRnMmhiM3Nxd2kxa3phZmJxOW04bDRndnRwdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/pPVvKdtlkOIHjJWcfb/giphy.gif',
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNDZ3eThtNmR6OGhmeG0wbTYweGRpbzI4eHU5a2l6anVrdHM0MXhoaSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/CcgO6hjOoNrfa/giphy.gif',
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzlnYXNzajZ6b2kycWdycmtjaTFibnZyYzM0dmNmeWVmaWNoc3VyYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/U1n0R4nQUYZ3i/giphy.gif',
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExa2d0cHk2djBnM3lpNXJyaWtpNHVuc241Z3loMGxmZm01NzQyaGRnOCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/wRzkZH82AqfzzGr1ES/giphy.gif',
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdW1paTdzYmI1b3dkbDAzZ3UwaHdoY3prOHFiZW80eDNzOWYyZTI2cCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SSGgQV6gckxgIrVgQT/giphy.gif',
-  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWc3ZnM2a24xZWY0YjJ2emR0dWhxZndjOHlweHd2cWZiYjhndTNvZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fCCyMb3O7qZKU/giphy.gif'
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWxqM2JkenFnbTRrZzI5ZGc5b2RkczFrbHJucG9zMHJxaTl1N2NvYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/kHmVOy84g8G6my09fu/giphy.gif', // dancing
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcGkycGF2ZHRiMHI3MDhvcjU3azd1dHJvazFteTNqbzVmYzA3cHV0ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/8m4R4pvViWtRzbloJ1/giphy.gif', // thumbs up
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExazR1dmY3a3p4YmttZmlvemM3OHNudnZrbTVsZ3p1cWM3cjc4ZGw3ZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/2sXf9PbHcEdE1x059I/giphy.gif', // laughing 
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOG12MGkycjF0eGkzdWZ3aDhwZm5jMnhoOHJwc2l4YjI5anFveGxwcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3V0D4Wb1OZRoU1fa/giphy.gif', // sad
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjlqZnB1amdoaG1wbHdvcGF2NDVtbXJpM2FnYTFqYmJsZ2c0dHdycyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/TL4d81cXH4THa/giphy.gif', // crying
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHI0NTBnc3lvZDZtY2VydDNydnQ1ZncwNHcwM3R0amExenh5cm9vciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QMkPpxPDYY0fu/giphy.gif', // thinking
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdjVtZHE0d3ZvYzN5ZWJwM2JmaGQ1NmcwNjR6MGpsMGZneG5lZmZ3ZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LmNwrBhejkK9EFP504/giphy.gif', // wow
+  'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExajFtbHQzMmRvbWVmaWE5enQzNnUzeTN6czV3MmlhajluaWxqYWJrdCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oKIPsx2VAYAgEHC12/giphy.gif'  // funny
 ];
 
-// Search terms to filter GIFs (for demo purposes)
+// Updated search terms with more accurate mapping
 const gifSearchMap: Record<string, string[]> = {
   'happy': [sampleGifs[0], sampleGifs[1], sampleGifs[2]],
   'sad': [sampleGifs[3], sampleGifs[4]],
-  'react': [sampleGifs[5], sampleGifs[6]],
-  'funny': [sampleGifs[1], sampleGifs[2], sampleGifs[7]],
-  'cat': [sampleGifs[2], sampleGifs[5]],
-  'dog': [sampleGifs[0], sampleGifs[3]],
+  'think': [sampleGifs[5]],
+  'wow': [sampleGifs[6]],
+  'funny': [sampleGifs[2], sampleGifs[7]],
+  'laugh': [sampleGifs[2]],
+  'dance': [sampleGifs[0]],
+  'cry': [sampleGifs[4]],
+  'thumbs': [sampleGifs[1]],
+  'yes': [sampleGifs[1]],
+  'no': [sampleGifs[3], sampleGifs[4]],
 };
 
 interface GifSelectorProps {
@@ -61,16 +66,17 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisib
       const lowerCaseQuery = searchQuery.toLowerCase();
       const results: string[] = [];
       
+      // Search for any keyword that contains the query
       Object.keys(gifSearchMap).forEach(term => {
         if (term.includes(lowerCaseQuery)) {
           results.push(...gifSearchMap[term]);
         }
       });
       
-      // Remove duplicates
+      // If no results found, return a subset of samples as fallback
       const uniqueResults = [...new Set(results)];
-      setGifs(uniqueResults.length > 0 ? uniqueResults : sampleGifs.slice(0, 2));
-    }, 500);
+      setGifs(uniqueResults.length > 0 ? uniqueResults : sampleGifs.slice(0, 3));
+    }, 300); // Reduced timeout for better UX
   };
 
   if (!isVisible) return null;
