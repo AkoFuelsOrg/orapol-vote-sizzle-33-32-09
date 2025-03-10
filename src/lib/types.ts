@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -37,4 +38,15 @@ export interface Follow {
   follower_id: string;
   following_id: string;
   created_at: string;
+}
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  read: boolean;
+  created_at: string;
+  attachment_url?: string;
+  attachment_type?: 'image' | 'video' | 'document' | 'gif';
 }
