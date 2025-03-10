@@ -206,7 +206,7 @@ const UserProfile: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="pt-20 px-4 max-w-lg mx-auto flex justify-center">
+        <main className="pt-20 px-4 max-w-full w-full mx-auto flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
       </div>
@@ -217,7 +217,7 @@ const UserProfile: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="pt-20 px-4 max-w-lg mx-auto">
+        <main className="pt-20 px-4 max-w-full w-full mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 text-center">
             <p className="mb-4">User not found</p>
             <Link 
@@ -236,7 +236,7 @@ const UserProfile: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="pt-20 px-4 max-w-lg mx-auto pb-20">
+      <main className="pt-20 px-4 w-full mx-auto pb-20">
         <div className="mb-4 animate-fade-in">
           <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={18} className="mr-1" />
