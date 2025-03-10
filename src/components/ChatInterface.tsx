@@ -461,7 +461,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setShowEmojiPicker(true);
+                  setShowEmojiPicker(!showEmojiPicker);
                   setShowGifSelector(false);
                 }}
                 className="flex-1 h-9 px-2 text-xs"
@@ -473,7 +473,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setShowGifSelector(true);
+                  setShowGifSelector(!showGifSelector);
                   setShowEmojiPicker(false);
                 }}
                 className="flex-1 h-9 px-2 text-xs"
@@ -500,17 +500,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
               </Button>
             </div>
             
-            <div className="absolute bottom-32 left-4 z-10">
-              <EmojiPicker 
-                onSelectEmoji={handleEmojiSelect} 
-                onClose={() => setShowEmojiPicker(false)} 
-              />
-            </div>
+            {showEmojiPicker && (
+              <div className="absolute bottom-32 left-4 z-10">
+                <EmojiPicker 
+                  onSelectEmoji={handleEmojiSelect} 
+                  onClose={() => setShowEmojiPicker(false)} 
+                />
+              </div>
+            )}
             
             <div className="absolute bottom-32 left-4 z-10">
               <GifSelector 
                 onSelectGif={handleGifSelect} 
                 onClose={() => setShowGifSelector(false)} 
+                isVisible={showGifSelector}
               />
             </div>
             

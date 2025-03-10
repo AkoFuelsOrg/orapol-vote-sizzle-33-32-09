@@ -16,27 +16,64 @@ const sampleGifs = [
   'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWc3ZnM2a24xZWY0YjJ2emR0dWhxZndjOHlweHd2cWZiYjhndTNvZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fCCyMb3O7qZKU/giphy.gif'
 ];
 
+// Search terms to filter GIFs (for demo purposes)
+const gifSearchMap: Record<string, string[]> = {
+  'happy': [sampleGifs[0], sampleGifs[1], sampleGifs[2]],
+  'sad': [sampleGifs[3], sampleGifs[4]],
+  'react': [sampleGifs[5], sampleGifs[6]],
+  'funny': [sampleGifs[1], sampleGifs[2], sampleGifs[7]],
+  'cat': [sampleGifs[2], sampleGifs[5]],
+  'dog': [sampleGifs[0], sampleGifs[3]],
+};
+
 interface GifSelectorProps {
   onSelectGif: (gifUrl: string) => void;
   onClose: () => void;
+  isVisible: boolean;
 }
 
-const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose }) => {
+const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisible }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [gifs, setGifs] = useState(sampleGifs);
 
-  // In a real app, you would fetch GIFs based on the search query
+  // Reset gifs when visibility changes
+  useEffect(() => {
+    if (isVisible) {
+      setSearchQuery('');
+      setGifs(sampleGifs);
+    }
+  }, [isVisible]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock search loading state
     setLoading(true);
+    
+    // Simple search functionality using the predefined map
     setTimeout(() => {
       setLoading(false);
-      // Just returning the same sample GIFs for now
-      // In a real app, you would fetch from Giphy, Tenor, etc.
+      
+      if (!searchQuery.trim()) {
+        setGifs(sampleGifs);
+        return;
+      }
+      
+      const lowerCaseQuery = searchQuery.toLowerCase();
+      const results: string[] = [];
+      
+      Object.keys(gifSearchMap).forEach(term => {
+        if (term.includes(lowerCaseQuery)) {
+          results.push(...gifSearchMap[term]);
+        }
+      });
+      
+      // Remove duplicates
+      const uniqueResults = [...new Set(results)];
+      setGifs(uniqueResults.length > 0 ? uniqueResults : sampleGifs.slice(0, 2));
     }, 500);
   };
+
+  if (!isVisible) return null;
 
   return (
     <div className="p-2 bg-background border rounded-lg shadow-lg w-full max-w-md">
@@ -47,17 +84,17 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose }) => {
         </Button>
       </div>
       
-      <form onSubmit={handleSearch} className="flex gap-2 mb-3">
+      <div className="flex gap-2 mb-3">
         <Input
           placeholder="Search GIFs..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="flex-1"
         />
-        <Button type="submit" size="sm" disabled={loading}>
+        <Button type="button" size="sm" disabled={loading} onClick={handleSearch}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
         </Button>
-      </form>
+      </div>
       
       <div className="grid grid-cols-2 gap-2 overflow-y-auto max-h-[300px]">
         {gifs.map((gif, index) => (
