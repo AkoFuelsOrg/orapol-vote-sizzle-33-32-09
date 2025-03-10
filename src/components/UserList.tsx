@@ -53,7 +53,6 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           .from('follows')
           .select(`
             follower_id,
-            following_id,
             profiles!follows_follower_id_fkey (
               id,
               username,
@@ -65,8 +64,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         if (error) throw error;
         
         if (data) {
-          const followerData = data as unknown as FollowerData[];
-          const userData: UserData[] = followerData.map(item => ({
+          const userData: UserData[] = data.map(item => ({
             id: item.profiles.id,
             username: item.profiles.username,
             avatar_url: item.profiles.avatar_url
@@ -77,7 +75,6 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         const { data, error } = await supabase
           .from('follows')
           .select(`
-            follower_id,
             following_id,
             profiles!follows_following_id_fkey (
               id,
@@ -90,8 +87,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         if (error) throw error;
         
         if (data) {
-          const followingData = data as unknown as FollowingData[];
-          const userData: UserData[] = followingData.map(item => ({
+          const userData: UserData[] = data.map(item => ({
             id: item.profiles.id,
             username: item.profiles.username,
             avatar_url: item.profiles.avatar_url
