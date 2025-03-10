@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import UserProfileCard from './UserProfileCard';
@@ -29,48 +30,52 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
     
     try {
       if (type === 'followers') {
+        // Get profiles of users who follow the current user
         const { data, error } = await supabase
           .from('follows')
-          .select(`
-            profiles (
-              id,
-              username,
-              avatar_url
-            )
-          `)
+          .select('follower_id')
           .eq('following_id', userId);
           
         if (error) throw error;
         
-        if (data) {
-          const userData: UserData[] = data.map(item => ({
-            id: item.profiles.id,
-            username: item.profiles.username,
-            avatar_url: item.profiles.avatar_url
-          }));
-          setUsers(userData);
+        if (data && data.length > 0) {
+          const followerIds = data.map(follow => follow.follower_id);
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .in('id', followerIds);
+            
+          if (profilesError) throw profilesError;
+          
+          if (profilesData) {
+            setUsers(profilesData);
+          }
+        } else {
+          setUsers([]);
         }
       } else {
+        // Get profiles of users that the current user follows
         const { data, error } = await supabase
           .from('follows')
-          .select(`
-            profiles!follows_following_id_fkey (
-              id,
-              username,
-              avatar_url
-            )
-          `)
+          .select('following_id')
           .eq('follower_id', userId);
           
         if (error) throw error;
         
-        if (data) {
-          const userData: UserData[] = data.map(item => ({
-            id: item.profiles.id,
-            username: item.profiles.username,
-            avatar_url: item.profiles.avatar_url
-          }));
-          setUsers(userData);
+        if (data && data.length > 0) {
+          const followingIds = data.map(follow => follow.following_id);
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .in('id', followingIds);
+            
+          if (profilesError) throw profilesError;
+          
+          if (profilesData) {
+            setUsers(profilesData);
+          }
+        } else {
+          setUsers([]);
         }
       }
     } catch (error: any) {
