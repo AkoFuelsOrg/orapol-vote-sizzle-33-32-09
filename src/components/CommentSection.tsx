@@ -14,7 +14,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const { user } = useSupabase();
+  const { user, profile } = useSupabase();
   
   useEffect(() => {
     fetchComments();
@@ -106,7 +106,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
           author: {
             id: comment.profiles.id,
             name: comment.profiles.username || 'Anonymous',
-            avatar: comment.profiles.avatar_url || 'https://i.pravatar.cc/150?u=' + comment.profiles.id
+            avatar: comment.profiles.avatar_url || `https://i.pravatar.cc/150?u=${comment.profiles.id}`
           }
         }));
         
@@ -215,7 +215,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
         <form onSubmit={handleSubmitComment} className="mb-6">
           <div className="flex space-x-2">
             <img 
-              src={user.user_metadata?.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
+              src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
               alt="Your avatar" 
               className="w-8 h-8 rounded-full border border-border/50 object-cover shrink-0"
             />
