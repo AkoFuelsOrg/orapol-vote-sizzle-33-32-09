@@ -117,7 +117,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           <img 
             src={poll.author.avatar} 
             alt={poll.author.name} 
-            className="w-8 h-8 rounded-full border border-border/50 object-cover"
+            className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
           />
           <div>
             <p className="text-sm font-medium">{poll.author.name}</p>
