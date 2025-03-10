@@ -33,7 +33,7 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -87,11 +87,24 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
+  
+  /* Improve button appearance */
+  button, 
+  .button {
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:ring-offset-1;
+  }
+  
+  /* Improve input focus states */
+  input, 
+  textarea, 
+  select {
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-300;
+  }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-sm;
+    @apply bg-white/95 backdrop-blur-sm border border-white/30 shadow-sm;
   }
   
   .pill {
@@ -99,11 +112,37 @@
   }
   
   .btn-animate {
-    @apply transition-all duration-200 hover:scale-105 active:scale-95;
+    @apply transition-all duration-200 hover:scale-102 active:scale-98;
   }
   
   .card-hover {
     @apply transition-all duration-300 hover:shadow-md hover:-translate-y-1;
+  }
+  
+  /* Card with subtle hover effect */
+  .interactive-card {
+    @apply bg-white border border-gray-100 shadow-sm rounded-xl transition-all duration-200 
+    hover:shadow-md hover:border-red-100 hover:-translate-y-0.5;
+  }
+  
+  /* Button styles */
+  .btn-primary {
+    @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg
+    transition-colors shadow-sm hover:shadow focus:ring-2 focus:ring-red-500/50 focus:ring-offset-1;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-gray-800 font-medium py-2 px-4 rounded-lg
+    transition-colors border border-gray-200 shadow-sm hover:shadow;
+  }
+  
+  /* Text styling */
+  .section-title {
+    @apply text-xl font-bold text-gray-800 mb-4;
+  }
+  
+  .page-title {
+    @apply text-2xl font-bold text-gray-900 mb-6;
   }
 }
 
@@ -113,4 +152,26 @@
   margin: 0;
   padding: 0;
   text-align: left;
+}
+
+/* Custom scrollbar for desktop browsers */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #d1d1d1;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #c1c1c1;
+  }
 }
