@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageCircle, Plus, User, LogOut } from 'lucide-react';
+import { MessageCircle, Plus, User, LogOut, MessageSquare } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
@@ -30,6 +30,14 @@ const Header: React.FC = () => {
           
           {user && !loading ? (
             <>
+              <Link 
+                to="/messages" 
+                className={`p-2.5 rounded-full transition-colors duration-200 ${
+                  location.pathname.startsWith('/messages') ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
+                }`}
+              >
+                <MessageSquare size={20} />
+              </Link>
               <Link 
                 to="/create" 
                 className={`p-2.5 rounded-full transition-colors duration-200 ${

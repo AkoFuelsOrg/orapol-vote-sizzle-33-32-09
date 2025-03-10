@@ -16,6 +16,7 @@ import PollDetail from "./pages/PollDetail";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Messages from "./pages/Messages";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,22 @@ const App = () => (
                   }
                 />
                 <Route path="/user/:id" element={<UserProfile />} />
+                <Route
+                  path="/messages"
+                  element={
+                    <ProtectedRoute>
+                      <Messages />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/messages/:id"
+                  element={
+                    <ProtectedRoute>
+                      <Messages />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLoader>

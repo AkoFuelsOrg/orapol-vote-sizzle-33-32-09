@@ -72,6 +72,36 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read: boolean
+          receiver_id: string
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id: string
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          receiver_id?: string
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       poll_votes: {
         Row: {
           created_at: string
@@ -181,7 +211,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_message: {
+        Args: {
+          user_id_1: string
+          user_id_2: string
+        }
+        Returns: boolean
+      }
+      get_conversations: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          other_user_id: string
+          username: string
+          avatar_url: string
+          last_message: string
+          last_message_time: string
+          unread_count: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
