@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,6 +11,7 @@ import UserProfile from "./pages/UserProfile";
 import AppLoader from "./components/AppLoader";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
+import TopHeader from "./components/TopHeader";
 import RightChatColumn from "./components/RightChatColumn";
 import { useBreakpoint } from "./hooks/use-mobile";
 
@@ -36,15 +38,18 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const showRightChat = isDesktop && !location.pathname.startsWith('/messages');
   
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {isDesktop && <Sidebar />}
-      {!isDesktop && <Header />}
-      <div className={`flex-1 ${showRightChat ? 'mr-80' : ''}`}>
-        <div className="w-full max-w-7xl mx-auto px-6 py-4 flex">
-          <main className="flex-1">{children}</main>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <TopHeader />
+      <div className="flex flex-1">
+        {isDesktop && <Sidebar />}
+        {!isDesktop && <Header />}
+        <div className={`flex-1 ${showRightChat ? 'mr-80' : ''}`}>
+          <div className="w-full max-w-7xl mx-auto px-6 py-4 flex">
+            <main className="flex-1">{children}</main>
+          </div>
         </div>
+        {showRightChat && <RightChatColumn />}
       </div>
-      {showRightChat && <RightChatColumn />}
     </div>
   );
 };
