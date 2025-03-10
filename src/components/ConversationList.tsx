@@ -62,6 +62,26 @@ const ConversationList: React.FC<ConversationListProps> = ({ onSelectConversatio
     };
   }, [user, refetch]);
   
+  // Helper function to format timestamps in a more compact way
+  const formatMessageTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffMinutes < 1) {
+      return 'just now';
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffMinutes < 1440) { // Less than a day
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours}h ago`;
+    } else {
+      const days = Math.floor(diffMinutes / 1440);
+      if (days === 1) return 'yesterday';
+      return `${days}d ago`;
+    }
+  };
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -107,7 +127,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ onSelectConversatio
             <div className="flex justify-between items-start">
               <h3 className="font-medium text-red-500 truncate">{conversation.username || 'User'}</h3>
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(conversation.last_message_time), { addSuffix: true })}
+                {formatMessageTime(conversation.last_message_time)}
               </span>
             </div>
             

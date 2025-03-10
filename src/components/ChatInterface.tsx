@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Loader2, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
@@ -82,14 +82,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     queryFn: async () => {
       if (!user) return [];
       
+      // Get all messages where:
+      // (sender is current user AND receiver is other user) OR (sender is other user AND receiver is current user)
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .or(`sender_id.eq.${userId},receiver_id.eq.${user.id}`)
+        .or(
+          `and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`
+        )
         .order('created_at', { ascending: true });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching messages:', error);
+        throw error;
+      }
       
       // Mark messages as read
       const unreadMessages = (data as Message[])
