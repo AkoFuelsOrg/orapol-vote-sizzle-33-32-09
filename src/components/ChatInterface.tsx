@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -11,6 +10,8 @@ import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import UserProfileCard from './UserProfileCard';
 import { Message } from '../lib/types';
+import EmojiPicker from './EmojiPicker';
+import GifSelector from './GifSelector';
 
 interface Profile {
   id: string;
@@ -28,9 +29,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const [newMessage, setNewMessage] = useState('');
   const [canMessage, setCanMessage] = useState(false);
   const [sending, setSending] = useState(false);
-  const [showAttachmentOptions, setShowAttachmentOptions] = useState(false);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [attachmentType, setAttachmentType] = useState<'image' | 'video' | 'document' | 'gif' | null>(null);
+  const [attachmentType, setAttachmentType] = useState<'image' | 'video' | 'document' | 'gif' | 'emoji' | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifSelector, setShowGifSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -157,7 +159,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
   
-  const handleFileSelect = (type: 'image' | 'video' | 'document' | 'gif') => {
+  // Handle emoji selection
+  const handleEmojiSelect = (emoji: string) => {
+    setNewMessage(prevMessage => prevMessage + emoji);
+    setShowEmojiPicker(false);
+  };
+  
+  // Handle GIF selection
+  const handleGifSelect = async (gifUrl: string) => {
+    if (!user || !userId || !canMessage) return;
+    
+    setSending(true);
+    
+    try {
+      // Send the GIF as a message
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: user.id,
+          receiver_id: userId,
+          content: '🖼️ Sent a GIF',
+          attachment_url: gifUrl,
+          attachment_type: 'gif',
+        });
+        
+      if (error) throw error;
+      
+      setShowGifSelector(false);
+      refetch();
+      toast.success('GIF sent successfully');
+    } catch (error: any) {
+      toast.error(`Failed to send GIF: ${error.message}`);
+    } finally {
+      setSending(false);
+    }
+  };
+  
+  const handleFileSelect = (type: 'image' | 'video' | 'document') => {
     setAttachmentType(type);
     if (fileInputRef.current) {
       // Set accepted file types based on the selected type
@@ -170,9 +208,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
           break;
         case 'document':
           fileInputRef.current.accept = '.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx';
-          break;
-        case 'gif':
-          fileInputRef.current.accept = 'image/gif';
           break;
       }
       fileInputRef.current.click();
@@ -265,7 +300,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
       setNewMessage('');
       setAttachmentFile(null);
       setAttachmentType(null);
-      setShowAttachmentOptions(false);
       refetch();
     } catch (error: any) {
       toast.error(`Failed to send message: ${error.message}`);
@@ -389,7 +423,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                         }`}
                       >
                         {message.attachment_url && message.attachment_type && (
-                          <div className="mb-2 overflow-hidden">
+                          <div className="mb-2 overflow-hidden rounded-lg">
                             {renderAttachmentPreview(message.attachment_url, message.attachment_type)}
                           </div>
                         )}
@@ -443,24 +477,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
               </Button>
             </div>
             
-            <div className="flex justify-between gap-1">
+            <div className="flex justify-between gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleFileSelect('image')}
+                onClick={() => {
+                  setShowEmojiPicker(true);
+                  setShowGifSelector(false);
+                }}
                 className="flex-1 h-9 px-2 text-xs"
               >
-                <Image className="h-4 w-4 mr-1" /> Image
+                <Smile className="h-4 w-4 mr-1" /> Emoji
               </Button>
               <Button
                 type="button" 
                 variant="outline"
                 size="sm"
-                onClick={() => handleFileSelect('gif')}
+                onClick={() => {
+                  setShowGifSelector(true);
+                  setShowEmojiPicker(false);
+                }}
                 className="flex-1 h-9 px-2 text-xs"
               >
-                <Smile className="h-4 w-4 mr-1" /> GIF
+                <Image className="h-4 w-4 mr-1" /> GIF
               </Button>
               <Button
                 type="button"
@@ -481,6 +521,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 <Film className="h-4 w-4 mr-1" /> Video
               </Button>
             </div>
+            
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-32 left-4 z-10">
+                <EmojiPicker 
+                  onSelectEmoji={handleEmojiSelect} 
+                  onClose={() => setShowEmojiPicker(false)} 
+                />
+              </div>
+            )}
+            
+            {/* GIF Selector */}
+            {showGifSelector && (
+              <div className="absolute bottom-32 left-4 z-10">
+                <GifSelector 
+                  onSelectGif={handleGifSelect} 
+                  onClose={() => setShowGifSelector(false)} 
+                />
+              </div>
+            )}
             
             {/* Hidden file input */}
             <input

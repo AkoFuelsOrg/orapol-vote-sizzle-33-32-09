@@ -48,5 +48,5 @@ export interface Message {
   read: boolean;
   created_at: string;
   attachment_url?: string;
-  attachment_type?: 'image' | 'video' | 'document' | 'gif';
+  attachment_type?: 'image' | 'video' | 'document' | 'gif' | 'emoji';
 }
