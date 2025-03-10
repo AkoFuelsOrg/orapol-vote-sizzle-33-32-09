@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import UserProfileCard from './UserProfileCard';
@@ -13,24 +12,6 @@ interface UserData {
   id: string;
   username: string | null;
   avatar_url: string | null;
-}
-
-interface FollowerData {
-  follower_id: string;
-  profiles: {
-    id: string;
-    username: string | null;
-    avatar_url: string | null;
-  };
-}
-
-interface FollowingData {
-  following_id: string;
-  profiles: {
-    id: string;
-    username: string | null;
-    avatar_url: string | null;
-  };
 }
 
 const UserList: React.FC<UserListProps> = ({ userId, type }) => {
@@ -51,8 +32,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         const { data, error } = await supabase
           .from('follows')
           .select(`
-            follower_id,
-            profiles: profiles!follows_follower_id_fkey (
+            profiles (
               id,
               username,
               avatar_url
@@ -63,7 +43,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         if (error) throw error;
         
         if (data) {
-          const userData: UserData[] = data.map((item: FollowerData) => ({
+          const userData: UserData[] = data.map(item => ({
             id: item.profiles.id,
             username: item.profiles.username,
             avatar_url: item.profiles.avatar_url
@@ -74,8 +54,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         const { data, error } = await supabase
           .from('follows')
           .select(`
-            following_id,
-            profiles: profiles!follows_following_id_fkey (
+            profiles!follows_following_id_fkey (
               id,
               username,
               avatar_url
@@ -86,7 +65,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
         if (error) throw error;
         
         if (data) {
-          const userData: UserData[] = data.map((item: FollowingData) => ({
+          const userData: UserData[] = data.map(item => ({
             id: item.profiles.id,
             username: item.profiles.username,
             avatar_url: item.profiles.avatar_url
