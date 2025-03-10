@@ -5,6 +5,11 @@ import { supabase } from '../integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 
+interface ProfileUpdateData {
+  username?: string;
+  file?: File;
+}
+
 interface SupabaseContextType {
   session: Session | null;
   user: User | null;
@@ -12,6 +17,7 @@ interface SupabaseContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateProfile: (data: ProfileUpdateData) => Promise<void>;
   loading: boolean;
 }
 
@@ -78,6 +84,60 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const updateProfile = async (data: ProfileUpdateData) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    setLoading(true);
+    try {
+      let avatarUrl = profile?.avatar_url;
+      
+      // If there's a file, upload it first
+      if (data.file) {
+        const fileExt = data.file.name.split('.').pop();
+        const filePath = `${user.id}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        // Upload the file to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, data.file, { upsert: true });
+          
+        if (uploadError) throw uploadError;
+        
+        // Get the public URL
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        avatarUrl = urlData.publicUrl;
+      }
+      
+      // Update the profile in the database
+      const updates = {
+        id: user.id,
+        updated_at: new Date().toISOString(),
+        ...(data.username && { username: data.username }),
+        ...(avatarUrl && { avatar_url: avatarUrl }),
+      };
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+        
+      if (updateError) throw updateError;
+      
+      // Refresh the profile
+      fetchProfile(user.id);
+      
+    } catch (error: any) {
+      toast.error(error.message || 'Error updating profile');
+      console.error('Error updating profile:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -138,6 +198,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         signUp,
         signIn,
         signOut,
+        updateProfile,
         loading,
       }}
     >
