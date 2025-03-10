@@ -221,7 +221,7 @@ const Profile: React.FC = () => {
             <div className="relative group">
               <div 
                 onClick={handleImageClick}
-                className="w-24 h-24 rounded-full border-2 border-border overflow-hidden cursor-pointer group-hover:opacity-80 transition-opacity relative"
+                className="w-24 h-24 rounded-full border-2 border-red-500 overflow-hidden cursor-pointer group-hover:opacity-80 transition-opacity relative"
               >
                 {uploading ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/50">

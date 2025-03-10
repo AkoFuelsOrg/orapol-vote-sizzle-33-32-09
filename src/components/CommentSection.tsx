@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Heart, Send, Loader2 } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
@@ -217,7 +218,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
             <img 
               src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
               alt="Your avatar" 
-              className="w-8 h-8 rounded-full border border-border/50 object-cover shrink-0"
+              className="w-8 h-8 rounded-full border-2 border-red-500 object-cover shrink-0"
             />
             <div className="flex-1 relative">
               <input
@@ -265,7 +266,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
               <img 
                 src={comment.author.avatar || `https://i.pravatar.cc/150?u=${comment.author.id}`} 
                 alt={comment.author.name} 
-                className="w-8 h-8 rounded-full border border-border/50 object-cover shrink-0 mt-1"
+                className="w-8 h-8 rounded-full border-2 border-red-500 object-cover shrink-0 mt-1"
               />
               <div className="flex-1">
                 <div className="bg-secondary/30 rounded-lg p-3">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -69,7 +68,6 @@ const UserProfile: React.FC = () => {
         
       if (pollsError) throw pollsError;
       
-      // Convert database polls to app Poll type
       let formattedPolls: Poll[] = [];
       
       if (pollsData && pollsData.length > 0) {
@@ -184,7 +182,6 @@ const UserProfile: React.FC = () => {
     }
   };
   
-  // Loading state
   if (isLoadingProfile) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -196,7 +193,6 @@ const UserProfile: React.FC = () => {
     );
   }
   
-  // Profile not found
   if (!profile) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -230,7 +226,7 @@ const UserProfile: React.FC = () => {
         
         <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in">
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 rounded-full border-2 border-border overflow-hidden">
+            <div className="w-24 h-24 rounded-full border-2 border-red-500 overflow-hidden">
               <img 
                 src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
                 alt={profile.username || 'User'} 

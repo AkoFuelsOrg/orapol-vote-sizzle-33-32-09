@@ -63,7 +63,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         <img 
           src={avatarUrl || `https://i.pravatar.cc/150?u=${userId}`} 
           alt={username} 
-          className="w-8 h-8 rounded-full object-cover"
+          className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
         />
         <span className="font-medium">{username || 'Anonymous'}</span>
       </Link>
@@ -76,7 +76,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         <img 
           src={avatarUrl || `https://i.pravatar.cc/150?u=${userId}`} 
           alt={username} 
-          className="w-10 h-10 rounded-full object-cover"
+          className="w-10 h-10 rounded-full border-2 border-red-500 object-cover"
         />
         <div>
           <p className="font-medium">{username || 'Anonymous'}</p>
