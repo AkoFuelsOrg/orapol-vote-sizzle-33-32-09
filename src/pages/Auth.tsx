@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import SplashScreen from '../components/SplashScreen';
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -30,11 +30,7 @@ const Auth: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <SplashScreen message="Checking authentication..." />;
   }
 
   return (

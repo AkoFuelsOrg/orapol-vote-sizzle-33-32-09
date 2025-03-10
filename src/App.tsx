@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,6 +8,7 @@ import { PollProvider } from "./context/PollContext";
 import { SupabaseProvider } from "./context/SupabaseContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserProfile from "./pages/UserProfile";
+import AppLoader from "./components/AppLoader";
 
 import Index from "./pages/Index";
 import CreatePoll from "./pages/CreatePoll";
@@ -25,29 +27,31 @@ const App = () => (
           <PollProvider>
             <Toaster />
             <Sonner position="top-center" closeButton={true} />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route
-                path="/create"
-                element={
-                  <ProtectedRoute>
-                    <CreatePoll />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/poll/:id" element={<PollDetail />} />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/user/:id" element={<UserProfile />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AppLoader>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route
+                  path="/create"
+                  element={
+                    <ProtectedRoute>
+                      <CreatePoll />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/poll/:id" element={<PollDetail />} />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/user/:id" element={<UserProfile />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLoader>
           </PollProvider>
         </SupabaseProvider>
       </BrowserRouter>
