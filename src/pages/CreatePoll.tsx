@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, ImagePlus, Loader2, Upload } from 'lucide-react';
@@ -179,9 +180,10 @@ const CreatePoll: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 animate-scale-in">
           <form onSubmit={handleSubmit} className="space-y-5">
             {isDesktop ? (
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-5">
-                  <div>
+              <div className="space-y-6">
+                <div className="flex gap-6">
+                  {/* Question field - takes up 2/3 of the space */}
+                  <div className="w-2/3">
                     <label htmlFor="question" className="block text-sm font-medium mb-2">
                       Your Question
                     </label>
@@ -197,17 +199,18 @@ const CreatePoll: React.FC = () => {
                     />
                   </div>
                   
-                  <div>
+                  {/* Poll image upload - takes up 1/3 of the space */}
+                  <div className="w-1/3">
                     <label className="block text-sm font-medium mb-2">
                       Add Poll Image (Optional)
                     </label>
                     
                     {imageUrl ? (
-                      <div className="mt-2 relative rounded-lg overflow-hidden border border-border">
+                      <div className="relative rounded-lg overflow-hidden border border-border h-[106px]">
                         <img 
                           src={imageUrl} 
                           alt="Poll image preview" 
-                          className="w-full h-48 object-cover"
+                          className="w-full h-full object-cover"
                           onError={() => {
                             toast.error("Invalid image");
                             setImageUrl('');
@@ -222,7 +225,7 @@ const CreatePoll: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex items-center justify-center h-48 rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
+                      <label className="flex items-center justify-center h-[106px] rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
                         <input
                           type="file"
                           accept="image/*"
@@ -236,41 +239,25 @@ const CreatePoll: React.FC = () => {
                         />
                         <div className="text-center text-muted-foreground">
                           {uploadingPollImage ? (
-                            <Loader2 className="mx-auto h-10 w-10 animate-spin" />
+                            <Loader2 className="mx-auto h-8 w-8 animate-spin" />
                           ) : (
                             <>
-                              <Upload className="mx-auto h-10 w-10 mb-2" />
-                              <p>Click to upload poll image</p>
+                              <Upload className="mx-auto h-8 w-8 mb-1" />
+                              <p className="text-sm">Click to upload poll image</p>
                             </>
                           )}
                         </div>
                       </label>
                     )}
                   </div>
-                  
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 size={20} className="animate-spin mr-2" />
-                          Creating Poll...
-                        </>
-                      ) : (
-                        'Create Poll'
-                      )}
-                    </button>
-                  </div>
                 </div>
                 
+                {/* Options section - full width */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Options
                   </label>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {options.map((option, index) => (
                       <div key={index} className="border border-border rounded-lg p-3">
                         <div className="flex gap-2 mb-2">
@@ -344,13 +331,32 @@ const CreatePoll: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleAddOption}
-                        className="w-full p-3 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
+                        className="h-full min-h-[156px] p-3 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
                       >
-                        <Plus size={18} className="mr-1.5" />
-                        <span>Add Option</span>
+                        <div className="text-center">
+                          <Plus size={24} className="mx-auto mb-2" />
+                          <span>Add Option</span>
+                        </div>
                       </button>
                     )}
                   </div>
+                </div>
+                
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin mr-2" />
+                        Creating Poll...
+                      </>
+                    ) : (
+                      'Create Poll'
+                    )}
+                  </button>
                 </div>
               </div>
             ) : (
