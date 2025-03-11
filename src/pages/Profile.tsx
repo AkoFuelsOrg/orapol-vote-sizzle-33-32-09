@@ -1,21 +1,28 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
 import Header from '../components/Header';
 import { useSupabase } from '../context/SupabaseContext';
-import { Pencil, Upload, Loader2, UserCircle, Users } from 'lucide-react';
+import { Pencil, Upload, Loader2, UserCircle, Users, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import UserList from '../components/UserList';
 import { supabase } from '../integrations/supabase/client';
 import { Poll, PollOption } from '../lib/types';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
-  const { user, profile, updateProfile, loading: profileLoading, getFollowCounts } = useSupabase();
+  const { user, profile, updateProfile, loading: profileLoading, getFollowCounts, updatePassword } = useSupabase();
   
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [username, setUsername] = useState(profile?.username || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [uploading, setUploading] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [userPolls, setUserPolls] = useState<Poll[]>([]);
@@ -166,6 +173,35 @@ const Profile: React.FC = () => {
     }
   };
   
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword || !currentPassword) {
+      toast.error('All password fields are required');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error('New password should be at least 6 characters');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    try {
+      await updatePassword(currentPassword, newPassword);
+      setIsChangingPassword(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.success('Password updated successfully');
+    } catch (error: any) {
+      toast.error('Failed to update password');
+      console.error('Error updating password:', error);
+    }
+  };
+  
   const handleImageClick = () => {
     fileInputRef.current?.click();
   };
@@ -283,6 +319,67 @@ const Profile: React.FC = () => {
                 </div>
               )}
               <p className="text-muted-foreground mt-1">{user?.email}</p>
+              
+              {!isChangingPassword ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsChangingPassword(true)} 
+                  className="mt-2"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Change Password
+                </Button>
+              ) : (
+                <div className="mt-4 space-y-3 max-w-sm mx-auto">
+                  <h3 className="font-medium text-left">Change Password</h3>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Current Password"
+                    />
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New Password"
+                    />
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm New Password"
+                    />
+                    <div className="flex justify-end space-x-2 pt-2">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setCurrentPassword('');
+                          setNewPassword('');
+                          setConfirmPassword('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={handleChangePassword}
+                        disabled={profileLoading}
+                      >
+                        {profileLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Update Password'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           

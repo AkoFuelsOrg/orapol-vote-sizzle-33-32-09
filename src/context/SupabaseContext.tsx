@@ -17,6 +17,7 @@ interface SupabaseContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: ProfileUpdateData) => Promise<void>;
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   loading: boolean;
   followUser: (targetUserId: string) => Promise<void>;
   unfollowUser: (targetUserId: string) => Promise<void>;
@@ -129,6 +130,38 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error: any) {
       toast.error(error.message || 'Error updating profile');
       console.error('Error updating profile:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) throw new Error('User not authenticated');
+    
+    setLoading(true);
+    try {
+      // First verify the current password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: currentPassword,
+      });
+      
+      if (signInError) {
+        throw new Error('Current password is incorrect');
+      }
+      
+      // Then update to the new password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Password updated successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Error updating password');
+      console.error('Error updating password:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -299,6 +332,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         signIn,
         signOut,
         updateProfile,
+        updatePassword,
         loading,
         followUser,
         unfollowUser,
