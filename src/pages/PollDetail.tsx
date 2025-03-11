@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -119,7 +120,7 @@ const PollDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="pt-20 px-4 max-w-lg mx-auto flex justify-center">
+        <main className="pt-20 px-4 mx-auto flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
       </div>
@@ -144,7 +145,7 @@ const PollDetail: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="pt-20 px-4 max-w-lg mx-auto pb-20">
+      <main className="pt-20 px-4 mx-auto pb-20 w-full max-w-4xl">
         <div className="mb-4 animate-fade-in">
           <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={18} className="mr-1" />
