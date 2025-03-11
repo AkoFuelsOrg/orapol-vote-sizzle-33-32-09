@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2, ChevronDown, ChevronUp, X, Maximize } from 'lucide-react';
@@ -186,10 +187,8 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           )}
           
           {poll.options.slice(0, 2).map((option) => (
-            <button
+            <div
               key={option.id}
-              onClick={(e) => handleVote(option.id, e)}
-              disabled={!!poll.userVoted || isVoting || !user}
               className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
                 ${poll.userVoted === option.id 
                   ? 'border-primary bg-primary/5' 
@@ -200,21 +199,26 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
               <div className="flex items-center space-x-3">
                 {option.imageUrl && (
                   <div 
-                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
-                    onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
+                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group z-20"
                   >
                     <img 
                       src={option.imageUrl} 
                       alt={option.text} 
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <div 
+                      className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+                      onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
+                    >
                       <Maximize size={16} className="text-white" />
                     </div>
                   </div>
                 )}
                 
-                <div className="flex justify-between items-center relative z-10 flex-1">
+                <div 
+                  className="flex justify-between items-center relative z-10 flex-1"
+                  onClick={(e) => handleVote(option.id, e)}
+                >
                   <span className="text-sm font-medium">{option.text}</span>
                   <span className="text-xs font-medium">
                     {calculatePercentage(option.votes)}%
@@ -230,16 +234,14 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
                 } transition-all duration-300`}
                 style={{ width: `${calculatePercentage(option.votes)}%` }}
               />
-            </button>
+            </div>
           ))}
         </div>
         
         <CollapsibleContent className="space-y-2.5">
           {poll.options.slice(2).map((option) => (
-            <button
+            <div
               key={option.id}
-              onClick={(e) => handleVote(option.id, e)}
-              disabled={!!poll.userVoted || isVoting || !user}
               className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
                 ${poll.userVoted === option.id 
                   ? 'border-primary bg-primary/5' 
@@ -250,21 +252,26 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
               <div className="flex items-center space-x-3">
                 {option.imageUrl && (
                   <div 
-                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
-                    onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
+                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group z-20"
                   >
                     <img 
                       src={option.imageUrl} 
                       alt={option.text} 
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <div 
+                      className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+                      onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
+                    >
                       <Maximize size={16} className="text-white" />
                     </div>
                   </div>
                 )}
                 
-                <div className="flex justify-between items-center relative z-10 flex-1">
+                <div 
+                  className="flex justify-between items-center relative z-10 flex-1"
+                  onClick={(e) => handleVote(option.id, e)}
+                >
                   <span className="text-sm font-medium">{option.text}</span>
                   <span className="text-xs font-medium">
                     {calculatePercentage(option.votes)}%
@@ -280,7 +287,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
                 } transition-all duration-300`}
                 style={{ width: `${calculatePercentage(option.votes)}%` }}
               />
-            </button>
+            </div>
           ))}
         </CollapsibleContent>
         
