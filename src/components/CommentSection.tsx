@@ -46,8 +46,9 @@ const CommentSection: React.FC = () => {
   useEffect(() => {
     if (pollId) {
       fetchPollCommentCount();
+      loadComments();
     }
-  }, [pollId]);
+  }, [pollId, user]);
 
   const fetchPollCommentCount = async () => {
     try {
