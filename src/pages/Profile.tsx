@@ -35,7 +35,6 @@ const Profile: React.FC = () => {
     setAnimateItems(true);
   }, [polls]);
   
-  // Function to convert JSON options from Supabase to PollOption type
   const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
       try {
@@ -49,7 +48,6 @@ const Profile: React.FC = () => {
     if (Array.isArray(jsonOptions)) {
       return jsonOptions.map(opt => {
         if (typeof opt === 'object' && opt !== null) {
-          // Use type assertion with optional chaining to safely access properties
           const option = opt as Record<string, unknown>;
           return {
             id: String(option?.id || ''),
@@ -90,7 +88,6 @@ const Profile: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch polls with author information
       const { data, error } = await supabase
         .from('polls')
         .select(`
@@ -110,7 +107,6 @@ const Profile: React.FC = () => {
       
       if (error) throw error;
       
-      // Fetch user votes for these polls
       const { data: votesData, error: votesError } = await supabase
         .from('poll_votes')
         .select('poll_id, option_id')
@@ -119,13 +115,11 @@ const Profile: React.FC = () => {
       
       if (votesError) throw votesError;
       
-      // Create a map of poll_id to option_id for easy lookup
       const votedOptions: Record<string, string> = votesData.reduce((acc, vote) => {
         acc[vote.poll_id] = vote.option_id;
         return acc;
       }, {} as Record<string, string>);
       
-      // Format polls for our application
       const userPolls = data.map((poll) => ({
         id: poll.id,
         question: poll.question,
@@ -157,9 +151,8 @@ const Profile: React.FC = () => {
     
     try {
       if (isFollowing) {
-        // Unfollow user
         const { error: deleteError } = await supabase
-          .from('followers')
+          .from('follows')
           .delete()
           .eq('follower_id', user.id)
           .eq('following_id', profile.id);
@@ -169,9 +162,8 @@ const Profile: React.FC = () => {
         setIsFollowing(false);
         toast.success(`Unfollowed ${profile.username}`);
       } else {
-        // Follow user
         const { error: insertError } = await supabase
-          .from('followers')
+          .from('follows')
           .insert({
             follower_id: user.id,
             following_id: profile.id
@@ -193,7 +185,7 @@ const Profile: React.FC = () => {
     
     try {
       const { data, error } = await supabase
-        .from('followers')
+        .from('follows')
         .select('*')
         .eq('follower_id', user.id)
         .eq('following_id', user.id);

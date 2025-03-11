@@ -1,10 +1,8 @@
-
 import React, { createContext, useContext, useState } from 'react';
 import { Poll, Comment, User, PollOption } from '../lib/types';
 import { initialPolls, initialComments, currentUser } from '../lib/data';
 import { toast } from "sonner";
 import { supabase } from '../integrations/supabase/client';
-import { v4 as uuidv4 } from 'uuid';
 
 interface PollContextType {
   polls: Poll[];
@@ -33,10 +31,8 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [polls, setPolls] = useState<Poll[]>(initialPolls);
   const [comments, setComments] = useState<Comment[]>(initialComments);
 
-  // Generate a simple ID for new items
   const generateId = () => Math.random().toString(36).substring(2, 9);
 
-  // Add a new poll
   const addPoll = (question: string, optionTexts: string[], image?: string, optionImages?: (string | null)[]) => {
     if (!question || optionTexts.length < 2) {
       toast.error("Please provide a question and at least two options");
@@ -58,26 +54,23 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       totalVotes: 0,
       commentCount: 0,
-      image: image || undefined, // Add the image URL if provided
-      views: 0, // Initialize views to 0
+      image: image || undefined,
+      views: 0,
     };
 
     setPolls([newPoll, ...polls]);
     toast.success("Poll created successfully");
   };
 
-  // Vote on a poll
   const votePoll = (pollId: string, optionId: string) => {
     setPolls(
       polls.map((poll) => {
         if (poll.id === pollId) {
-          // Check if user has already voted
           if (poll.userVoted) {
             toast.error("You've already voted on this poll");
             return poll;
           }
 
-          // Update the option votes
           const updatedOptions = poll.options.map((option) => {
             if (option.id === optionId) {
               return { ...option, votes: option.votes + 1 };
@@ -99,7 +92,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Add a comment to a poll
   const addComment = (pollId: string, content: string) => {
     if (!content.trim()) {
       toast.error("Comment cannot be empty");
@@ -117,7 +109,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setComments([...comments, newComment]);
 
-    // Update comment count on the poll
     setPolls(
       polls.map((poll) => {
         if (poll.id === pollId) {
@@ -133,7 +124,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Comment added");
   };
 
-  // Like a comment
   const likeComment = (commentId: string) => {
     setComments(
       comments.map((comment) => {
@@ -148,20 +138,16 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Get a poll by ID
   const getPollById = (id: string) => {
     return polls.find((poll) => poll.id === id);
   };
 
-  // Get comments for a specific poll
   const getCommentsForPoll = (pollId: string) => {
     return comments.filter((comment) => comment.pollId === pollId);
   };
 
-  // Record a view for a poll
   const recordPollView = async (pollId: string) => {
     try {
-      // Update local state first for immediate feedback
       setPolls(
         polls.map((poll) => {
           if (poll.id === pollId) {
@@ -174,25 +160,24 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       );
       
-      // Record the view in Supabase
       const { error } = await supabase
         .from('poll_views')
         .insert({
           poll_id: pollId,
           user_id: supabase.auth.getUser() ? (await supabase.auth.getUser()).data.user?.id : null,
-          ip_address: null // We don't track IP addresses on the client side for privacy
+          ip_address: null
         })
         .select('id')
         .single();
       
-      if (error && error.code !== '23505') { // Ignore unique constraint violations (user already viewed)
+      if (error && error.code !== '23505') {
         console.error('Error recording poll view:', error);
       }
       
-      // Update the view count in the polls table using the RPC function
-      await supabase.rpc('increment_poll_views', {
-        poll_id: pollId
-      });
+      await supabase
+        .from('polls')
+        .update({ views: supabase.rpc('get_poll_views_count', { poll_id_param: pollId }) })
+        .eq('id', pollId);
       
     } catch (error) {
       console.error('Error recording poll view:', error);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -7,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
+import { supabase } from '../integrations/supabase/client';
 
 const VotedPolls: React.FC = () => {
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
@@ -54,7 +56,7 @@ const VotedPolls: React.FC = () => {
     try {
       setLoading(true);
 
-      const { data, error } = await useSupabase().supabase
+      const { data, error } = await supabase
         .from('poll_votes')
         .select(`
           option_id,
