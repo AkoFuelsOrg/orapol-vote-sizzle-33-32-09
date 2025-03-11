@@ -55,9 +55,18 @@ const Auth: React.FC = () => {
   return (
     <div className={`min-h-screen flex ${isDesktop ? 'bg-red-500' : 'bg-gray-50'} p-4`}>
       {isDesktop && (
-        <div className="flex-1 flex flex-col justify-center items-center">
-          <h1 className="text-5xl font-bold text-white mb-4">Orapol</h1>
-          <p className="text-xl text-white/90">The World's Opinion Platform</p>
+        <div className="flex-1 flex flex-col justify-center items-center relative">
+          <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-90">
+            <img 
+              src="/lovable-uploads/30799e52-a9a3-451a-9bd8-805303d1e217.png" 
+              alt="Voting illustration" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="z-10 text-center">
+            <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-md">Orapol</h1>
+            <p className="text-xl text-white/90 drop-shadow-md">The World's Opinion Platform</p>
+          </div>
         </div>
       )}
 
