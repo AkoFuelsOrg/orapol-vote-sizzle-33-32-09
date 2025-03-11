@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { MessageCircle, Loader2, ChevronDown, ChevronUp, X, Maximize } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -19,6 +18,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   const [isVoting, setIsVoting] = React.useState(false);
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isImageExpanded, setIsImageExpanded] = React.useState(false);
+  const [expandedOptionImage, setExpandedOptionImage] = React.useState<string | null>(null);
   
   const handleVote = async (optionId: string, e: React.MouseEvent) => {
     if (preview || isVoting) return;
@@ -107,6 +107,13 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     console.log("Image double clicked, expanded:", !isImageExpanded);
   };
 
+  const handleOptionImageDoubleClick = (e: React.MouseEvent, imageUrl: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpandedOptionImage(imageUrl);
+    console.log("Option image double clicked, expanded:", imageUrl);
+  };
+
   const cardContent = (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -192,12 +199,18 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
             >
               <div className="flex items-center space-x-3">
                 {option.imageUrl && (
-                  <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden">
+                  <div 
+                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
+                    onDoubleClick={(e) => handleOptionImageDoubleClick(e, option.imageUrl!)}
+                  >
                     <img 
                       src={option.imageUrl} 
                       alt={option.text} 
                       className="w-full h-full object-cover"
                     />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <Maximize size={16} className="text-white" />
+                    </div>
                   </div>
                 )}
                 
@@ -221,51 +234,55 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           ))}
         </div>
         
-        {poll.options.length > 2 && (
-          <CollapsibleContent className="space-y-2.5">
-            {poll.options.slice(2).map((option) => (
-              <button
-                key={option.id}
-                onClick={(e) => handleVote(option.id, e)}
-                disabled={!!poll.userVoted || isVoting || !user}
-                className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
-                  ${poll.userVoted === option.id 
-                    ? 'border-primary bg-primary/5' 
-                    : poll.userVoted 
-                      ? 'border-border/50 hover:border-border' 
-                      : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
-              >
-                <div className="flex items-center space-x-3">
-                  {option.imageUrl && (
-                    <div className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden">
-                      <img 
-                        src={option.imageUrl} 
-                        alt={option.text} 
-                        className="w-full h-full object-cover"
-                      />
+        <CollapsibleContent className="space-y-2.5">
+          {poll.options.slice(2).map((option) => (
+            <button
+              key={option.id}
+              onClick={(e) => handleVote(option.id, e)}
+              disabled={!!poll.userVoted || isVoting || !user}
+              className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
+                ${poll.userVoted === option.id 
+                  ? 'border-primary bg-primary/5' 
+                  : poll.userVoted 
+                    ? 'border-border/50 hover:border-border' 
+                    : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
+            >
+              <div className="flex items-center space-x-3">
+                {option.imageUrl && (
+                  <div 
+                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
+                    onDoubleClick={(e) => handleOptionImageDoubleClick(e, option.imageUrl!)}
+                  >
+                    <img 
+                      src={option.imageUrl} 
+                      alt={option.text} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <Maximize size={16} className="text-white" />
                     </div>
-                  )}
-                  
-                  <div className="flex justify-between items-center relative z-10 flex-1">
-                    <span className="text-sm font-medium">{option.text}</span>
-                    <span className="text-xs font-medium">
-                      {calculatePercentage(option.votes)}%
-                    </span>
                   </div>
-                </div>
+                )}
                 
-                <div 
-                  className={`absolute top-0 left-0 h-full rounded-lg ${
-                    poll.userVoted === option.id 
-                      ? 'bg-primary/10' 
-                      : 'bg-secondary/60'
-                  } transition-all duration-300`}
-                  style={{ width: `${calculatePercentage(option.votes)}%` }}
-                />
-              </button>
-            ))}
-          </CollapsibleContent>
-        )}
+                <div className="flex justify-between items-center relative z-10 flex-1">
+                  <span className="text-sm font-medium">{option.text}</span>
+                  <span className="text-xs font-medium">
+                    {calculatePercentage(option.votes)}%
+                  </span>
+                </div>
+              </div>
+              
+              <div 
+                className={`absolute top-0 left-0 h-full rounded-lg ${
+                  poll.userVoted === option.id 
+                    ? 'bg-primary/10' 
+                    : 'bg-secondary/60'
+                } transition-all duration-300`}
+                style={{ width: `${calculatePercentage(option.votes)}%` }}
+              />
+            </button>
+          ))}
+        </CollapsibleContent>
         
         {poll.options.length > 2 && (
           <CollapsibleTrigger asChild>
@@ -280,6 +297,25 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           </CollapsibleTrigger>
         )}
       </Collapsible>
+      
+      {expandedOptionImage && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setExpandedOptionImage(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 text-white bg-black/40 p-2 rounded-full hover:bg-black/60"
+            onClick={() => setExpandedOptionImage(null)}
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={expandedOptionImage} 
+            alt="Poll option" 
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+          />
+        </div>
+      )}
       
       <div className="flex items-center">
         <MessageCircle size={15} className="mr-1 text-muted-foreground" />
