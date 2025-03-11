@@ -21,6 +21,7 @@ import { Input } from './ui/input';
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import Fuse from 'fuse.js';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -29,9 +30,12 @@ const Sidebar: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<{users: any[], polls: any[]}>({users: [], polls: []});
   const [searchLoading, setSearchLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Handle search input change
   const handleSearch = async (search: string) => {
+    setSearchTerm(search);
+    
     if (!search || search.length < 2) {
       setSearchResults({users: [], polls: []});
       return;
@@ -40,27 +44,44 @@ const Sidebar: React.FC = () => {
     setSearchLoading(true);
     
     try {
-      // Search for users
+      // Fetch data for fuzzy search
       const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
-        .ilike('username', `%${search}%`)
-        .limit(5);
+        .limit(20);
       
       if (usersError) throw usersError;
       
-      // Search for polls
+      // Fetch polls for fuzzy search
       const { data: polls, error: pollsError } = await supabase
         .from('polls')
         .select('id, question')
-        .ilike('question', `%${search}%`)
-        .limit(5);
+        .limit(20);
       
       if (pollsError) throw pollsError;
       
+      // Configure Fuse options for fuzzy search with min matching threshold of 0.4 (60% match)
+      const userFuseOptions = {
+        keys: ['username'],
+        threshold: 0.4, // Lower threshold means higher match requirement (0 is exact, 1 is match anything)
+        includeScore: true
+      };
+      
+      const pollFuseOptions = {
+        keys: ['question'],
+        threshold: 0.4,
+        includeScore: true
+      };
+      
+      const userFuse = new Fuse(users || [], userFuseOptions);
+      const pollFuse = new Fuse(polls || [], pollFuseOptions);
+      
+      const userResults = userFuse.search(search).map(result => result.item);
+      const pollResults = pollFuse.search(search).map(result => result.item);
+      
       setSearchResults({
-        users: users || [],
-        polls: polls || []
+        users: userResults,
+        polls: pollResults
       });
     } catch (error) {
       console.error("Search error:", error);
@@ -171,6 +192,7 @@ const Sidebar: React.FC = () => {
           placeholder="Search for users or polls..."
           onValueChange={handleSearch}
           className="border-none outline-none focus:outline-none focus:ring-0"
+          value={searchTerm}
         />
         <CommandList>
           {searchLoading && (
@@ -179,12 +201,12 @@ const Sidebar: React.FC = () => {
             </div>
           )}
           
-          {!searchLoading && searchResults.users.length === 0 && searchResults.polls.length === 0 && (
-            <CommandEmpty>No results found.</CommandEmpty>
+          {!searchLoading && searchResults.users.length === 0 && searchResults.polls.length === 0 && searchTerm.length >= 2 && (
+            <CommandEmpty>No results found matching "{searchTerm}"</CommandEmpty>
           )}
           
           {searchResults.users.length > 0 && (
-            <CommandGroup heading="Users">
+            <CommandGroup heading={`Users matching "${searchTerm}" (${searchResults.users.length})`}>
               {searchResults.users.map((user) => (
                 <CommandItem
                   key={user.id}
@@ -206,7 +228,7 @@ const Sidebar: React.FC = () => {
           )}
           
           {searchResults.polls.length > 0 && (
-            <CommandGroup heading="Polls">
+            <CommandGroup heading={`Polls matching "${searchTerm}" (${searchResults.polls.length})`}>
               {searchResults.polls.map((poll) => (
                 <CommandItem
                   key={poll.id}
