@@ -31,7 +31,7 @@ export interface Comment {
   content: string;
   createdAt: string;
   likes: number;
-  parentId?: string; // Parent comment ID for replies
+  // parentId removed as it doesn't exist in the database
   replyCount?: number; // Number of replies to this comment
 }
 
