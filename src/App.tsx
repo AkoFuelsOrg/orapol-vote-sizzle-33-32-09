@@ -38,6 +38,7 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const showRightChat = isDesktop && !location.pathname.startsWith('/messages');
   
   // Check if current route is profile, user profile, or poll detail page
+  // Profile page is always treated as a full-width page
   const isFullWidthPage = 
     location.pathname === '/profile' || 
     location.pathname.startsWith('/user/') || 
@@ -50,8 +51,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
         {isDesktop && <Sidebar />}
         {!isDesktop && <Header />}
         <div className={`flex-1 ${isDesktop ? 'ml-64' : ''} ${showRightChat ? 'mr-80' : ''}`}>
-          <div className={`w-full mx-auto px-4 py-6 flex ${isDesktop ? 'mt-16' : ''} ${!isFullWidthPage && !showRightChat ? 'max-w-3xl' : ''}`}>
-            <main className="flex-1">{children}</main>
+          <div className={`w-full mx-auto px-4 py-6 ${isDesktop ? 'mt-16' : ''} ${!isFullWidthPage && !showRightChat ? 'max-w-3xl' : ''}`}>
+            <main className="flex-1 w-full">{children}</main>
           </div>
         </div>
         {showRightChat && <RightChatColumn />}

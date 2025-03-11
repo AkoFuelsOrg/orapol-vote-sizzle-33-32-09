@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -43,7 +42,6 @@ const Profile: React.FC = () => {
     
     setIsLoadingPolls(true);
     try {
-      // Fetch user's created polls
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select(`
@@ -61,7 +59,6 @@ const Profile: React.FC = () => {
         
       if (pollsError) throw pollsError;
       
-      // Fetch polls the user has voted on
       const { data: votesData, error: votesError } = await supabase
         .from('poll_votes')
         .select('poll_id, option_id')
@@ -69,10 +66,8 @@ const Profile: React.FC = () => {
         
       if (votesError) throw votesError;
       
-      // Get the list of poll IDs the user has voted on
       const votedPollIds = votesData?.map(vote => vote.poll_id) || [];
       
-      // Fetch the actual poll data for voted polls
       const { data: votedPollsData, error: votedPollsError } = await supabase
         .from('polls')
         .select(`
@@ -90,7 +85,6 @@ const Profile: React.FC = () => {
         
       if (votedPollsError && votedPollIds.length > 0) throw votedPollsError;
       
-      // Process polls data
       setUserPolls(formatPollsData(pollsData || [], votesData || []));
       setVotedPolls(formatPollsData(votedPollsData || [], votesData || []));
     } catch (error) {
@@ -104,7 +98,6 @@ const Profile: React.FC = () => {
   const formatPollsData = (pollsData: any[], votesData: any[]): Poll[] => {
     if (!pollsData || pollsData.length === 0) return [];
     
-    // Create a map of poll_id -> option_id for quick lookup
     const userVotes: Record<string, string> = {};
     votesData.forEach(vote => {
       userVotes[vote.poll_id] = vote.option_id;
@@ -184,19 +177,16 @@ const Profile: React.FC = () => {
       setUploading(true);
       const file = e.target.files[0];
       
-      // Make sure the file is an image
       if (!file.type.startsWith('image/')) {
         toast.error('Please upload an image file');
         return;
       }
       
-      // File size validation (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
       
-      // Upload the image and update profile
       await updateProfile({ file });
       toast.success('Profile image updated successfully');
     } catch (error: any) {
@@ -204,7 +194,6 @@ const Profile: React.FC = () => {
       console.error('Error uploading image:', error);
     } finally {
       setUploading(false);
-      // Clear the file input
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -212,11 +201,11 @@ const Profile: React.FC = () => {
   const avatarUrl = profile?.avatar_url || (user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : '');
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 w-full">
       <Header />
       
-      <main className="pt-20 px-4 max-w-lg mx-auto pb-20">
-        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in">
+      <main className="pt-20 px-4 max-w-4xl mx-auto pb-20 w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in w-full">
           <div className="flex flex-col items-center">
             <div className="relative group">
               <div 
