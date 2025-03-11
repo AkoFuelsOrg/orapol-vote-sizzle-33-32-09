@@ -107,11 +107,11 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     console.log("Image double clicked, expanded:", !isImageExpanded);
   };
 
-  const handleOptionImageDoubleClick = (e: React.MouseEvent, imageUrl: string) => {
+  const handleOptionImageClick = (e: React.MouseEvent, imageUrl: string) => {
     e.preventDefault();
     e.stopPropagation();
     setExpandedOptionImage(imageUrl);
-    console.log("Option image double clicked, expanded:", imageUrl);
+    console.log("Option image clicked, expanded:", imageUrl);
   };
 
   const cardContent = (
@@ -201,7 +201,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
                 {option.imageUrl && (
                   <div 
                     className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
-                    onDoubleClick={(e) => handleOptionImageDoubleClick(e, option.imageUrl!)}
+                    onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
                   >
                     <img 
                       src={option.imageUrl} 
@@ -251,7 +251,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
                 {option.imageUrl && (
                   <div 
                     className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
-                    onDoubleClick={(e) => handleOptionImageDoubleClick(e, option.imageUrl!)}
+                    onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
                   >
                     <img 
                       src={option.imageUrl} 
