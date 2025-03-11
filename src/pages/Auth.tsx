@@ -22,7 +22,22 @@ const Auth: React.FC = () => {
     if (user && !loading) {
       navigate('/');
     }
-  }, [user, loading, navigate]);
+
+    // Hide sidebar and header when on auth page for desktop
+    if (isDesktop) {
+      const sidebar = document.querySelector('.w-64.h-screen');
+      const topHeader = document.querySelector('.w-full.bg-gradient-to-r');
+      
+      if (sidebar) sidebar.classList.add('hidden');
+      if (topHeader) topHeader.classList.add('hidden');
+      
+      return () => {
+        // Show them again when leaving the page
+        if (sidebar) sidebar.classList.remove('hidden');
+        if (topHeader) topHeader.classList.remove('hidden');
+      };
+    }
+  }, [user, loading, navigate, isDesktop]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

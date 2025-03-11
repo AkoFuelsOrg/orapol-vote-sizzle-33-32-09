@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -33,6 +34,11 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
   const location = useLocation();
+  
+  // Don't render the layout for the Auth page
+  if (location.pathname === '/auth') {
+    return <>{children}</>;
+  }
   
   const showRightChat = isDesktop && !location.pathname.startsWith('/messages');
   
