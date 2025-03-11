@@ -8,7 +8,8 @@ import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import { Dialog, DialogContent, DialogClose } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface PollCardProps {
   poll: Poll;
@@ -110,6 +111,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   };
 
   const handleOptionImageClick = (e: React.MouseEvent, imageUrl: string) => {
+    // This is critical to make sure this event doesn't trigger the voting function
     e.preventDefault();
     e.stopPropagation();
     setExpandedOptionImage(imageUrl);
@@ -123,7 +125,6 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       <div 
         className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
         onClick={(e) => {
-          e.stopPropagation();
           handleOptionImageClick(e, option.imageUrl!);
         }}
       >
@@ -133,7 +134,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           className="w-full h-full object-cover"
         />
         <div 
-          className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+          className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer z-20"
         >
           <Maximize size={16} className="text-white" />
         </div>
@@ -218,11 +219,12 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           
           {isImageExpanded && (
             <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
-              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-2xl">
-                <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60">
+              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+                <DialogTitle className="sr-only">Poll Image</DialogTitle>
+                <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
                   <X size={24} />
                 </DialogClose>
-                <div className="relative w-full overflow-hidden rounded-lg">
+                <div className="relative w-full overflow-hidden rounded-lg p-1">
                   <img 
                     src={poll.image} 
                     alt={poll.question} 
@@ -270,11 +272,12 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       
       {expandedOptionImage && (
         <Dialog open={!!expandedOptionImage} onOpenChange={(open) => !open && setExpandedOptionImage(null)}>
-          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-2xl">
-            <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60">
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+            <DialogTitle className="sr-only">Option Image</DialogTitle>
+            <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
               <X size={24} />
             </DialogClose>
-            <div className="relative w-full overflow-hidden rounded-lg">
+            <div className="relative w-full overflow-hidden rounded-lg p-1">
               <img 
                 src={expandedOptionImage} 
                 alt="Poll option" 
