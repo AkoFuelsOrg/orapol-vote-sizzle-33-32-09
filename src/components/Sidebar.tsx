@@ -34,8 +34,23 @@ const Sidebar: React.FC = () => {
     if (searchTerm.trim().length > 1) {
       navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
       setOpen(false);
+      setSearchTerm('');
     }
   };
+
+  // Handle keyboard events for Command dialog
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (open && e.key === 'Enter' && searchTerm.trim().length > 1) {
+        navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+        setOpen(false);
+        setSearchTerm('');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, searchTerm, navigate]);
 
   const menuItems = [
     { path: '/', label: 'Polls', icon: MessageCircle },
@@ -134,6 +149,7 @@ const Sidebar: React.FC = () => {
             onValueChange={setSearchTerm}
             value={searchTerm}
             className="border-none outline-none focus:outline-none focus:ring-0"
+            autoFocus
           />
         </form>
         <CommandList>
@@ -142,6 +158,18 @@ const Sidebar: React.FC = () => {
             <div className="px-4 py-3 text-sm text-gray-600">
               Press Enter to search for "{searchTerm}"
             </div>
+            {searchTerm.trim().length > 1 && (
+              <CommandItem 
+                onSelect={() => {
+                  navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+                  setOpen(false);
+                }}
+                className="cursor-pointer"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                <span>Search for "{searchTerm}"</span>
+              </CommandItem>
+            )}
           </CommandGroup>
         </CommandList>
       </CommandDialog>
