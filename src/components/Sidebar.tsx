@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   MessageCircle, 
@@ -31,20 +31,19 @@ const Sidebar: React.FC = () => {
   const [searchResults, setSearchResults] = useState<{users: any[], polls: any[]}>({users: [], polls: []});
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchData, setSearchData] = useState<{users: any[], polls: any[]}>({users: [], polls: []});
 
-  // Handle search input change
-  const handleSearch = async (search: string) => {
-    setSearchTerm(search);
-    
-    if (!search || search.length < 2) {
-      setSearchResults({users: [], polls: []});
-      return;
+  // Fetch data when search dialog is opened
+  useEffect(() => {
+    if (open) {
+      fetchSearchData();
     }
+  }, [open]);
 
+  // Fetch data for fuzzy search
+  const fetchSearchData = async () => {
     setSearchLoading(true);
-    
     try {
-      // Fetch data for fuzzy search
       const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -52,42 +51,56 @@ const Sidebar: React.FC = () => {
       
       if (usersError) throw usersError;
       
-      // Fetch polls for fuzzy search
       const { data: polls, error: pollsError } = await supabase
         .from('polls')
         .select('id, question')
         .limit(20);
       
       if (pollsError) throw pollsError;
-      
-      // Configure Fuse options for fuzzy search with min matching threshold of 0.4 (60% match)
-      const userFuseOptions = {
-        keys: ['username'],
-        threshold: 0.4, // Lower threshold means higher match requirement (0 is exact, 1 is match anything)
-        includeScore: true
-      };
-      
-      const pollFuseOptions = {
-        keys: ['question'],
-        threshold: 0.4,
-        includeScore: true
-      };
-      
-      const userFuse = new Fuse(users || [], userFuseOptions);
-      const pollFuse = new Fuse(polls || [], pollFuseOptions);
-      
-      const userResults = userFuse.search(search).map(result => result.item);
-      const pollResults = pollFuse.search(search).map(result => result.item);
-      
-      setSearchResults({
-        users: userResults,
-        polls: pollResults
+
+      setSearchData({
+        users: users || [],
+        polls: polls || []
       });
     } catch (error) {
-      console.error("Search error:", error);
+      console.error("Error fetching search data:", error);
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  // Handle search input change
+  const handleSearch = (search: string) => {
+    setSearchTerm(search);
+    
+    if (!search || search.length < 2) {
+      setSearchResults({users: [], polls: []});
+      return;
+    }
+    
+    // Configure Fuse options for fuzzy search with min matching threshold of 0.4 (60% match)
+    const userFuseOptions = {
+      keys: ['username'],
+      threshold: 0.4, // Lower threshold means higher match requirement (0 is exact, 1 is match anything)
+      includeScore: true
+    };
+    
+    const pollFuseOptions = {
+      keys: ['question'],
+      threshold: 0.4,
+      includeScore: true
+    };
+    
+    const userFuse = new Fuse(searchData.users || [], userFuseOptions);
+    const pollFuse = new Fuse(searchData.polls || [], pollFuseOptions);
+    
+    const userResults = userFuse.search(search).map(result => result.item);
+    const pollResults = pollFuse.search(search).map(result => result.item);
+    
+    setSearchResults({
+      users: userResults,
+      polls: pollResults
+    });
   };
   
   const menuItems = [
@@ -110,6 +123,8 @@ const Sidebar: React.FC = () => {
   const handleItemClick = (item: typeof menuItems[0]) => {
     if (item.action) {
       item.action();
+    } else if (item.path) {
+      navigate(item.path);
     }
   };
 
