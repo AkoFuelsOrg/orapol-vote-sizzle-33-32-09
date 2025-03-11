@@ -327,36 +327,36 @@ const CreatePoll: React.FC = () => {
                       </div>
                     ))}
                     
-                    {options.length < 6 && (
+                    <div className="flex flex-col gap-4">
+                      {options.length < 6 && (
+                        <button
+                          type="button"
+                          onClick={handleAddOption}
+                          className="h-full min-h-[156px] p-3 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
+                        >
+                          <div className="text-center">
+                            <Plus size={24} className="mx-auto mb-2" />
+                            <span>Add Option</span>
+                          </div>
+                        </button>
+                      )}
+
                       <button
-                        type="button"
-                        onClick={handleAddOption}
-                        className="h-full min-h-[156px] p-3 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                       >
-                        <div className="text-center">
-                          <Plus size={24} className="mx-auto mb-2" />
-                          <span>Add Option</span>
-                        </div>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 size={20} className="animate-spin mr-2" />
+                            Creating Poll...
+                          </>
+                        ) : (
+                          'Create Poll'
+                        )}
                       </button>
-                    )}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full p-3.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium btn-animate disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={20} className="animate-spin mr-2" />
-                        Creating Poll...
-                      </>
-                    ) : (
-                      'Create Poll'
-                    )}
-                  </button>
                 </div>
               </div>
             ) : (
