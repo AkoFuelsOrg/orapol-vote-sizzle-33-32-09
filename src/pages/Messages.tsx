@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -52,13 +51,13 @@ const Messages: React.FC = () => {
     return (
       <div className="flex flex-col min-h-screen pb-20">
         <Header />
-        <div className="container max-w-6xl mx-auto px-4 pt-8 flex-1 flex flex-col">
+        <div className="container max-w-7xl mx-auto px-4 pt-8 flex-1 flex flex-col">
           <h1 className="text-2xl font-bold mb-6 animate-fade-in">Messages</h1>
           
           <div className="flex-1 rounded-lg overflow-hidden">
             <ResizablePanelGroup 
               direction="horizontal" 
-              className="min-h-[600px] rounded-lg border glass-card"
+              className="min-h-[700px] rounded-lg border glass-card"
             >
               <ResizablePanel defaultSize={30} minSize={20}>
                 <div className="h-full p-4">
