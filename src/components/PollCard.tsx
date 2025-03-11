@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { MessageCircle, Loader2, ChevronDown, ChevronUp, X, Eye } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -124,8 +125,14 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
             <p className="text-xs text-muted-foreground">{formatDate(poll.createdAt)}</p>
           </div>
         </Link>
-        <div className="pill bg-secondary text-secondary-foreground">
-          {poll.totalVotes} votes
+        <div className="flex items-center space-x-2">
+          <div className="pill bg-secondary text-secondary-foreground">
+            {poll.totalVotes} votes
+          </div>
+          <div className="pill bg-secondary/70 text-secondary-foreground flex items-center">
+            <Eye className="h-3 w-3 mr-1" />
+            {poll.views || 0} views
+          </div>
         </div>
       </div>
       
@@ -280,9 +287,11 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
         )}
       </Collapsible>
       
-      <div className="flex items-center">
-        <MessageCircle size={15} className="mr-1 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">{poll.commentCount} comments</span>
+      <div className="flex items-center space-x-3">
+        <div className="flex items-center">
+          <MessageCircle size={15} className="mr-1 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">{poll.commentCount} comments</span>
+        </div>
       </div>
     </>
   );

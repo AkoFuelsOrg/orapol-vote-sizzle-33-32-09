@@ -10,20 +10,50 @@ import { Poll, PollOption } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
+import { usePollContext } from '../context/PollContext';
 
 const PollDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useSupabase();
+  const { recordPollView } = usePollContext();
   const [poll, setPoll] = useState<Poll | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewRecorded, setViewRecorded] = useState(false);
   
   useEffect(() => {
     if (id) {
       fetchPollDetails(id);
     }
   }, [id, user]);
+  
+  useEffect(() => {
+    // Record view when poll is loaded and view hasn't been recorded yet
+    if (poll && !viewRecorded) {
+      const recordView = async () => {
+        try {
+          // Increment view count in the database
+          await recordPollView(poll.id);
+          
+          // Update local state
+          setPoll(prevPoll => {
+            if (!prevPoll) return null;
+            return {
+              ...prevPoll,
+              views: (prevPoll.views || 0) + 1
+            };
+          });
+          
+          setViewRecorded(true);
+        } catch (error) {
+          console.error('Error recording view:', error);
+        }
+      };
+      
+      recordView();
+    }
+  }, [poll, viewRecorded, recordPollView]);
   
   const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
@@ -68,6 +98,7 @@ const PollDetail: React.FC = () => {
           total_votes,
           comment_count,
           image,
+          views,
           profiles:user_id (id, username, avatar_url)
         `)
         .eq('id', pollId)
@@ -103,7 +134,8 @@ const PollDetail: React.FC = () => {
         totalVotes: pollData.total_votes || 0,
         commentCount: pollData.comment_count || 0,
         userVoted,
-        image: pollData.image
+        image: pollData.image,
+        views: pollData.views || 0
       };
       
       setPoll(formattedPoll);
