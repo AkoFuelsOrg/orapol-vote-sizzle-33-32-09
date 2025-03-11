@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Loader2, ChevronDown, ChevronUp, X } from 'lucide-react';
@@ -295,13 +296,14 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       {!preview ? (
         <Link 
           to={`/poll/${poll.id}`}
-          onClick={(e) => e.stopPropagation()} // Prevent double-click from triggering navigation
           className="block"
         >
           {cardContent}
         </Link>
       ) : (
-        cardContent
+        <div className="block">
+          {cardContent}
+        </div>
       )}
     </div>
   );
