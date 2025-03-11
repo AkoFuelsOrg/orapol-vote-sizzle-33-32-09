@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useOnClickOutside } from '../hooks/use-mobile';
@@ -96,8 +97,8 @@ const Header = () => {
             <ThemeToggle />
             <NotificationIndicator />
             <Avatar
-              src={user?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
-              alt={user?.username || 'User'}
+              src={user?.user_metadata?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`}
+              alt={user?.user_metadata?.username || user?.email || 'User'}
               onClick={() => setDropdownOpen(!dropdownOpen)}
             />
           </div>
