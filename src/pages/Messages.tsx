@@ -58,7 +58,7 @@ const Messages: React.FC = () => {
           <div className="flex-1 rounded-lg overflow-hidden desktop-messages-container">
             <ResizablePanelGroup 
               direction="horizontal" 
-              className="max-h-[60vh] rounded-lg border shadow-md bg-gradient-to-br from-white to-gray-50"
+              className="max-h-[80vh] rounded-lg border shadow-md bg-gradient-to-br from-white to-gray-50"
             >
               <ResizablePanel defaultSize={30} minSize={20} className="border-r">
                 <div className="h-full flex flex-col">
