@@ -190,8 +190,9 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Update the view count in the polls table using the RPC function
-      await supabase
-        .rpc('increment_poll_views', { poll_id: pollId });
+      await supabase.rpc('increment_poll_views', {
+        poll_id: pollId
+      });
       
     } catch (error) {
       console.error('Error recording poll view:', error);

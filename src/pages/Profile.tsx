@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -125,7 +124,8 @@ const Profile: React.FC = () => {
         totalVotes: poll.total_votes || 0,
         commentCount: poll.comment_count || 0,
         userVoted: userVotes[poll.id],
-        image: poll.image
+        image: poll.image,
+        views: poll.views || 0
       };
     });
   };

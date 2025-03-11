@@ -44,6 +44,7 @@ export const initialPolls: Poll[] = [
     totalVotes: 119,
     commentCount: 8,
     image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6',
+    views: 250,
   },
   {
     id: '2',
@@ -58,6 +59,7 @@ export const initialPolls: Poll[] = [
     createdAt: '2023-11-24T15:45:00Z',
     totalVotes: 177,
     commentCount: 12,
+    views: 320,
   },
   {
     id: '3',
@@ -73,6 +75,7 @@ export const initialPolls: Poll[] = [
     totalVotes: 144,
     commentCount: 15,
     image: 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7',
+    views: 280,
   },
   {
     id: '4',
@@ -88,6 +91,7 @@ export const initialPolls: Poll[] = [
     totalVotes: 133,
     commentCount: 9,
     image: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d',
+    views: 195,
   },
   {
     id: '5',
@@ -102,6 +106,7 @@ export const initialPolls: Poll[] = [
     createdAt: '2023-11-21T12:10:00Z',
     totalVotes: 161,
     commentCount: 7,
+    views: 210,
   },
 ];
 

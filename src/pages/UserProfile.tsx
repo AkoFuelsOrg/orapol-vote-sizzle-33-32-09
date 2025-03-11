@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -65,6 +64,7 @@ const UserProfile: React.FC = () => {
           total_votes,
           comment_count,
           image,
+          views,
           profiles:user_id (id, username, avatar_url)
         `)
         .eq('user_id', userId)
@@ -92,7 +92,8 @@ const UserProfile: React.FC = () => {
             totalVotes: poll.total_votes || 0,
             commentCount: poll.comment_count || 0,
             userVoted: userVotes[poll.id],
-            image: poll.image
+            image: poll.image,
+            views: poll.views || 0
           };
         });
       }
