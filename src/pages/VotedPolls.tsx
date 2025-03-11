@@ -98,7 +98,8 @@ const VotedPolls: React.FC = () => {
                       name: poll.profiles.username || 'Anonymous',
                       avatar: poll.profiles.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles.id}`
                     },
-                    image: poll.image
+                    image: poll.image,
+                    views: poll.views || 0
                   }}
                 />
               ))}
