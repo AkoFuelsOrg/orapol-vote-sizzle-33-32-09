@@ -166,17 +166,17 @@
   /* Desktop optimized chat styling */
   .desktop-messages-container {
     @apply bg-white shadow-md rounded-lg;
-    height: 80vh;
+    height: 95vh;
   }
   
   .desktop-chat-interface {
     @apply h-full flex flex-col;
-    max-height: 80vh;
+    max-height: 95vh;
   }
   
   .desktop-chat-messages {
     @apply overflow-y-auto px-6 py-5;
-    max-height: calc(80vh - 130px);
+    max-height: calc(95vh - 130px);
   }
   
   .desktop-chat-header {
