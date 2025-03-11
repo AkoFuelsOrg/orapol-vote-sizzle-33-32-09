@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState } from 'react';
 import { Poll, Comment, User, PollOption } from '../lib/types';
 import { initialPolls, initialComments, currentUser } from '../lib/data';
@@ -148,13 +149,17 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const recordPollView = async (pollId: string) => {
     try {
-      // Update local state first
-      setPolls(
-        polls.map((poll) => {
+      console.log('Recording view for poll:', pollId);
+      
+      // Update local state first for immediate feedback
+      setPolls(prevPolls => 
+        prevPolls.map(poll => {
           if (poll.id === pollId) {
+            const updatedViews = (poll.views || 0) + 1;
+            console.log(`Updating poll ${pollId} views from ${poll.views} to ${updatedViews}`);
             return {
               ...poll,
-              views: poll.views + 1,
+              views: updatedViews
             };
           }
           return poll;
@@ -162,7 +167,7 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
       
       // Record view in database
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('poll_views')
         .insert({
           poll_id: pollId,
@@ -170,12 +175,33 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ip_address: null
         });
       
-      if (error && error.code !== '23505') {
-        console.error('Error recording poll view:', error);
+      if (insertError && insertError.code !== '23505') {
+        console.error('Error recording poll view:', insertError);
       }
       
-      // Call the increment_poll_views function instead of trying to update with RPC result
-      await supabase.rpc('increment_poll_views', { poll_id: pollId });
+      // Update the poll views count in the database
+      const { error: rpcError } = await supabase.rpc('increment_poll_views', { poll_id: pollId });
+      
+      if (rpcError) {
+        console.error('Error incrementing poll views:', rpcError);
+        
+        // Fallback: directly update the views count if RPC fails
+        const { data: viewsData } = await supabase
+          .from('poll_views')
+          .select('poll_id')
+          .eq('poll_id', pollId);
+          
+        const viewCount = viewsData?.length || 0;
+        
+        const { error: updateError } = await supabase
+          .from('polls')
+          .update({ views: viewCount })
+          .eq('id', pollId);
+          
+        if (updateError) {
+          console.error('Error updating poll views:', updateError);
+        }
+      }
       
     } catch (error) {
       console.error('Error recording poll view:', error);
