@@ -12,10 +12,10 @@ interface PollContextType {
   currentUser: User;
   addPoll: (question: string, options: string[], image?: string, optionImages?: (string | null)[]) => void;
   votePoll: (pollId: string, optionId: string) => void;
-  addComment: (pollId: string, content: string) => void;
+  addComment: (pollId: string, content: string, parentId?: string) => void;
   likeComment: (commentId: string) => void;
   getPollById: (id: string) => Poll | undefined;
-  getCommentsForPoll: (pollId: string) => Comment[];
+  getCommentsForPoll: (pollId: string, parentId?: string) => Comment[];
 }
 
 const PollContext = createContext<PollContextType | undefined>(undefined);
@@ -98,7 +98,7 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Add a comment to a poll
-  const addComment = (pollId: string, content: string) => {
+  const addComment = (pollId: string, content: string, parentId?: string) => {
     if (!content.trim()) {
       toast.error("Comment cannot be empty");
       return;
@@ -111,24 +111,40 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       content,
       createdAt: new Date().toISOString(),
       likes: 0,
+      parentId,
     };
 
     setComments([...comments, newComment]);
 
-    // Update comment count on the poll
-    setPolls(
-      polls.map((poll) => {
-        if (poll.id === pollId) {
-          return {
-            ...poll,
-            commentCount: poll.commentCount + 1,
-          };
-        }
-        return poll;
-      })
-    );
+    // Update comment count on the poll if it's a top-level comment
+    if (!parentId) {
+      setPolls(
+        polls.map((poll) => {
+          if (poll.id === pollId) {
+            return {
+              ...poll,
+              commentCount: poll.commentCount + 1,
+            };
+          }
+          return poll;
+        })
+      );
+    } else {
+      // Update reply count on the parent comment
+      setComments(
+        comments.map((comment) => {
+          if (comment.id === parentId) {
+            return {
+              ...comment,
+              replyCount: (comment.replyCount || 0) + 1,
+            };
+          }
+          return comment;
+        })
+      );
+    }
 
-    toast.success("Comment added");
+    toast.success(parentId ? "Reply added" : "Comment added");
   };
 
   // Like a comment
@@ -151,9 +167,12 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return polls.find((poll) => poll.id === id);
   };
 
-  // Get comments for a specific poll
-  const getCommentsForPoll = (pollId: string) => {
-    return comments.filter((comment) => comment.pollId === pollId);
+  // Get comments for a specific poll, optionally filtered by parent ID
+  const getCommentsForPoll = (pollId: string, parentId?: string) => {
+    return comments.filter((comment) => 
+      comment.pollId === pollId && 
+      (parentId === undefined ? comment.parentId === undefined : comment.parentId === parentId)
+    );
   };
 
   return (

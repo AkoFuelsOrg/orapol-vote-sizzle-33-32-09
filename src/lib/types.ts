@@ -31,6 +31,8 @@ export interface Comment {
   content: string;
   createdAt: string;
   likes: number;
+  parentId?: string; // Parent comment ID for replies
+  replyCount?: number; // Number of replies to this comment
 }
 
 export interface Follow {
