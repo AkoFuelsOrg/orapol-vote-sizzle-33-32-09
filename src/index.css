@@ -75,6 +75,9 @@
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
 
   /* Hide scrollbar for Chrome, Safari and Opera */
@@ -99,6 +102,13 @@
   textarea, 
   select {
     @apply focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-300;
+  }
+  
+  /* Fix iOS input zoom */
+  @media screen and (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
   }
 }
 
@@ -144,6 +154,15 @@
   .page-title {
     @apply text-2xl font-bold text-gray-900 mb-6;
   }
+  
+  /* Mobile optimized chat */
+  .mobile-chat-container {
+    @apply h-[calc(100vh-64px)] w-full flex flex-col;
+  }
+  
+  .mobile-message-bubble {
+    @apply max-w-[85%] px-3 py-2 rounded-xl text-sm;
+  }
 }
 
 #root {
@@ -152,6 +171,7 @@
   margin: 0;
   padding: 0;
   text-align: left;
+  overflow-x: hidden;
 }
 
 /* Custom scrollbar for desktop browsers */

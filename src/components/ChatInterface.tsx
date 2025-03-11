@@ -12,6 +12,7 @@ import UserProfileCard from './UserProfileCard';
 import { Message } from '../lib/types';
 import EmojiPicker from './EmojiPicker';
 import GifSelector from './GifSelector';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 interface Profile {
   id: string;
@@ -21,7 +22,7 @@ interface Profile {
 
 interface ChatInterfaceProps {
   userId: string;
-  onBack: () => void;
+  onBack: (() => void) | undefined;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
@@ -35,6 +36,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const [showGifSelector, setShowGifSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', userId],
@@ -356,11 +359,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   }
   
   return (
-    <div className="flex flex-col h-[70vh]">
-      <div className="flex items-center space-x-2 p-3 border-b">
-        <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+    <div className="flex flex-col h-[calc(100vh-64px)]">
+      <div className="flex items-center space-x-2 p-3 border-b bg-white dark:bg-gray-900 shadow-sm">
+        {onBack && (
+          <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         
         <UserProfileCard 
           userId={profile.id} 
@@ -382,9 +387,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
         </div>
       ) : (
         <>
-          <ScrollArea className="flex-1 p-4">
+          <ScrollArea className="flex-1 px-2 py-4 md:p-4">
             {messages && messages.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {messages.map((message) => {
                   const isOutgoing = message.sender_id === user?.id;
                   
@@ -394,7 +399,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                       className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                        className={`max-w-[80%] rounded-2xl px-3 py-2 ${
                           isOutgoing
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-secondary text-secondary-foreground'
@@ -405,7 +410,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                             {renderAttachmentPreview(message.attachment_url, message.attachment_type)}
                           </div>
                         )}
-                        <p className="break-words">{message.content}</p>
+                        <p className="break-words text-sm">{message.content}</p>
                         <p className={`text-xs mt-1 ${isOutgoing ? 'text-primary-foreground/70' : 'text-secondary-foreground/70'}`}>
                           {formatMessageTime(message.created_at)}
                         </p>
@@ -422,7 +427,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
             )}
           </ScrollArea>
           
-          <form onSubmit={handleSendMessage} className="border-t p-3 space-y-2">
+          <form onSubmit={handleSendMessage} className="border-t p-3 space-y-2 bg-background">
             {attachmentFile && (
               <div className="flex items-center justify-between p-2 bg-secondary/20 rounded-lg">
                 <div className="flex items-center space-x-2 truncate">
@@ -455,7 +460,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
               </Button>
             </div>
             
-            <div className="flex justify-between gap-2">
+            <div className="flex justify-between gap-1">
               <Button
                 type="button"
                 variant="outline"
@@ -464,7 +469,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                   setShowEmojiPicker(!showEmojiPicker);
                   setShowGifSelector(false);
                 }}
-                className="flex-1 h-9 px-2 text-xs"
+                className="flex-1 h-9 px-1 text-xs"
               >
                 <Smile className="h-4 w-4 mr-1" /> Emoji
               </Button>
@@ -476,7 +481,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                   setShowGifSelector(!showGifSelector);
                   setShowEmojiPicker(false);
                 }}
-                className="flex-1 h-9 px-2 text-xs"
+                className="flex-1 h-9 px-1 text-xs"
               >
                 <Image className="h-4 w-4 mr-1" /> GIF
               </Button>
@@ -485,7 +490,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleFileSelect('document')}
-                className="flex-1 h-9 px-2 text-xs"
+                className="flex-1 h-9 px-1 text-xs"
               >
                 <FileText className="h-4 w-4 mr-1" /> Doc
               </Button>
@@ -494,14 +499,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleFileSelect('image')}
-                className="flex-1 h-9 px-2 text-xs"
+                className="flex-1 h-9 px-1 text-xs"
               >
                 <Image className="h-4 w-4 mr-1" /> Image
               </Button>
             </div>
             
             {showEmojiPicker && (
-              <div className="absolute bottom-32 left-4 z-10">
+              <div className={`${isMobile ? 'fixed bottom-20 left-2 right-2' : 'absolute bottom-32 left-4'} z-10`}>
                 <EmojiPicker 
                   onSelectEmoji={handleEmojiSelect} 
                   onClose={() => setShowEmojiPicker(false)} 
@@ -509,7 +514,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
               </div>
             )}
             
-            <div className="absolute bottom-32 left-4 z-10">
+            <div className={`${isMobile ? 'fixed bottom-20 left-2 right-2' : 'absolute bottom-32 left-4'} z-10`}>
               <GifSelector 
                 onSelectGif={handleGifSelect} 
                 onClose={() => setShowGifSelector(false)} 

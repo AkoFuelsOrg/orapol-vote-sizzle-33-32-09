@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -89,23 +90,28 @@ const Messages: React.FC = () => {
   }
   
   return (
-    <div className="flex flex-col min-h-screen pb-20">
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <div className="container max-w-lg mx-auto px-4 pt-20 flex-1 flex flex-col">
-        <h1 className="text-2xl font-bold mb-6 animate-fade-in">Messages</h1>
-        
-        <div className="flex-1 glass-card rounded-lg p-4">
-          {showConversations ? (
-            <ConversationList 
-              onSelectConversation={handleSelectConversation} 
-            />
-          ) : (
+      <div className="container mx-auto px-0 pt-16 flex-1 flex flex-col">
+        {showConversations ? (
+          <>
+            <div className="px-4 pt-2 pb-2">
+              <h1 className="text-xl font-bold animate-fade-in">Messages</h1>
+            </div>
+            <div className="flex-1">
+              <ConversationList 
+                onSelectConversation={handleSelectConversation} 
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col h-[calc(100vh-64px)]">
             <ChatInterface 
               userId={selectedUserId!} 
               onBack={handleBackToList} 
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
