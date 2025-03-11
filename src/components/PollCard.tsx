@@ -8,6 +8,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Dialog, DialogContent, DialogClose } from './ui/dialog';
 
 interface PollCardProps {
   poll: Poll;
@@ -115,6 +116,68 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     console.log("Option image clicked, expanded:", imageUrl);
   };
 
+  const renderOptionImage = (option: PollOption) => {
+    if (!option.imageUrl) return null;
+    
+    return (
+      <div 
+        className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleOptionImageClick(e, option.imageUrl!);
+        }}
+      >
+        <img 
+          src={option.imageUrl} 
+          alt={option.text} 
+          className="w-full h-full object-cover"
+        />
+        <div 
+          className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+        >
+          <Maximize size={16} className="text-white" />
+        </div>
+      </div>
+    );
+  };
+
+  const renderOptionContent = (option: PollOption) => {
+    return (
+      <div
+        key={option.id}
+        className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
+          ${poll.userVoted === option.id 
+            ? 'border-primary bg-primary/5' 
+            : poll.userVoted 
+              ? 'border-border/50 hover:border-border' 
+              : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
+      >
+        <div className="flex items-center space-x-3">
+          {renderOptionImage(option)}
+          
+          <div 
+            className="flex justify-between items-center relative z-10 flex-1"
+            onClick={(e) => handleVote(option.id, e)}
+          >
+            <span className="text-sm font-medium">{option.text}</span>
+            <span className="text-xs font-medium">
+              {calculatePercentage(option.votes)}%
+            </span>
+          </div>
+        </div>
+        
+        <div 
+          className={`absolute top-0 left-0 h-full rounded-lg ${
+            poll.userVoted === option.id 
+              ? 'bg-primary/10' 
+              : 'bg-secondary/60'
+          } transition-all duration-300`}
+          style={{ width: `${calculatePercentage(option.votes)}%` }}
+        />
+      </div>
+    );
+  };
+
   const cardContent = (
     <>
       <div className="mb-4 flex items-center justify-between">
@@ -154,22 +217,20 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           </div>
           
           {isImageExpanded && (
-            <div 
-              className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-              onClick={() => setIsImageExpanded(false)}
-            >
-              <button 
-                className="absolute top-4 right-4 text-white bg-black/40 p-2 rounded-full hover:bg-black/60"
-                onClick={() => setIsImageExpanded(false)}
-              >
-                <X size={24} />
-              </button>
-              <img 
-                src={poll.image} 
-                alt={poll.question} 
-                className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-              />
-            </div>
+            <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
+              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-2xl">
+                <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60">
+                  <X size={24} />
+                </DialogClose>
+                <div className="relative w-full overflow-hidden rounded-lg">
+                  <img 
+                    src={poll.image} 
+                    alt={poll.question} 
+                    className="w-full h-auto max-h-[80vh] object-contain"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
           )}
         </>
       )}
@@ -186,109 +247,11 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
             </div>
           )}
           
-          {poll.options.slice(0, 2).map((option) => (
-            <div
-              key={option.id}
-              className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
-                ${poll.userVoted === option.id 
-                  ? 'border-primary bg-primary/5' 
-                  : poll.userVoted 
-                    ? 'border-border/50 hover:border-border' 
-                    : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
-            >
-              <div className="flex items-center space-x-3">
-                {option.imageUrl && (
-                  <div 
-                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group z-20"
-                  >
-                    <img 
-                      src={option.imageUrl} 
-                      alt={option.text} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div 
-                      className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
-                      onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
-                    >
-                      <Maximize size={16} className="text-white" />
-                    </div>
-                  </div>
-                )}
-                
-                <div 
-                  className="flex justify-between items-center relative z-10 flex-1"
-                  onClick={(e) => handleVote(option.id, e)}
-                >
-                  <span className="text-sm font-medium">{option.text}</span>
-                  <span className="text-xs font-medium">
-                    {calculatePercentage(option.votes)}%
-                  </span>
-                </div>
-              </div>
-              
-              <div 
-                className={`absolute top-0 left-0 h-full rounded-lg ${
-                  poll.userVoted === option.id 
-                    ? 'bg-primary/10' 
-                    : 'bg-secondary/60'
-                } transition-all duration-300`}
-                style={{ width: `${calculatePercentage(option.votes)}%` }}
-              />
-            </div>
-          ))}
+          {poll.options.slice(0, 2).map((option) => renderOptionContent(option))}
         </div>
         
         <CollapsibleContent className="space-y-2.5">
-          {poll.options.slice(2).map((option) => (
-            <div
-              key={option.id}
-              className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
-                ${poll.userVoted === option.id 
-                  ? 'border-primary bg-primary/5' 
-                  : poll.userVoted 
-                    ? 'border-border/50 hover:border-border' 
-                    : 'border-border/50 hover:border-primary hover:bg-primary/5'}`}
-            >
-              <div className="flex items-center space-x-3">
-                {option.imageUrl && (
-                  <div 
-                    className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group z-20"
-                  >
-                    <img 
-                      src={option.imageUrl} 
-                      alt={option.text} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div 
-                      className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
-                      onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
-                    >
-                      <Maximize size={16} className="text-white" />
-                    </div>
-                  </div>
-                )}
-                
-                <div 
-                  className="flex justify-between items-center relative z-10 flex-1"
-                  onClick={(e) => handleVote(option.id, e)}
-                >
-                  <span className="text-sm font-medium">{option.text}</span>
-                  <span className="text-xs font-medium">
-                    {calculatePercentage(option.votes)}%
-                  </span>
-                </div>
-              </div>
-              
-              <div 
-                className={`absolute top-0 left-0 h-full rounded-lg ${
-                  poll.userVoted === option.id 
-                    ? 'bg-primary/10' 
-                    : 'bg-secondary/60'
-                } transition-all duration-300`}
-                style={{ width: `${calculatePercentage(option.votes)}%` }}
-              />
-            </div>
-          ))}
+          {poll.options.slice(2).map((option) => renderOptionContent(option))}
         </CollapsibleContent>
         
         {poll.options.length > 2 && (
@@ -306,22 +269,20 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
       </Collapsible>
       
       {expandedOptionImage && (
-        <div 
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => setExpandedOptionImage(null)}
-        >
-          <button 
-            className="absolute top-4 right-4 text-white bg-black/40 p-2 rounded-full hover:bg-black/60"
-            onClick={() => setExpandedOptionImage(null)}
-          >
-            <X size={24} />
-          </button>
-          <img 
-            src={expandedOptionImage} 
-            alt="Poll option" 
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-          />
-        </div>
+        <Dialog open={!!expandedOptionImage} onOpenChange={(open) => !open && setExpandedOptionImage(null)}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-2xl">
+            <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60">
+              <X size={24} />
+            </DialogClose>
+            <div className="relative w-full overflow-hidden rounded-lg">
+              <img 
+                src={expandedOptionImage} 
+                alt="Poll option" 
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
       
       <div className="flex items-center">
