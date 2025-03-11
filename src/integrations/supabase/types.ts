@@ -144,38 +144,6 @@ export type Database = {
         }
         Relationships: []
       }
-      poll_views: {
-        Row: {
-          id: string
-          ip_address: string | null
-          poll_id: string
-          user_id: string | null
-          viewed_at: string
-        }
-        Insert: {
-          id?: string
-          ip_address?: string | null
-          poll_id: string
-          user_id?: string | null
-          viewed_at?: string
-        }
-        Update: {
-          id?: string
-          ip_address?: string | null
-          poll_id?: string
-          user_id?: string | null
-          viewed_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "poll_views_poll_id_fkey"
-            columns: ["poll_id"]
-            isOneToOne: false
-            referencedRelation: "polls"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       poll_votes: {
         Row: {
           created_at: string
@@ -225,7 +193,6 @@ export type Database = {
           question: string
           total_votes: number | null
           user_id: string
-          views: number
         }
         Insert: {
           comment_count?: number | null
@@ -236,7 +203,6 @@ export type Database = {
           question: string
           total_votes?: number | null
           user_id: string
-          views?: number
         }
         Update: {
           comment_count?: number | null
@@ -247,7 +213,6 @@ export type Database = {
           question?: string
           total_votes?: number | null
           user_id?: string
-          views?: number
         }
         Relationships: [
           {

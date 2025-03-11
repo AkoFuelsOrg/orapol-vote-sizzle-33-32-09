@@ -83,7 +83,6 @@ const Index: React.FC = () => {
           total_votes,
           comment_count,
           image,
-          views,
           profiles:user_id (id, username, avatar_url)
         `)
         .eq('id', pollId)
@@ -121,8 +120,7 @@ const Index: React.FC = () => {
         totalVotes: pollData.total_votes || 0,
         commentCount: pollData.comment_count || 0,
         userVoted,
-        image: pollData.image,
-        views: pollData.views || 0
+        image: pollData.image
       };
       
       // Add to polls without duplicates
@@ -154,7 +152,6 @@ const Index: React.FC = () => {
           total_votes,
           comment_count,
           image,
-          views,
           profiles:user_id (id, username, avatar_url)
         `)
         .order('created_at', { ascending: false })
@@ -193,8 +190,7 @@ const Index: React.FC = () => {
         totalVotes: poll.total_votes || 0,
         commentCount: poll.comment_count || 0,
         userVoted: userVotes[poll.id],
-        image: poll.image,
-        views: poll.views || 0
+        image: poll.image
       }));
       
       setPolls(formattedPolls);

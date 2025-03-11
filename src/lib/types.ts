@@ -22,7 +22,6 @@ export interface Poll {
   commentCount: number;
   userVoted?: string; // ID of the option the user voted for
   image?: string; // Optional image URL for the poll
-  views: number; // Number of views the poll has received
 }
 
 export interface Comment {

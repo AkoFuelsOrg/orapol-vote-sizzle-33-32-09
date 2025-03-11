@@ -16,7 +16,6 @@ interface PollContextType {
   likeComment: (commentId: string) => void;
   getPollById: (id: string) => Poll | undefined;
   getCommentsForPoll: (pollId: string) => Comment[];
-  recordPollView: (pollId: string) => Promise<void>;
 }
 
 const PollContext = createContext<PollContextType | undefined>(undefined);
@@ -59,7 +58,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       totalVotes: 0,
       commentCount: 0,
       image: image || undefined, // Add the image URL if provided
-      views: 0, // Initialize views to 0
     };
 
     setPolls([newPoll, ...polls]);
@@ -158,46 +156,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return comments.filter((comment) => comment.pollId === pollId);
   };
 
-  // Record a view for a poll
-  const recordPollView = async (pollId: string) => {
-    try {
-      // Update local state first for immediate feedback
-      setPolls(
-        polls.map((poll) => {
-          if (poll.id === pollId) {
-            return {
-              ...poll,
-              views: poll.views + 1,
-            };
-          }
-          return poll;
-        })
-      );
-      
-      // Record the view in Supabase
-      const { error } = await supabase
-        .from('poll_views')
-        .insert({
-          poll_id: pollId,
-          user_id: supabase.auth.getUser() ? (await supabase.auth.getUser()).data.user?.id : null,
-          ip_address: null // We don't track IP addresses on the client side for privacy
-        })
-        .select('id')
-        .single();
-      
-      if (error && error.code !== '23505') { // Ignore unique constraint violations (user already viewed)
-        console.error('Error recording poll view:', error);
-      }
-      
-      // Update the view count in the polls table
-      await supabase
-        .rpc('increment_poll_views', { poll_id: pollId });
-      
-    } catch (error) {
-      console.error('Error recording poll view:', error);
-    }
-  };
-
   return (
     <PollContext.Provider
       value={{
@@ -210,7 +168,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
         likeComment,
         getPollById,
         getCommentsForPoll,
-        recordPollView,
       }}
     >
       {children}
