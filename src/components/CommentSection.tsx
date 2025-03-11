@@ -41,6 +41,29 @@ const CommentSection: React.FC = () => {
   const [replyContent, setReplyContent] = useState('');
   const [showReplies, setShowReplies] = useState<Record<string, boolean>>({});
   const [repliesLoading, setRepliesLoading] = useState<Record<string, boolean>>({});
+  const [pollCommentCount, setPollCommentCount] = useState(0);
+
+  useEffect(() => {
+    if (pollId) {
+      fetchPollCommentCount();
+    }
+  }, [pollId]);
+
+  const fetchPollCommentCount = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('comment_count')
+        .eq('id', pollId)
+        .single();
+      
+      if (error) throw error;
+      
+      setPollCommentCount(data.comment_count || 0);
+    } catch (error) {
+      console.error('Error fetching poll comment count:', error);
+    }
+  };
 
   const loadComments = async () => {
     if (!pollId) return;
@@ -48,7 +71,6 @@ const CommentSection: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch only top-level comments (no parent_id)
       const { data, error } = await supabase
         .from('comments')
         .select(`
@@ -65,7 +87,6 @@ const CommentSection: React.FC = () => {
       
       if (error) throw error;
       
-      // Count replies for each comment
       const commentsWithCounts = await Promise.all(data.map(async (comment) => {
         const { count, error: countError } = await supabase
           .from('comments')
@@ -80,7 +101,6 @@ const CommentSection: React.FC = () => {
         };
       }));
       
-      // Check if the current user has liked each comment
       let formattedComments: CommentType[] = [];
       
       if (user) {
@@ -154,7 +174,6 @@ const CommentSection: React.FC = () => {
       
       if (error) throw error;
       
-      // Check if the current user has liked each reply
       let formattedReplies: CommentType[] = [];
       
       if (user) {
@@ -196,7 +215,6 @@ const CommentSection: React.FC = () => {
         }));
       }
       
-      // Merge replies into the main comments array
       setComments(prev => [
         ...prev.filter(c => c.parent_id !== commentId && c.id !== commentId),
         ...formattedReplies,
@@ -214,15 +232,8 @@ const CommentSection: React.FC = () => {
 
   const hideReplies = (commentId: string) => {
     setShowReplies(prev => ({ ...prev, [commentId]: false }));
-    // Remove replies from the comments array
     setComments(prev => prev.filter(c => c.parent_id !== commentId));
   };
-
-  useEffect(() => {
-    if (pollId) {
-      loadComments();
-    }
-  }, [pollId]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,13 +262,14 @@ const CommentSection: React.FC = () => {
       
       if (commentError) throw commentError;
       
-      // Increment the comment count on the poll
+      const newCommentCount = pollCommentCount + 1;
+      setPollCommentCount(newCommentCount);
+      
       await supabase
         .from('polls')
-        .update({ comment_count: (polls.comment_count || 0) + 1 })
+        .update({ comment_count: newCommentCount })
         .eq('id', pollId);
       
-      // Add the new comment to the list
       if (commentData && commentData[0]) {
         const newComment: CommentType = {
           id: commentData[0].id,
@@ -295,7 +307,6 @@ const CommentSection: React.FC = () => {
     
     try {
       if (currentlyLiked) {
-        // Unlike the comment
         const { error } = await supabase
           .from('comment_likes')
           .delete()
@@ -304,7 +315,6 @@ const CommentSection: React.FC = () => {
         
         if (error) throw error;
         
-        // Decrement the likes count
         const { error: updateError } = await supabase
           .from('comments')
           .update({ likes: Math.max(0, (comments.find(c => c.id === commentId)?.likes || 1) - 1) })
@@ -312,7 +322,6 @@ const CommentSection: React.FC = () => {
           
         if (updateError) throw updateError;
       } else {
-        // Like the comment
         const { error } = await supabase
           .from('comment_likes')
           .insert({
@@ -322,7 +331,6 @@ const CommentSection: React.FC = () => {
         
         if (error) throw error;
         
-        // Increment the likes count
         const { error: updateError } = await supabase
           .from('comments')
           .update({ likes: (comments.find(c => c.id === commentId)?.likes || 0) + 1 })
@@ -331,7 +339,6 @@ const CommentSection: React.FC = () => {
         if (updateError) throw updateError;
       }
       
-      // Update the comments list
       setComments(prevComments => 
         prevComments.map(comment => 
           comment.id === commentId
@@ -377,15 +384,16 @@ const CommentSection: React.FC = () => {
       
       if (replyError) throw replyError;
       
-      // Increment the comment count on the poll
+      const newCommentCount = pollCommentCount + 1;
+      setPollCommentCount(newCommentCount);
+      
       await supabase
         .from('polls')
         .update({ 
-          comment_count: (polls.comment_count || 0) + 1 
+          comment_count: newCommentCount
         })
         .eq('id', pollId);
       
-      // Add the new reply to the list if replies are currently shown
       if (replyData && replyData[0] && showReplies[parentId]) {
         const newReply: CommentType = {
           id: replyData[0].id,
@@ -407,7 +415,6 @@ const CommentSection: React.FC = () => {
         ]);
       }
       
-      // Update reply count for the parent comment
       setComments(prev => 
         prev.map(comment => 
           comment.id === parentId
@@ -420,7 +427,6 @@ const CommentSection: React.FC = () => {
       setReplyingTo(null);
       toast.success('Reply added successfully');
       
-      // If replies aren't already showing, load them now
       if (!showReplies[parentId]) {
         loadReplies(parentId);
       }
