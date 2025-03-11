@@ -28,9 +28,12 @@ const UserProfile: React.FC = () => {
     if (id) {
       fetchUserProfile(id);
       fetchUserPolls(id);
-      checkFollowStatus();
-      fetchFollowCounts();
-      checkCanMessage();
+      fetchFollowCounts(); // Always fetch follow counts regardless of login status
+      
+      if (user) {
+        checkFollowStatus();
+        checkCanMessage();
+      }
     }
   }, [id, user]);
   
@@ -164,8 +167,30 @@ const UserProfile: React.FC = () => {
   
   const fetchFollowCounts = async () => {
     if (id) {
-      const counts = await getFollowCounts(id);
-      setFollowCounts(counts);
+      try {
+        // Direct Supabase query to get followers count
+        const { count: followersCount, error: followersError } = await supabase
+          .from('follows')
+          .select('id', { count: 'exact', head: true })
+          .eq('following_id', id);
+        
+        // Direct Supabase query to get following count
+        const { count: followingCount, error: followingError } = await supabase
+          .from('follows')
+          .select('id', { count: 'exact', head: true })
+          .eq('follower_id', id);
+        
+        if (followersError) throw followersError;
+        if (followingError) throw followingError;
+        
+        setFollowCounts({
+          followers: followersCount || 0,
+          following: followingCount || 0
+        });
+      } catch (error) {
+        console.error('Error fetching follow counts:', error);
+        setFollowCounts({ followers: 0, following: 0 });
+      }
     }
   };
   

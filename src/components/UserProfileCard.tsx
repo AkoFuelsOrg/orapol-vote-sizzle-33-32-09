@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -89,6 +90,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     }
   };
   
+  // Only show follow button if user is logged in and it's not the current user
   const showFollowButton = !hideFollowButton && user && user.id !== userId;
   
   if (minimal) {

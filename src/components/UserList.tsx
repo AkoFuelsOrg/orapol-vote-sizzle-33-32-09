@@ -119,6 +119,7 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           userId={user.id}
           username={user.username || 'Anonymous'}
           avatarUrl={user.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`}
+          hideFollowButton={!userId}
         />
       ))}
     </div>
