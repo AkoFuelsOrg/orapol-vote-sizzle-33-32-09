@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import PollCard from '../components/PollCard';
 import Header from '../components/Header';
 import { Loader2 } from 'lucide-react';
@@ -14,11 +14,8 @@ const Index: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [animateItems, setAnimateItems] = useState(false);
   const { user } = useSupabase();
-  const location = useLocation();
   
-  // Reset loading state when navigating back to this page
   useEffect(() => {
-    setLoading(true);
     fetchPolls();
     
     // Set up realtime subscription
@@ -36,7 +33,7 @@ const Index: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [location.key]); // Adding location.key as a dependency to re-run when navigating
+  }, []);
   
   useEffect(() => {
     // Trigger animations after a small delay for a staggered effect

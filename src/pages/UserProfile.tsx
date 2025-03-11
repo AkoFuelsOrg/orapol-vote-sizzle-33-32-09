@@ -1,32 +1,132 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSupabase } from '../context/SupabaseContext';
 import { useParams, Link } from 'react-router-dom';
+import { supabase } from '../integrations/supabase/client';
+import Header from '../components/Header';
 import PollCard from '../components/PollCard';
-import { Loader2, UserPlus, UserCheck, UserX } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import UserList from '../components/UserList';
+import { useSupabase } from '../context/SupabaseContext';
+import { ArrowLeft, Loader2, UserPlus, UserCheck, MessageSquare } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
-import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
 
 const UserProfile: React.FC = () => {
-  const [userPolls, setUserPolls] = useState<Poll[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [profileData, setProfileData] = useState<any>(null);
+  const { id } = useParams<{ id: string }>();
+  const { user, followUser, unfollowUser, isFollowing, getFollowCounts } = useSupabase();
+  const [profile, setProfile] = useState<any | null>(null);
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isLoadingPolls, setIsLoadingPolls] = useState(true);
+  const [userIsFollowing, setUserIsFollowing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
-  const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
-  const { user } = useSupabase();
-  const { id } = useParams();
-
+  const [canSendMessage, setCanSendMessage] = useState(false);
+  
   useEffect(() => {
-    fetchUserProfile();
-    fetchUserPolls();
-    if (user) {
-      checkIfFollowing();
+    if (id) {
+      fetchUserProfile(id);
+      fetchUserPolls(id);
+      checkFollowStatus();
+      fetchFollowCounts();
+      checkCanMessage();
     }
   }, [id, user]);
-
-  // Function to convert JSON options from Supabase to PollOption type
+  
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      setIsLoadingProfile(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) throw error;
+      setProfile(data);
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+  
+  const fetchUserPolls = async (userId: string) => {
+    try {
+      setIsLoadingPolls(true);
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (pollsError) throw pollsError;
+      
+      let formattedPolls: Poll[] = [];
+      
+      if (pollsData && pollsData.length > 0) {
+        const userVotes = user ? await fetchUserVotes(user.id) : {};
+        
+        formattedPolls = pollsData.map(poll => {
+          const options = convertJsonToPollOptions(poll.options);
+          return {
+            id: poll.id,
+            question: poll.question,
+            options,
+            author: {
+              id: poll.profiles.id,
+              name: poll.profiles.username || 'Anonymous',
+              avatar: poll.profiles.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles.id}`
+            },
+            createdAt: poll.created_at,
+            totalVotes: poll.total_votes || 0,
+            commentCount: poll.comment_count || 0,
+            userVoted: userVotes[poll.id],
+            image: poll.image
+          };
+        });
+      }
+      
+      setPolls(formattedPolls);
+    } catch (error: any) {
+      console.error('Error fetching user polls:', error);
+    } finally {
+      setIsLoadingPolls(false);
+    }
+  };
+  
+  const fetchUserVotes = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('poll_votes')
+        .select('poll_id, option_id')
+        .eq('user_id', userId);
+        
+      const votes: Record<string, string> = {};
+      
+      if (data) {
+        data.forEach(vote => {
+          votes[vote.poll_id] = vote.option_id;
+        });
+      }
+      
+      return votes;
+    } catch (error) {
+      console.error('Error fetching user votes:', error);
+      return {};
+    }
+  };
+  
   const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
       try {
@@ -54,274 +154,198 @@ const UserProfile: React.FC = () => {
     
     return [];
   };
-
-  const fetchUserProfile = async () => {
-    if (!id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) throw error;
-      
-      setProfileData(data);
-      
-      // Fetch follow counts
-      const counts = await getFollowCounts(id);
-      setFollowCounts(counts);
-    } catch (error: any) {
-      console.error('Error fetching user profile:', error);
-      toast.error('Failed to load user profile');
+  
+  const checkFollowStatus = async () => {
+    if (user && id) {
+      const following = await isFollowing(id);
+      setUserIsFollowing(following);
     }
   };
   
-  const fetchUserPolls = async () => {
-    if (!id) return;
-    
-    try {
-      setLoading(true);
-      
-      // Fetch polls with author information
-      const { data: pollsData, error } = await supabase
-        .from('polls')
-        .select(`
-          id,
-          question,
-          options,
-          created_at,
-          total_votes,
-          comment_count,
-          image,
-          views,
-          profiles:user_id (id, username, avatar_url)
-        `)
-        .eq('user_id', id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Fetch user votes for these polls if the user is logged in
-      let votedOptions: Record<string, string> = {};
-      
-      if (user) {
-        const { data: votesData, error: votesError } = await supabase
-          .from('poll_votes')
-          .select('poll_id, option_id')
-          .eq('user_id', user.id)
-          .in('poll_id', pollsData.map(poll => poll.id));
-        
-        if (!votesError && votesData) {
-          votedOptions = votesData.reduce((acc, vote) => {
-            acc[vote.poll_id] = vote.option_id;
-            return acc;
-          }, {} as Record<string, string>);
-        }
-      }
-      
-      // Format polls for our application
-      const userPollsData = pollsData.map((poll) => ({
-        id: poll.id,
-        question: poll.question,
-        options: convertJsonToPollOptions(poll.options),
-        author: {
-          id: poll.profiles.id,
-          name: poll.profiles.username || 'Anonymous',
-          avatar: poll.profiles.avatar_url || 'https://i.pravatar.cc/150',
-        },
-        createdAt: poll.created_at,
-        totalVotes: poll.total_votes || 0,
-        commentCount: poll.comment_count || 0,
-        userVoted: votedOptions[poll.id] || null,
-        image: poll.image,
-        views: poll.views || 0, // Include views property
-      }));
-      
-      setUserPolls(userPollsData);
-    } catch (error: any) {
-      console.error('Error fetching user polls:', error);
-      toast.error('Failed to load user polls');
-    } finally {
-      setLoading(false);
+  const fetchFollowCounts = async () => {
+    if (id) {
+      const counts = await getFollowCounts(id);
+      setFollowCounts(counts);
     }
   };
-
-  const checkIfFollowing = async () => {
-    if (!user || !id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('follows')
-        .select('id')
-        .eq('follower_id', user.id)
-        .eq('following_id', id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      
-      setIsFollowing(!!data);
-    } catch (error: any) {
-      console.error('Error checking follow status:', error);
-      setIsFollowing(false);
-    }
-  };
-
-  const handleFollow = async () => {
-    if (!user || !id) return;
-    
-    try {
-      if (isFollowing) {
-        // Unfollow
-        const { error } = await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', user.id)
-          .eq('following_id', id);
-        
+  
+  const checkCanMessage = async () => {
+    if (user && id) {
+      try {
+        const { data, error } = await supabase
+          .rpc('can_message', { user_id_1: user.id, user_id_2: id });
+          
         if (error) throw error;
-        
-        setIsFollowing(false);
-        setFollowCounts(prev => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
-        toast.success(`Unfollowed ${profileData?.username || 'user'}`);
+        setCanSendMessage(!!data);
+      } catch (error) {
+        console.error('Error checking messaging permission:', error);
+        setCanSendMessage(false);
+      }
+    }
+  };
+  
+  const handleFollowAction = async () => {
+    if (!user || !id) return;
+    
+    setActionLoading(true);
+    try {
+      if (userIsFollowing) {
+        await unfollowUser(id);
       } else {
-        // Follow
-        const { error } = await supabase
-          .from('follows')
-          .insert({
-            follower_id: user.id,
-            following_id: id
-          });
-        
-        if (error) throw error;
-        
-        setIsFollowing(true);
-        setFollowCounts(prev => ({ ...prev, followers: prev.followers + 1 }));
-        toast.success(`Followed ${profileData?.username || 'user'}`);
+        await followUser(id);
       }
-    } catch (error: any) {
-      console.error('Error following/unfollowing user:', error);
-      toast.error('Failed to follow/unfollow user');
+      await checkFollowStatus();
+      await fetchFollowCounts();
+      await checkCanMessage();
+    } finally {
+      setActionLoading(false);
     }
   };
-
-  const getFollowCounts = async (userId: string) => {
-    try {
-      const { count: followersCount, error: followersError } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_id', userId);
-      
-      const { count: followingCount, error: followingError } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', userId);
-      
-      if (followersError) throw followersError;
-      if (followingError) throw followingError;
-      
-      return {
-        followers: followersCount || 0,
-        following: followingCount || 0
-      };
-    } catch (error: any) {
-      console.error('Error getting follow counts:', error);
-      return { followers: 0, following: 0 };
-    }
-  };
-
-  if (loading) {
+  
+  if (isLoadingProfile) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen py-12 bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Loading profile...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="pt-20 px-4 max-w-full w-full mx-auto flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
       </div>
     );
   }
-
-  if (!profileData) {
+  
+  if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen py-12 bg-gray-50">
-        <h2 className="text-2xl font-bold mb-2">User not found</h2>
-        <p className="text-muted-foreground mb-6">This user profile doesn't exist or has been deleted.</p>
-        <Link 
-          to="/"
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          Back to Home
-        </Link>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="pt-20 px-4 max-w-full w-full mx-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 text-center">
+            <p className="mb-4">User not found</p>
+            <Link 
+              to="/"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Go Home
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
-
+  
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <main className="pt-8 px-4 max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-6 mb-6">
-          <div className="flex items-center space-x-4 mb-4">
-            <img 
-              src={profileData.avatar_url || 'https://i.pravatar.cc/150'} 
-              alt={profileData.username} 
-              className="w-16 h-16 rounded-full object-cover border-2 border-primary" 
-            />
-            <div>
-              <h3 className="text-lg font-medium">{profileData.username || 'Anonymous User'}</h3>
-              <div className="flex gap-4 text-sm text-muted-foreground">
-                <span>{followCounts.followers} Followers</span>
-                <span>{followCounts.following} Following</span>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      
+      <main className="pt-20 px-4 w-full mx-auto pb-20">
+        <div className="mb-4 animate-fade-in">
+          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft size={18} className="mr-1" />
+            <span>Back to Polls</span>
+          </Link>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in">
+          <div className="flex flex-col items-center">
+            <div className="w-24 h-24 rounded-full border-2 border-red-500 overflow-hidden">
+              <img 
+                src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
+                alt={profile.username || 'User'} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            <div className="mt-4 text-center">
+              <h2 className="text-xl font-bold">{profile.username || 'Anonymous'}</h2>
+            </div>
+            
+            <div className="mt-6 flex space-x-6 justify-center">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{polls.length}</p>
+                <p className="text-sm text-muted-foreground">Polls</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.followers}</p>
+                <p className="text-sm text-muted-foreground">Followers</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.following}</p>
+                <p className="text-sm text-muted-foreground">Following</p>
               </div>
             </div>
             
-            {user && user.id !== id && (
-              <button
-                onClick={handleFollow}
-                className={`ml-auto inline-flex items-center px-4 py-2 rounded-lg transition-colors
-                  ${isFollowing === true
-                    ? 'bg-red-500 text-white hover:bg-red-600'
-                    : isFollowing === false
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                disabled={isFollowing === null}
-              >
-                {isFollowing === true ? (
-                  <>
-                    <UserX className="h-4 w-4 mr-2" />
-                    Unfollow
-                  </>
-                ) : isFollowing === false ? (
-                  <>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Follow
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="h-4 w-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
+            {user && user.id !== profile.id && (
+              <div className="mt-4 flex space-x-3 w-full max-w-xs">
+                <Button
+                  onClick={handleFollowAction}
+                  disabled={actionLoading}
+                  variant={userIsFollowing ? "secondary" : "default"}
+                  className="flex-1"
+                >
+                  {actionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : userIsFollowing ? (
+                    <>
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </Button>
+                
+                {canSendMessage && (
+                  <Button
+                    asChild
+                    variant="secondary"
+                    className="flex-1"
+                  >
+                    <Link to={`/messages/${id}`}>
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      <span>Message</span>
+                    </Link>
+                  </Button>
                 )}
-              </button>
+              </div>
             )}
           </div>
         </div>
         
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold">User Polls</h3>
-        </div>
-        
-        {userPolls.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-8 text-center">
-            <h3 className="text-lg font-medium mb-2">No polls yet</h3>
-            <p className="text-muted-foreground mb-4">This user hasn't created any polls.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {userPolls.map((poll) => (
-              <PollCard key={poll.id} poll={poll} />
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="polls" className="w-full animate-fade-in">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="polls">Polls</TabsTrigger>
+            <TabsTrigger value="followers">Followers</TabsTrigger>
+            <TabsTrigger value="following">Following</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="polls" className="mt-0">
+            {isLoadingPolls ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : polls.length > 0 ? (
+              <div className="space-y-4">
+                {polls.map(poll => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No polls created yet.</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="followers" className="mt-0">
+            <UserList userId={id!} type="followers" />
+          </TabsContent>
+          
+          <TabsContent value="following" className="mt-0">
+            <UserList userId={id!} type="following" />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -29,22 +30,18 @@ const PollDetail: React.FC = () => {
   
   useEffect(() => {
     // Record view when poll is loaded and view hasn't been recorded yet
-    if (poll && !viewRecorded && id) {
+    if (poll && !viewRecorded) {
       const recordView = async () => {
         try {
-          console.log(`Recording view for poll ${id}, current views: ${poll.views}`);
-          
           // Increment view count in the database
           await recordPollView(poll.id);
           
-          // Update local state to match
+          // Update local state
           setPoll(prevPoll => {
             if (!prevPoll) return null;
-            const updatedViews = (prevPoll.views || 0) + 1;
-            console.log(`Updated views: ${updatedViews}`);
             return {
               ...prevPoll,
-              views: updatedViews
+              views: (prevPoll.views || 0) + 1
             };
           });
           
@@ -56,7 +53,7 @@ const PollDetail: React.FC = () => {
       
       recordView();
     }
-  }, [poll, viewRecorded, recordPollView, id]);
+  }, [poll, viewRecorded, recordPollView]);
   
   const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
@@ -193,7 +190,7 @@ const PollDetail: React.FC = () => {
         </div>
         
         <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5">
-          <CommentSection pollId={poll?.id || ''} />
+          <CommentSection pollId={poll.id} />
         </div>
       </main>
     </div>

@@ -129,6 +129,10 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           <div className="pill bg-secondary text-secondary-foreground">
             {poll.totalVotes} votes
           </div>
+          <div className="pill bg-secondary/70 text-secondary-foreground flex items-center">
+            <Eye className="h-3 w-3 mr-1" />
+            {poll.views || 0} views
+          </div>
         </div>
       </div>
       
@@ -283,14 +287,10 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
         )}
       </Collapsible>
       
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3">
         <div className="flex items-center">
           <MessageCircle size={15} className="mr-1 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">{poll.commentCount} comments</span>
-        </div>
-        <div className="flex items-center">
-          <Eye size={15} className="mr-1 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">{poll.views || 0} views</span>
         </div>
       </div>
     </>

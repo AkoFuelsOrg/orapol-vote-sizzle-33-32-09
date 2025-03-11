@@ -1,41 +1,136 @@
-// Profile.tsx
-import React, { useState, useEffect } from 'react';
-import { useSupabase } from '../context/SupabaseContext';
-import { Link, useNavigate } from 'react-router-dom';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
 import Header from '../components/Header';
-import { Loader2, Pencil, Plus, UserPlus, UserCheck, UserX } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { Poll, PollOption } from '../lib/types';
+import { useSupabase } from '../context/SupabaseContext';
+import { Pencil, Upload, Loader2, UserCircle, Users, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { Json } from '@/integrations/supabase/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import UserList from '../components/UserList';
+import { supabase } from '../integrations/supabase/client';
+import { Poll, PollOption } from '../lib/types';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 const Profile: React.FC = () => {
-  const [polls, setPolls] = useState<Poll[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [animateItems, setAnimateItems] = useState(false);
-  const { user } = useSupabase();
-  const [profile, setProfile] = useState<any>(null);
-  const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
-  const navigate = useNavigate();
+  const { polls, currentUser } = usePollContext();
+  const { user, profile, updateProfile, loading: profileLoading, getFollowCounts, updatePassword } = useSupabase();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [username, setUsername] = useState(profile?.username || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
+  const [userPolls, setUserPolls] = useState<Poll[]>([]);
+  const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
+  const [isLoadingPolls, setIsLoadingPolls] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
+    if (user) {
+      fetchFollowCounts();
+      fetchUserPolls();
     }
-    
-    fetchProfile();
-    fetchPolls();
-    checkIfFollowing();
   }, [user]);
   
-  useEffect(() => {
-    // Trigger animations after a small delay for a staggered effect
-    setAnimateItems(true);
-  }, [polls]);
+  const fetchFollowCounts = async () => {
+    if (user) {
+      const counts = await getFollowCounts(user.id);
+      setFollowCounts(counts);
+    }
+  };
   
-  const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
+  const fetchUserPolls = async () => {
+    if (!user) return;
+    
+    setIsLoadingPolls(true);
+    try {
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (pollsError) throw pollsError;
+      
+      const { data: votesData, error: votesError } = await supabase
+        .from('poll_votes')
+        .select('poll_id, option_id')
+        .eq('user_id', user.id);
+        
+      if (votesError) throw votesError;
+      
+      const votedPollIds = votesData?.map(vote => vote.poll_id) || [];
+      
+      const { data: votedPollsData, error: votedPollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .in('id', votedPollIds.length > 0 ? votedPollIds : ['no-polls'])
+        .order('created_at', { ascending: false });
+        
+      if (votedPollsError && votedPollIds.length > 0) throw votedPollsError;
+      
+      setUserPolls(formatPollsData(pollsData || [], votesData || []));
+      setVotedPolls(formatPollsData(votedPollsData || [], votesData || []));
+    } catch (error) {
+      console.error('Error fetching user polls:', error);
+      toast.error('Failed to load your polls');
+    } finally {
+      setIsLoadingPolls(false);
+    }
+  };
+  
+  const formatPollsData = (pollsData: any[], votesData: any[]): Poll[] => {
+    if (!pollsData || pollsData.length === 0) return [];
+    
+    const userVotes: Record<string, string> = {};
+    votesData.forEach(vote => {
+      userVotes[vote.poll_id] = vote.option_id;
+    });
+    
+    return pollsData.map(poll => {
+      const options = convertJsonToPollOptions(poll.options);
+      return {
+        id: poll.id,
+        question: poll.question,
+        options,
+        author: {
+          id: poll.profiles?.id || '',
+          name: poll.profiles?.username || 'Anonymous',
+          avatar: poll.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles?.id || ''}`
+        },
+        createdAt: poll.created_at,
+        totalVotes: poll.total_votes || 0,
+        commentCount: poll.comment_count || 0,
+        userVoted: userVotes[poll.id],
+        image: poll.image
+      };
+    });
+  };
+  
+  const convertJsonToPollOptions = (jsonOptions: any): PollOption[] => {
     if (typeof jsonOptions === 'string') {
       try {
         return JSON.parse(jsonOptions);
@@ -48,12 +143,11 @@ const Profile: React.FC = () => {
     if (Array.isArray(jsonOptions)) {
       return jsonOptions.map(opt => {
         if (typeof opt === 'object' && opt !== null) {
-          const option = opt as Record<string, unknown>;
           return {
-            id: String(option?.id || ''),
-            text: String(option?.text || ''),
-            votes: Number(option?.votes || 0),
-            imageUrl: option?.imageUrl as string | undefined
+            id: String(opt.id || ''),
+            text: String(opt.text || ''),
+            votes: Number(opt.votes || 0),
+            imageUrl: opt.imageUrl
           };
         }
         return { id: '', text: '', votes: 0 };
@@ -63,250 +157,320 @@ const Profile: React.FC = () => {
     return [];
   };
   
-  const fetchProfile = async () => {
-    if (!user) return;
+  const handleSaveProfile = async () => {
+    if (!username.trim()) {
+      toast.error('Username cannot be empty');
+      return;
+    }
     
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (profileError) throw profileError;
-      
-      setProfile(profileData);
+      await updateProfile({ username });
+      setIsEditing(false);
+      toast.success('Profile updated successfully');
     } catch (error: any) {
-      console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile');
+      toast.error('Failed to update profile');
+      console.error('Error updating profile:', error);
     }
   };
   
-  const fetchPolls = async () => {
-    if (!user) return;
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword || !currentPassword) {
+      toast.error('All password fields are required');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error('New password should be at least 6 characters');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
     
     try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('polls')
-        .select(`
-          id,
-          question,
-          options,
-          created_at,
-          total_votes,
-          comment_count,
-          image,
-          views,
-          profiles:user_id (id, username, avatar_url)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (error) throw error;
-      
-      const { data: votesData, error: votesError } = await supabase
-        .from('poll_votes')
-        .select('poll_id, option_id')
-        .eq('user_id', user.id)
-        .in('poll_id', data.map(poll => poll.id));
-      
-      if (votesError) throw votesError;
-      
-      const votedOptions: Record<string, string> = votesData.reduce((acc, vote) => {
-        acc[vote.poll_id] = vote.option_id;
-        return acc;
-      }, {} as Record<string, string>);
-      
-      const userPolls = data.map((poll) => ({
-        id: poll.id,
-        question: poll.question,
-        options: convertJsonToPollOptions(poll.options),
-        author: {
-          id: poll.profiles.id,
-          name: poll.profiles.username || 'Anonymous',
-          avatar: poll.profiles.avatar_url || 'https://i.pravatar.cc/150',
-        },
-        createdAt: poll.created_at,
-        totalVotes: poll.total_votes || 0,
-        commentCount: poll.comment_count || 0,
-        userVoted: votedOptions[poll.id] || null,
-        image: poll.image,
-        views: poll.views || 0,
-      }));
-      
-      setPolls(userPolls);
+      await updatePassword(currentPassword, newPassword);
+      setIsChangingPassword(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.success('Password updated successfully');
     } catch (error: any) {
-      console.error('Error fetching polls:', error);
-      toast.error('Failed to load polls');
-    } finally {
-      setLoading(false);
+      toast.error('Failed to update password');
+      console.error('Error updating password:', error);
     }
   };
   
-  const handleFollow = async () => {
-    if (!user || !profile) return;
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
     
     try {
-      if (isFollowing) {
-        const { error: deleteError } = await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', user.id)
-          .eq('following_id', profile.id);
-        
-        if (deleteError) throw deleteError;
-        
-        setIsFollowing(false);
-        toast.success(`Unfollowed ${profile.username}`);
-      } else {
-        const { error: insertError } = await supabase
-          .from('follows')
-          .insert({
-            follower_id: user.id,
-            following_id: profile.id
-          });
-        
-        if (insertError) throw insertError;
-        
-        setIsFollowing(true);
-        toast.success(`Followed ${profile.username}`);
+      setUploading(true);
+      const file = e.target.files[0];
+      
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
       }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      
+      await updateProfile({ file });
+      toast.success('Profile image updated successfully');
     } catch (error: any) {
-      console.error('Error following/unfollowing user:', error);
-      toast.error('Failed to follow/unfollow user');
+      toast.error('Failed to upload image');
+      console.error('Error uploading image:', error);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
   
-  const checkIfFollowing = async () => {
-    if (!user || !profile) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('follows')
-        .select('*')
-        .eq('follower_id', user.id)
-        .eq('following_id', user.id);
-      
-      if (error) throw error;
-      
-      setIsFollowing(data.length > 0);
-    } catch (error: any) {
-      console.error('Error checking if following:', error);
-      setIsFollowing(false);
-    }
-  };
-  
-  if (!user) {
-    return null;
-  }
+  const avatarUrl = profile?.avatar_url || (user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : '');
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 w-full">
       <Header />
       
-      <main className="pt-20 px-4 max-w-3xl mx-auto">
-        <div className="mb-6 animate-fade-in">
-          <h2 className="text-2xl font-bold">Your Profile</h2>
-          <p className="text-muted-foreground">Manage your polls and profile settings</p>
-        </div>
-        
-        {profile && (
-          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-6 mb-6 animate-fade-in">
-            <div className="flex items-center space-x-4 mb-4">
-              <img 
-                src={profile.avatar_url || 'https://i.pravatar.cc/150'} 
-                alt={profile.username} 
-                className="w-16 h-16 rounded-full object-cover border-2 border-primary" 
-              />
-              <div>
-                <h3 className="text-lg font-medium">{profile.username}</h3>
-                <p className="text-muted-foreground">{profile.email}</p>
+      <main className="pt-20 px-4 max-w-4xl mx-auto pb-20 w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in w-full">
+          <div className="flex flex-col items-center">
+            <div className="relative group">
+              <div 
+                onClick={handleImageClick}
+                className="w-24 h-24 rounded-full border-2 border-red-500 overflow-hidden cursor-pointer group-hover:opacity-80 transition-opacity relative"
+              >
+                {uploading ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <>
+                    <img 
+                      src={avatarUrl} 
+                      alt={profile?.username || 'User'} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                      <Upload className="h-8 w-8 text-white" />
+                    </div>
+                  </>
+                )}
               </div>
+              <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
             
-            <div className="flex items-center justify-between">
-              <Link 
-                to="/profile" 
-                className="inline-flex items-center px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Link>
+            <div className="mt-4 text-center w-full">
+              {isEditing ? (
+                <div className="space-y-2">
+                  <input 
+                    type="text" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="px-3 py-2 border border-input rounded text-center w-full focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="Enter username"
+                  />
+                  <div className="flex space-x-2 justify-center">
+                    <button 
+                      onClick={handleSaveProfile}
+                      disabled={profileLoading}
+                      className="px-4 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
+                    >
+                      {profileLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setIsEditing(false);
+                        setUsername(profile?.username || '');
+                      }}
+                      className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded text-sm hover:bg-secondary/90 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <h2 className="text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                </div>
+              )}
+              <p className="text-muted-foreground mt-1">{user?.email}</p>
               
-              {user.id !== profile.id && (
-                <button
-                  onClick={handleFollow}
-                  className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors
-                    ${isFollowing === true
-                      ? 'bg-red-500 text-white hover:bg-red-600'
-                      : isFollowing === false
-                        ? 'bg-green-500 text-white hover:bg-green-600'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  disabled={isFollowing === null}
+              {!isChangingPassword ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsChangingPassword(true)} 
+                  className="mt-2"
                 >
-                  {isFollowing === true ? (
-                    <>
-                      <UserX className="h-4 w-4 mr-2" />
-                      Unfollow
-                    </>
-                  ) : isFollowing === false ? (
-                    <>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Follow
-                    </>
-                  ) : (
-                    <>
-                      <UserCheck className="h-4 w-4 mr-2 animate-spin" />
-                      Checking...
-                    </>
-                  )}
-                </button>
+                  <Lock className="w-4 h-4 mr-2" />
+                  Change Password
+                </Button>
+              ) : (
+                <div className="mt-4 space-y-3 max-w-sm mx-auto">
+                  <h3 className="font-medium text-left">Change Password</h3>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Current Password"
+                    />
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New Password"
+                    />
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm New Password"
+                    />
+                    <div className="flex justify-end space-x-2 pt-2">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setCurrentPassword('');
+                          setNewPassword('');
+                          setConfirmPassword('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={handleChangePassword}
+                        disabled={profileLoading}
+                      >
+                        {profileLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Update Password'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
-        )}
-        
-        <div className="mb-6 animate-fade-in">
-          <h3 className="text-xl font-semibold">Your Polls</h3>
+          
+          <div className="mt-6 flex space-x-6 justify-center">
+            <div className="text-center">
+              <p className="text-2xl font-bold">{userPolls.length}</p>
+              <p className="text-sm text-muted-foreground">Polls</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">{followCounts.followers}</p>
+              <p className="text-sm text-muted-foreground">Followers</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">{followCounts.following}</p>
+              <p className="text-sm text-muted-foreground">Following</p>
+            </div>
+          </div>
         </div>
         
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : polls.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-8 text-center">
-            <h3 className="text-lg font-medium mb-2">No polls yet</h3>
-            <p className="text-muted-foreground mb-4">Create your first poll!</p>
-            <Link 
-              to="/create" 
-              className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Poll
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {polls.map((poll, index) => (
-              <div 
-                key={poll.id} 
-                className={`transition-opacity duration-500 ${
-                  animateItems 
-                    ? 'opacity-100' 
-                    : 'opacity-0'
-                }`}
-                style={{ transitionDelay: `${index * 100}ms` }}
-              >
-                <PollCard poll={poll} />
+        <Tabs defaultValue="polls" className="w-full animate-fade-in">
+          <TabsList className="grid grid-cols-4 mb-4">
+            <TabsTrigger value="polls">My Polls</TabsTrigger>
+            <TabsTrigger value="voted">Voted</TabsTrigger>
+            <TabsTrigger value="followers">Followers</TabsTrigger>
+            <TabsTrigger value="following">Following</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="polls" className="mt-0">
+            {isLoadingPolls ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ))}
-          </div>
-        )}
+            ) : userPolls.length > 0 ? (
+              <div className="space-y-4">
+                {userPolls.map(poll => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">You haven't created any polls yet.</p>
+                <div className="inline-block">
+                  <a 
+                    href="/create" 
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Create Your First Poll
+                  </a>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="voted" className="mt-0">
+            {isLoadingPolls ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : votedPolls.length > 0 ? (
+              <div className="space-y-4">
+                {votedPolls.map(poll => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>You haven't voted on any polls yet.</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="followers" className="mt-0">
+            {user ? (
+              <UserList userId={user.id} type="followers" />
+            ) : (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="following" className="mt-0">
+            {user ? (
+              <UserList userId={user.id} type="following" />
+            ) : (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

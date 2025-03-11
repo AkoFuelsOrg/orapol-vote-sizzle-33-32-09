@@ -308,12 +308,6 @@ export type Database = {
           unread_count: number
         }[]
       }
-      increment_poll_views: {
-        Args: {
-          poll_id: string
-        }
-        Returns: undefined
-      }
     }
     Enums: {
       [_ in never]: never
