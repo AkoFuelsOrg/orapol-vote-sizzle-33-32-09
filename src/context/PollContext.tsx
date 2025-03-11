@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState } from 'react';
 import { Poll, Comment, User, PollOption } from '../lib/types';
 import { initialPolls, initialComments, currentUser } from '../lib/data';
 import { toast } from "sonner";
+import { supabase } from '../integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 interface PollContextType {
   polls: Poll[];
