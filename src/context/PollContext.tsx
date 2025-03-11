@@ -148,6 +148,7 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const recordPollView = async (pollId: string) => {
     try {
+      // Update local state first
       setPolls(
         polls.map((poll) => {
           if (poll.id === pollId) {
@@ -160,24 +161,21 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       );
       
+      // Record view in database
       const { error } = await supabase
         .from('poll_views')
         .insert({
           poll_id: pollId,
           user_id: supabase.auth.getUser() ? (await supabase.auth.getUser()).data.user?.id : null,
           ip_address: null
-        })
-        .select('id')
-        .single();
+        });
       
       if (error && error.code !== '23505') {
         console.error('Error recording poll view:', error);
       }
       
-      await supabase
-        .from('polls')
-        .update({ views: supabase.rpc('get_poll_views_count', { poll_id_param: pollId }) })
-        .eq('id', pollId);
+      // Call the increment_poll_views function instead of trying to update with RPC result
+      await supabase.rpc('increment_poll_views', { poll_id: pollId });
       
     } catch (error) {
       console.error('Error recording poll view:', error);
