@@ -158,7 +158,7 @@ const PollDetail: React.FC = () => {
         </div>
         
         <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5">
-          <CommentSection pollId={poll.id} />
+          <CommentSection />
         </div>
       </main>
     </div>

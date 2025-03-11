@@ -30,8 +30,13 @@ interface CommentType {
   reply_count?: number;
 }
 
-const CommentSection = () => {
-  const { id: pollId } = useParams<{ id: string }>();
+interface CommentSectionProps {
+  pollId?: string;
+}
+
+const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) => {
+  const { id: paramPollId } = useParams<{ id: string }>();
+  const pollId = propPollId || paramPollId;
   const { user, profile } = useSupabase();
   const [comments, setComments] = useState<CommentType[]>([]);
   const [commentContent, setCommentContent] = useState('');
@@ -82,7 +87,7 @@ const CommentSection = () => {
       }));
       
       // Check if the current user has liked each comment
-      let formattedComments = commentsWithCounts;
+      let formattedComments: CommentType[] = [];
       
       if (user) {
         const { data: likes, error: likesError } = await supabase
@@ -95,7 +100,12 @@ const CommentSection = () => {
         const likedCommentIds = new Set(likes?.map(like => like.comment_id) || []);
         
         formattedComments = commentsWithCounts.map(comment => ({
-          ...comment,
+          id: comment.id,
+          content: comment.content,
+          created_at: comment.created_at,
+          likes: comment.likes || 0,
+          parent_id: comment.parent_id,
+          reply_count: comment.reply_count,
           author: {
             id: comment.profiles.id,
             username: comment.profiles.username || 'Anonymous',
@@ -105,7 +115,12 @@ const CommentSection = () => {
         }));
       } else {
         formattedComments = commentsWithCounts.map(comment => ({
-          ...comment,
+          id: comment.id,
+          content: comment.content,
+          created_at: comment.created_at,
+          likes: comment.likes || 0,
+          parent_id: comment.parent_id,
+          reply_count: comment.reply_count,
           author: {
             id: comment.profiles.id,
             username: comment.profiles.username || 'Anonymous',
@@ -146,7 +161,7 @@ const CommentSection = () => {
       if (error) throw error;
       
       // Check if the current user has liked each reply
-      let formattedReplies;
+      let formattedReplies: CommentType[] = [];
       
       if (user) {
         const { data: likes, error: likesError } = await supabase
@@ -159,7 +174,11 @@ const CommentSection = () => {
         const likedCommentIds = new Set(likes?.map(like => like.comment_id) || []);
         
         formattedReplies = data.map(reply => ({
-          ...reply,
+          id: reply.id,
+          content: reply.content,
+          created_at: reply.created_at,
+          likes: reply.likes || 0,
+          parent_id: reply.parent_id,
           author: {
             id: reply.profiles.id,
             username: reply.profiles.username || 'Anonymous',
@@ -169,7 +188,11 @@ const CommentSection = () => {
         }));
       } else {
         formattedReplies = data.map(reply => ({
-          ...reply,
+          id: reply.id,
+          content: reply.content,
+          created_at: reply.created_at,
+          likes: reply.likes || 0,
+          parent_id: reply.parent_id,
           author: {
             id: reply.profiles.id,
             username: reply.profiles.username || 'Anonymous',
@@ -237,15 +260,19 @@ const CommentSection = () => {
       // Increment the comment count on the poll
       const { error: pollError } = await supabase
         .from('polls')
-        .update({ comment_count: supabase.rpc('increment', { x: 1 }) })
+        .update({ comment_count: supabase.rpc('increment_poll_views') })
         .eq('id', pollId);
       
       if (pollError) throw pollError;
       
       // Add the new comment to the list
       if (commentData && commentData[0]) {
-        const newComment = {
-          ...commentData[0],
+        const newComment: CommentType = {
+          id: commentData[0].id,
+          content: commentData[0].content,
+          created_at: commentData[0].created_at,
+          parent_id: commentData[0].parent_id,
+          likes: commentData[0].likes || 0,
           author: {
             id: profile?.id || user.id,
             username: profile?.username || 'Anonymous',
@@ -285,10 +312,13 @@ const CommentSection = () => {
         
         if (error) throw error;
         
-        // Decrement the likes count
+        // Manually decrement the likes count
         await supabase
           .from('comments')
-          .update({ likes: supabase.rpc('decrement', { x: 1 }) })
+          .update({ likes: (commentToUpdate) => {
+            const currLikes = commentToUpdate.likes || 0;
+            return Math.max(0, currLikes - 1);
+          }})
           .eq('id', commentId);
       } else {
         // Like the comment
@@ -301,10 +331,13 @@ const CommentSection = () => {
         
         if (error) throw error;
         
-        // Increment the likes count
+        // Manually increment the likes count
         await supabase
           .from('comments')
-          .update({ likes: supabase.rpc('increment', { x: 1 }) })
+          .update({ likes: (commentToUpdate) => {
+            const currLikes = commentToUpdate.likes || 0;
+            return currLikes + 1;
+          }})
           .eq('id', commentId);
       }
       
@@ -355,17 +388,21 @@ const CommentSection = () => {
       if (replyError) throw replyError;
       
       // Increment the comment count on the poll
-      const { error: pollError } = await supabase
+      await supabase
         .from('polls')
-        .update({ comment_count: supabase.rpc('increment', { x: 1 }) })
+        .update({ comment_count: (pollToUpdate) => {
+          return (pollToUpdate.comment_count || 0) + 1;
+        }})
         .eq('id', pollId);
-      
-      if (pollError) throw pollError;
       
       // Add the new reply to the list if replies are currently shown
       if (replyData && replyData[0] && showReplies[parentId]) {
-        const newReply = {
-          ...replyData[0],
+        const newReply: CommentType = {
+          id: replyData[0].id,
+          content: replyData[0].content,
+          created_at: replyData[0].created_at,
+          parent_id: replyData[0].parent_id,
+          likes: replyData[0].likes || 0,
           author: {
             id: profile?.id || user.id,
             username: profile?.username || 'Anonymous',
