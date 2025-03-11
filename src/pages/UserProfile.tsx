@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -11,10 +10,11 @@ import { Poll, PollOption } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
 
 const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, followUser, unfollowUser, isFollowing, getFollowCounts } = useSupabase();
+  const { user, followUser, unfollowUser, isFollowing } = useSupabase();
   const [profile, setProfile] = useState<any | null>(null);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -23,12 +23,13 @@ const UserProfile: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [canSendMessage, setCanSendMessage] = useState(false);
+  const [activeTab, setActiveTab] = useState("polls");
   
   useEffect(() => {
     if (id) {
       fetchUserProfile(id);
       fetchUserPolls(id);
-      fetchFollowCounts(); // Always fetch follow counts regardless of login status
+      fetchFollowCounts();
       
       if (user) {
         checkFollowStatus();
@@ -36,6 +37,12 @@ const UserProfile: React.FC = () => {
       }
     }
   }, [id, user]);
+
+  useEffect(() => {
+    if (activeTab === "followers" || activeTab === "following") {
+      fetchFollowCounts();
+    }
+  }, [activeTab]);
   
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -168,13 +175,13 @@ const UserProfile: React.FC = () => {
   const fetchFollowCounts = async () => {
     if (id) {
       try {
-        // Direct Supabase query to get followers count
+        console.log("Fetching follow counts for user ID:", id);
+        
         const { count: followersCount, error: followersError } = await supabase
           .from('follows')
           .select('id', { count: 'exact', head: true })
           .eq('following_id', id);
         
-        // Direct Supabase query to get following count
         const { count: followingCount, error: followingError } = await supabase
           .from('follows')
           .select('id', { count: 'exact', head: true })
@@ -182,6 +189,8 @@ const UserProfile: React.FC = () => {
         
         if (followersError) throw followersError;
         if (followingError) throw followingError;
+        
+        console.log("Follow counts:", { followers: followersCount || 0, following: followingCount || 0 });
         
         setFollowCounts({
           followers: followersCount || 0,
@@ -216,12 +225,17 @@ const UserProfile: React.FC = () => {
     try {
       if (userIsFollowing) {
         await unfollowUser(id);
+        toast.success("Unfollowed successfully");
       } else {
         await followUser(id);
+        toast.success("Followed successfully");
       }
       await checkFollowStatus();
       await fetchFollowCounts();
       await checkCanMessage();
+    } catch (error) {
+      console.error("Follow action error:", error);
+      toast.error("Failed to update follow status");
     } finally {
       setActionLoading(false);
     }
@@ -338,7 +352,13 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
         
-        <Tabs defaultValue="polls" className="w-full animate-fade-in">
+        <Tabs 
+          defaultValue="polls" 
+          className="w-full animate-fade-in"
+          onValueChange={(value) => {
+            setActiveTab(value);
+          }}
+        >
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="polls">Polls</TabsTrigger>
             <TabsTrigger value="followers">Followers</TabsTrigger>
@@ -364,11 +384,23 @@ const UserProfile: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="followers" className="mt-0">
-            <UserList userId={id!} type="followers" />
+            <UserList 
+              userId={id!} 
+              type="followers" 
+              onCountChange={(count) => {
+                setFollowCounts(prev => ({ ...prev, followers: count }));
+              }}
+            />
           </TabsContent>
           
           <TabsContent value="following" className="mt-0">
-            <UserList userId={id!} type="following" />
+            <UserList 
+              userId={id!} 
+              type="following"
+              onCountChange={(count) => {
+                setFollowCounts(prev => ({ ...prev, following: count }));
+              }} 
+            />
           </TabsContent>
         </Tabs>
       </main>

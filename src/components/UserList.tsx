@@ -7,6 +7,7 @@ import { Loader2, User as UserIcon } from 'lucide-react';
 interface UserListProps {
   userId: string;
   type: 'followers' | 'following';
+  onCountChange?: (count: number) => void;
 }
 
 interface UserData {
@@ -15,7 +16,7 @@ interface UserData {
   avatar_url: string | null;
 }
 
-const UserList: React.FC<UserListProps> = ({ userId, type }) => {
+const UserList: React.FC<UserListProps> = ({ userId, type, onCountChange }) => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,9 +50,11 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           
           if (profilesData) {
             setUsers(profilesData);
+            if (onCountChange) onCountChange(profilesData.length);
           }
         } else {
           setUsers([]);
+          if (onCountChange) onCountChange(0);
         }
       } else {
         // Get profiles of users that the current user follows
@@ -73,9 +76,11 @@ const UserList: React.FC<UserListProps> = ({ userId, type }) => {
           
           if (profilesData) {
             setUsers(profilesData);
+            if (onCountChange) onCountChange(profilesData.length);
           }
         } else {
           setUsers([]);
+          if (onCountChange) onCountChange(0);
         }
       }
     } catch (error: any) {
