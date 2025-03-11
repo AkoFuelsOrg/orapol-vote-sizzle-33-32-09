@@ -1,133 +1,62 @@
 
 import React, { useState, useEffect } from 'react';
-import { Heart, Send, Loader2, Reply, MessageSquare } from 'lucide-react';
-import { useSupabase } from '../context/SupabaseContext';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Comment } from '../lib/types';
-import { toast } from 'sonner';
+import { useSupabase } from '../context/SupabaseContext';
+import { User } from '../lib/types';
+import { MessageSquare, Heart, Send, Reply, ChevronDown, ChevronUp } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
+import { Card } from './ui/card';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
-interface CommentSectionProps {
-  pollId: string;
+interface CommentAuthor {
+  id: string;
+  username: string | null;
+  avatar_url: string | null;
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
-  const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<Comment[]>([]);
+interface CommentType {
+  id: string;
+  content: string;
+  created_at: string;
+  author: CommentAuthor;
+  likes: number;
+  user_has_liked: boolean;
+  parent_id: string | null;
+  reply_count?: number;
+}
+
+const CommentSection = () => {
+  const { id: pollId } = useParams<{ id: string }>();
+  const { user, profile } = useSupabase();
+  const [comments, setComments] = useState<CommentType[]>([]);
+  const [commentContent, setCommentContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const { user, profile } = useSupabase();
-  const [likedComments, setLikedComments] = useState<{[key: string]: boolean}>({});
-  const [replyTo, setReplyTo] = useState<string | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [submittingReply, setSubmittingReply] = useState(false);
-  
-  useEffect(() => {
-    fetchComments();
-    
-    // Set up realtime subscription for new comments
-    const channel = supabase
-      .channel('public:comments')
-      .on(
-        'postgres_changes',
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'comments',
-          filter: `poll_id=eq.${pollId}`
-        },
-        (payload) => {
-          fetchCommentDetails(payload.new.id);
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [pollId]);
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [showReplies, setShowReplies] = useState<Record<string, boolean>>({});
+  const [repliesLoading, setRepliesLoading] = useState<Record<string, boolean>>({});
 
-  // Fetch user liked comments on mount
-  useEffect(() => {
-    if (user) {
-      fetchUserLikedComments();
-    }
-  }, [user]);
-  
-  const fetchUserLikedComments = async () => {
-    if (!user) return;
+  const loadComments = async () => {
+    if (!pollId) return;
     
-    try {
-      const { data, error } = await supabase
-        .from('comment_likes')
-        .select('comment_id')
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      const likes: {[key: string]: boolean} = {};
-      data.forEach(like => {
-        likes[like.comment_id] = true;
-      });
-      
-      setLikedComments(likes);
-    } catch (error) {
-      console.error('Error fetching liked comments:', error);
-    }
-  };
-  
-  const fetchCommentDetails = async (commentId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          likes,
-          poll_id,
-          parent_id,
-          profiles:user_id (id, username, avatar_url)
-        `)
-        .eq('id', commentId)
-        .single();
-      
-      if (error) throw error;
-      
-      if (data) {
-        const formattedComment: Comment = {
-          id: data.id,
-          pollId: data.poll_id,
-          content: data.content,
-          createdAt: data.created_at,
-          likes: data.likes || 0,
-          parentId: data.parent_id,
-          author: {
-            id: data.profiles.id,
-            name: data.profiles.username || 'Anonymous',
-            avatar: data.profiles.avatar_url || 'https://i.pravatar.cc/150'
-          }
-        };
-        
-        setComments(prev => [formattedComment, ...prev]);
-      }
-    } catch (error) {
-      console.error('Error fetching new comment:', error);
-    }
-  };
-  
-  const fetchComments = async () => {
     try {
       setLoading(true);
       
+      // Fetch only top-level comments (no parent_id)
       const { data, error } = await supabase
         .from('comments')
         .select(`
-          id,
-          content,
-          created_at,
-          likes,
-          poll_id,
+          id, 
+          content, 
+          created_at, 
+          likes, 
           parent_id,
           profiles:user_id (id, username, avatar_url)
         `)
@@ -136,437 +65,573 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId }) => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-
-      // Fetch all replies to any comment
-      const { data: repliesData, error: repliesError } = await supabase
-        .from('comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          likes,
-          poll_id,
-          parent_id,
-          profiles:user_id (id, username, avatar_url)
-        `)
-        .eq('poll_id', pollId)
-        .not('parent_id', 'is', null)
-        .order('created_at', { ascending: true });
-        
-      if (repliesError) throw repliesError;
       
-      if (data) {
-        const formattedComments: Comment[] = data.map(comment => ({
-          id: comment.id,
-          pollId: comment.poll_id,
-          content: comment.content,
-          createdAt: comment.created_at,
-          likes: comment.likes || 0,
-          parentId: comment.parent_id,
+      // Count replies for each comment
+      const commentsWithCounts = await Promise.all(data.map(async (comment) => {
+        const { count, error: countError } = await supabase
+          .from('comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('parent_id', comment.id);
+        
+        if (countError) throw countError;
+        
+        return {
+          ...comment,
+          reply_count: count || 0
+        };
+      }));
+      
+      // Check if the current user has liked each comment
+      let formattedComments = commentsWithCounts;
+      
+      if (user) {
+        const { data: likes, error: likesError } = await supabase
+          .from('comment_likes')
+          .select('comment_id')
+          .eq('user_id', user.id);
+        
+        if (likesError) throw likesError;
+        
+        const likedCommentIds = new Set(likes?.map(like => like.comment_id) || []);
+        
+        formattedComments = commentsWithCounts.map(comment => ({
+          ...comment,
           author: {
             id: comment.profiles.id,
-            name: comment.profiles.username || 'Anonymous',
-            avatar: comment.profiles.avatar_url || `https://i.pravatar.cc/150?u=${comment.profiles.id}`
+            username: comment.profiles.username || 'Anonymous',
+            avatar_url: comment.profiles.avatar_url
           },
-          replies: []
+          user_has_liked: likedCommentIds.has(comment.id)
         }));
-
-        // Format replies and attach them to parent comments
-        if (repliesData) {
-          const replies: Comment[] = repliesData.map(reply => ({
-            id: reply.id,
-            pollId: reply.poll_id,
-            content: reply.content,
-            createdAt: reply.created_at,
-            likes: reply.likes || 0,
-            parentId: reply.parent_id,
-            author: {
-              id: reply.profiles.id,
-              name: reply.profiles.username || 'Anonymous',
-              avatar: reply.profiles.avatar_url || `https://i.pravatar.cc/150?u=${reply.profiles.id}`
-            }
-          }));
-
-          // Attach replies to their parent comments
-          for (const reply of replies) {
-            if (reply.parentId) {
-              const parentComment = formattedComments.find(c => c.id === reply.parentId);
-              if (parentComment) {
-                if (!parentComment.replies) {
-                  parentComment.replies = [];
-                }
-                parentComment.replies.push(reply);
-              }
-            }
-          }
-        }
-        
-        setComments(formattedComments);
+      } else {
+        formattedComments = commentsWithCounts.map(comment => ({
+          ...comment,
+          author: {
+            id: comment.profiles.id,
+            username: comment.profiles.username || 'Anonymous',
+            avatar_url: comment.profiles.avatar_url
+          },
+          user_has_liked: false
+        }));
       }
+      
+      setComments(formattedComments);
     } catch (error: any) {
-      console.error('Error fetching comments:', error);
+      console.error('Error loading comments:', error);
       toast.error('Failed to load comments');
     } finally {
       setLoading(false);
     }
   };
-  
+
+  const loadReplies = async (commentId: string) => {
+    if (!commentId) return;
+    
+    try {
+      setRepliesLoading(prev => ({ ...prev, [commentId]: true }));
+      
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          id, 
+          content, 
+          created_at, 
+          likes, 
+          parent_id,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .eq('parent_id', commentId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Check if the current user has liked each reply
+      let formattedReplies;
+      
+      if (user) {
+        const { data: likes, error: likesError } = await supabase
+          .from('comment_likes')
+          .select('comment_id')
+          .eq('user_id', user.id);
+        
+        if (likesError) throw likesError;
+        
+        const likedCommentIds = new Set(likes?.map(like => like.comment_id) || []);
+        
+        formattedReplies = data.map(reply => ({
+          ...reply,
+          author: {
+            id: reply.profiles.id,
+            username: reply.profiles.username || 'Anonymous',
+            avatar_url: reply.profiles.avatar_url
+          },
+          user_has_liked: likedCommentIds.has(reply.id)
+        }));
+      } else {
+        formattedReplies = data.map(reply => ({
+          ...reply,
+          author: {
+            id: reply.profiles.id,
+            username: reply.profiles.username || 'Anonymous',
+            avatar_url: reply.profiles.avatar_url
+          },
+          user_has_liked: false
+        }));
+      }
+      
+      // Merge replies into the main comments array
+      setComments(prev => [
+        ...prev.filter(c => c.parent_id !== commentId && c.id !== commentId),
+        ...formattedReplies,
+        ...prev.filter(c => c.id === commentId)
+      ]);
+      
+      setShowReplies(prev => ({ ...prev, [commentId]: true }));
+    } catch (error: any) {
+      console.error('Error loading replies:', error);
+      toast.error('Failed to load replies');
+    } finally {
+      setRepliesLoading(prev => ({ ...prev, [commentId]: false }));
+    }
+  };
+
+  const hideReplies = (commentId: string) => {
+    setShowReplies(prev => ({ ...prev, [commentId]: false }));
+    // Remove replies from the comments array
+    setComments(prev => prev.filter(c => c.parent_id !== commentId));
+  };
+
+  useEffect(() => {
+    if (pollId) {
+      loadComments();
+    }
+  }, [pollId]);
+
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!commentText.trim()) return;
     
     if (!user) {
       toast.error('Please sign in to comment');
       return;
     }
     
+    if (!commentContent.trim()) {
+      toast.error('Comment cannot be empty');
+      return;
+    }
+    
     try {
       setSubmitting(true);
       
-      // Insert the comment
-      const { error } = await supabase
+      const { data: commentData, error: commentError } = await supabase
         .from('comments')
         .insert({
           poll_id: pollId,
           user_id: user.id,
-          content: commentText.trim()
-        });
+          content: commentContent.trim()
+        })
+        .select();
       
-      if (error) throw error;
+      if (commentError) throw commentError;
       
-      // Update the poll's comment count
-      await supabase
+      // Increment the comment count on the poll
+      const { error: pollError } = await supabase
         .from('polls')
-        .update({ comment_count: comments.length + 1 })
+        .update({ comment_count: supabase.rpc('increment', { x: 1 }) })
         .eq('id', pollId);
       
-      setCommentText('');
-      toast.success('Comment added');
+      if (pollError) throw pollError;
       
+      // Add the new comment to the list
+      if (commentData && commentData[0]) {
+        const newComment = {
+          ...commentData[0],
+          author: {
+            id: profile?.id || user.id,
+            username: profile?.username || 'Anonymous',
+            avatar_url: profile?.avatar_url
+          },
+          user_has_liked: false,
+          reply_count: 0
+        };
+        
+        setComments(prev => [newComment, ...prev]);
+      }
+      
+      setCommentContent('');
+      toast.success('Comment added successfully');
     } catch (error: any) {
-      console.error('Error adding comment:', error);
+      console.error('Error submitting comment:', error);
       toast.error(error.message || 'Failed to add comment');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleSubmitReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!replyText.trim() || !replyTo) return;
-    
-    if (!user) {
-      toast.error('Please sign in to reply');
-      return;
-    }
-    
-    try {
-      setSubmittingReply(true);
-      
-      // Insert the reply
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          poll_id: pollId,
-          user_id: user.id,
-          content: replyText.trim(),
-          parent_id: replyTo
-        });
-      
-      if (error) throw error;
-      
-      // Update the poll's comment count
-      await supabase
-        .from('polls')
-        .update({ comment_count: comments.length + 1 })
-        .eq('id', pollId);
-      
-      setReplyText('');
-      setReplyTo(null);
-      toast.success('Reply added');
-      
-      // Refresh comments to include the new reply
-      fetchComments();
-      
-    } catch (error: any) {
-      console.error('Error adding reply:', error);
-      toast.error(error.message || 'Failed to add reply');
-    } finally {
-      setSubmittingReply(false);
-    }
-  };
-  
-  const handleLikeComment = async (commentId: string) => {
+  const handleLikeComment = async (commentId: string, currentlyLiked: boolean) => {
     if (!user) {
       toast.error('Please sign in to like comments');
       return;
     }
     
-    // If already liked by this user, don't allow again
-    if (likedComments[commentId]) {
-      toast.error('You already liked this comment');
+    try {
+      if (currentlyLiked) {
+        // Unlike the comment
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('comment_id', commentId);
+        
+        if (error) throw error;
+        
+        // Decrement the likes count
+        await supabase
+          .from('comments')
+          .update({ likes: supabase.rpc('decrement', { x: 1 }) })
+          .eq('id', commentId);
+      } else {
+        // Like the comment
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert({
+            user_id: user.id,
+            comment_id: commentId
+          });
+        
+        if (error) throw error;
+        
+        // Increment the likes count
+        await supabase
+          .from('comments')
+          .update({ likes: supabase.rpc('increment', { x: 1 }) })
+          .eq('id', commentId);
+      }
+      
+      // Update the comments list
+      setComments(prevComments => 
+        prevComments.map(comment => 
+          comment.id === commentId
+            ? {
+                ...comment,
+                likes: currentlyLiked 
+                  ? Math.max(0, comment.likes - 1) 
+                  : comment.likes + 1,
+                user_has_liked: !currentlyLiked
+              }
+            : comment
+        )
+      );
+    } catch (error: any) {
+      console.error('Error liking comment:', error);
+      toast.error(error.message || 'Failed to update like status');
+    }
+  };
+
+  const handleSubmitReply = async (parentId: string) => {
+    if (!user) {
+      toast.error('Please sign in to reply');
+      return;
+    }
+    
+    if (!replyContent.trim()) {
+      toast.error('Reply cannot be empty');
       return;
     }
     
     try {
-      // Find the current comment likes
-      const currentComment = findCommentById(commentId);
+      setSubmitting(true);
       
-      if (!currentComment) return;
-      
-      // First, record the like in comment_likes table
-      const { error: likeError } = await supabase
-        .from('comment_likes')
-        .insert({
-          comment_id: commentId,
-          user_id: user.id
-        });
-        
-      if (likeError) throw likeError;
-      
-      // Update the comment in the database
-      const { error } = await supabase
+      const { data: replyData, error: replyError } = await supabase
         .from('comments')
-        .update({ likes: (currentComment.likes || 0) + 1 })
-        .eq('id', commentId);
+        .insert({
+          poll_id: pollId,
+          user_id: user.id,
+          content: replyContent.trim(),
+          parent_id: parentId
+        })
+        .select();
       
-      if (error) throw error;
+      if (replyError) throw replyError;
       
-      // Mark as liked by this user
-      setLikedComments(prev => ({
-        ...prev,
-        [commentId]: true
-      }));
+      // Increment the comment count on the poll
+      const { error: pollError } = await supabase
+        .from('polls')
+        .update({ comment_count: supabase.rpc('increment', { x: 1 }) })
+        .eq('id', pollId);
       
-      // Update the local state
-      setComments(updateCommentLikes(comments, commentId));
+      if (pollError) throw pollError;
       
-      toast.success('Comment liked');
+      // Add the new reply to the list if replies are currently shown
+      if (replyData && replyData[0] && showReplies[parentId]) {
+        const newReply = {
+          ...replyData[0],
+          author: {
+            id: profile?.id || user.id,
+            username: profile?.username || 'Anonymous',
+            avatar_url: profile?.avatar_url
+          },
+          user_has_liked: false
+        };
+        
+        setComments(prev => [
+          ...prev,
+          newReply
+        ]);
+      }
       
+      // Update reply count for the parent comment
+      setComments(prev => 
+        prev.map(comment => 
+          comment.id === parentId
+            ? { ...comment, reply_count: (comment.reply_count || 0) + 1 }
+            : comment
+        )
+      );
+      
+      setReplyContent('');
+      setReplyingTo(null);
+      toast.success('Reply added successfully');
+      
+      // If replies aren't already showing, load them now
+      if (!showReplies[parentId]) {
+        loadReplies(parentId);
+      }
     } catch (error: any) {
-      console.error('Error liking comment:', error);
-      toast.error(error.message || 'Failed to like comment');
+      console.error('Error submitting reply:', error);
+      toast.error(error.message || 'Failed to add reply');
+    } finally {
+      setSubmitting(false);
     }
-  };
-  
-  // Helper function to find a comment by ID (including in replies)
-  const findCommentById = (commentId: string): Comment | null => {
-    // Check main comments
-    const mainComment = comments.find(c => c.id === commentId);
-    if (mainComment) return mainComment;
-    
-    // Check in replies
-    for (const comment of comments) {
-      if (comment.replies) {
-        const reply = comment.replies.find(r => r.id === commentId);
-        if (reply) return reply;
-      }
-    }
-    
-    return null;
-  };
-  
-  // Helper function to update likes in nested comments structure
-  const updateCommentLikes = (commentsList: Comment[], commentId: string): Comment[] => {
-    return commentsList.map(comment => {
-      if (comment.id === commentId) {
-        return {
-          ...comment,
-          likes: (comment.likes || 0) + 1
-        };
-      }
-      
-      // Check replies if they exist
-      if (comment.replies && comment.replies.length > 0) {
-        return {
-          ...comment,
-          replies: updateCommentLikes(comment.replies, commentId)
-        };
-      }
-      
-      return comment;
-    });
-  };
-  
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
   };
 
+  const toggleReplyForm = (commentId: string | null) => {
+    setReplyingTo(prevId => prevId === commentId ? null : commentId);
+    if (commentId) {
+      setReplyContent('');
+    }
+  };
+
+  const toggleExpand = (commentId: string) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
+  const toggleReplies = (commentId: string) => {
+    if (showReplies[commentId]) {
+      hideReplies(commentId);
+    } else {
+      loadReplies(commentId);
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+    } catch (error) {
+      return 'some time ago';
+    }
+  };
+
+  // Function to determine if a comment is a top-level comment
+  const isTopLevelComment = (comment: CommentType) => !comment.parent_id;
+
+  // Get only top-level comments for rendering
+  const topLevelComments = comments.filter(isTopLevelComment);
+
+  // Get replies for a specific parent comment
+  const getRepliesForComment = (commentId: string) => 
+    comments.filter(comment => comment.parent_id === commentId);
+
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4">Comments ({comments.length})</h3>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold flex items-center gap-2">
+        <MessageSquare className="h-5 w-5" />
+        Comments
+      </h2>
       
       {user ? (
-        <form onSubmit={handleSubmitComment} className="mb-6">
-          <div className="flex space-x-2">
-            <img 
-              src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
-              alt="Your avatar" 
-              className="w-8 h-8 rounded-full border-2 border-red-500 object-cover shrink-0"
-            />
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment..."
-                className="w-full py-2 px-4 pr-12 border border-input rounded-full focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-                disabled={submitting}
-              />
-              <button
-                type="submit"
-                disabled={!commentText.trim() || submitting}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
-              >
-                {submitting ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : (
-                  <Send size={18} />
-                )}
-              </button>
-            </div>
+        <form onSubmit={handleSubmitComment} className="space-y-4">
+          <Textarea
+            placeholder="Add a comment..."
+            value={commentContent}
+            onChange={(e) => setCommentContent(e.target.value)}
+            className="min-h-[100px]"
+          />
+          <div className="flex justify-end">
+            <Button 
+              type="submit" 
+              disabled={submitting || !commentContent.trim()}
+              className="flex items-center gap-2"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Post Comment
+            </Button>
           </div>
         </form>
       ) : (
-        <div className="mb-6 p-3 bg-secondary/30 rounded-lg text-center">
-          <p className="text-sm text-muted-foreground">
-            Please <a href="/auth" className="text-primary hover:underline">sign in</a> to comment
-          </p>
-        </div>
+        <Card className="p-4 text-center bg-muted/50">
+          <p>Please sign in to leave a comment</p>
+        </Card>
       )}
       
       {loading ? (
         <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : comments.length === 0 ? (
-        <div className="py-8 text-center">
-          <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>
+      ) : topLevelComments.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>No comments yet. Be the first to comment!</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {comments.map((comment) => (
-            <div key={comment.id} className="space-y-2">
-              <div className="flex space-x-3">
-                <img 
-                  src={comment.author.avatar || `https://i.pravatar.cc/150?u=${comment.author.id}`} 
-                  alt={comment.author.name} 
-                  className="w-8 h-8 rounded-full border-2 border-red-500 object-cover shrink-0 mt-1"
-                />
+          {topLevelComments.map(comment => (
+            <div key={comment.id} className="border rounded-lg p-4 bg-card">
+              <div className="flex gap-3">
+                <Avatar>
+                  <AvatarImage src={comment.author.avatar_url || ''} alt={comment.author.username || ''} />
+                  <AvatarFallback>{comment.author.username?.substring(0, 2).toUpperCase() || '??'}</AvatarFallback>
+                </Avatar>
                 <div className="flex-1">
-                  <div className="bg-secondary/30 rounded-lg p-3">
-                    <div className="flex justify-between items-start mb-1">
-                      <div>
-                        <span className="font-medium text-sm">{comment.author.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">{formatDate(comment.createdAt)}</span>
-                      </div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{comment.author.username || 'Anonymous'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatTimestamp(comment.created_at)}
+                      </p>
                     </div>
-                    <p className="text-sm break-words">{comment.content}</p>
                   </div>
-                  <div className="flex space-x-4 mt-1">
+                  <div className="mt-2">
+                    <p className={`${expandedComments[comment.id] || comment.content.length < 200 ? '' : 'line-clamp-3'}`}>
+                      {comment.content}
+                    </p>
+                    {comment.content.length > 200 && (
+                      <button 
+                        onClick={() => toggleExpand(comment.id)} 
+                        className="text-xs text-primary hover:underline mt-1"
+                      >
+                        {expandedComments[comment.id] ? 'Show less' : 'Read more'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-3 flex items-center gap-4">
                     <button 
-                      onClick={() => handleLikeComment(comment.id)}
-                      className={`flex items-center mt-1 px-2 py-1 text-xs ${
-                        likedComments[comment.id] ? 'text-red-500' : 'text-muted-foreground hover:text-primary'
-                      } transition-colors`}
-                      disabled={!user || likedComments[comment.id]}
+                      onClick={() => handleLikeComment(comment.id, comment.user_has_liked)}
+                      className="flex items-center gap-1 text-sm"
                     >
-                      <Heart size={14} className={`mr-1 ${likedComments[comment.id] ? 'fill-red-500' : ''}`} />
-                      <span>{comment.likes} likes</span>
+                      <Heart 
+                        className={`h-4 w-4 ${comment.user_has_liked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} 
+                      />
+                      <span>{comment.likes || 0}</span>
                     </button>
-                    
                     <button 
-                      onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
-                      className="flex items-center mt-1 px-2 py-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-                      disabled={!user}
+                      onClick={() => toggleReplyForm(comment.id)}
+                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                     >
-                      <Reply size={14} className="mr-1" />
-                      <span>Reply</span>
+                      <Reply className="h-4 w-4" />
+                      Reply
                     </button>
-                    
-                    {comment.replies && comment.replies.length > 0 && (
-                      <div className="flex items-center mt-1 px-2 py-1 text-xs text-muted-foreground">
-                        <MessageSquare size={14} className="mr-1" />
-                        <span>{comment.replies.length} replies</span>
-                      </div>
+                    {comment.reply_count > 0 && (
+                      <button 
+                        onClick={() => toggleReplies(comment.id)}
+                        className="flex items-center gap-1 text-sm text-primary"
+                      >
+                        {showReplies[comment.id] ? (
+                          <>
+                            <ChevronUp className="h-4 w-4" />
+                            Hide {comment.reply_count} {comment.reply_count === 1 ? 'reply' : 'replies'}
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4" />
+                            View {comment.reply_count} {comment.reply_count === 1 ? 'reply' : 'replies'}
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
                   
-                  {replyTo === comment.id && (
-                    <form onSubmit={handleSubmitReply} className="mt-2">
-                      <div className="flex space-x-2">
-                        <img 
-                          src={profile?.avatar_url || `https://i.pravatar.cc/150?u=${user?.id}`} 
-                          alt="Your avatar" 
-                          className="w-6 h-6 rounded-full border-2 border-red-500 object-cover shrink-0"
-                        />
-                        <div className="flex-1 relative">
-                          <input
-                            type="text"
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder={`Reply to ${comment.author.name}...`}
-                            className="w-full py-1.5 px-3 pr-10 text-sm border border-input rounded-full focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-                            disabled={submittingReply}
-                            autoFocus
-                          />
-                          <button
-                            type="submit"
-                            disabled={!replyText.trim() || submittingReply}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-primary disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
-                          >
-                            {submittingReply ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              <Send size={14} />
-                            )}
-                          </button>
-                        </div>
+                  {/* Reply form */}
+                  {replyingTo === comment.id && (
+                    <div className="mt-3 space-y-2">
+                      <Textarea
+                        placeholder={`Reply to ${comment.author.username || 'Anonymous'}...`}
+                        value={replyContent}
+                        onChange={(e) => setReplyContent(e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => toggleReplyForm(null)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleSubmitReply(comment.id)}
+                          disabled={submitting || !replyContent.trim()}
+                          className="flex items-center gap-2"
+                        >
+                          {submitting ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Send className="h-3 w-3" />
+                          )}
+                          Reply
+                        </Button>
                       </div>
-                    </form>
+                    </div>
                   )}
                   
-                  {/* Display replies */}
-                  {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-2 pl-4 space-y-2 border-l-2 border-secondary/50">
-                      {comment.replies.map((reply) => (
-                        <div key={reply.id} className="flex space-x-2">
-                          <img 
-                            src={reply.author.avatar || `https://i.pravatar.cc/150?u=${reply.author.id}`} 
-                            alt={reply.author.name} 
-                            className="w-6 h-6 rounded-full border-2 border-red-500 object-cover shrink-0 mt-1"
-                          />
-                          <div className="flex-1">
-                            <div className="bg-secondary/20 rounded-lg p-2">
-                              <div className="flex items-start mb-1">
-                                <span className="font-medium text-xs">{reply.author.name}</span>
-                                <span className="text-xs text-muted-foreground ml-2">{formatDate(reply.createdAt)}</span>
-                              </div>
-                              <p className="text-xs break-words">{reply.content}</p>
+                  {/* Replies */}
+                  {repliesLoading[comment.id] && (
+                    <div className="mt-4 ml-2 flex justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                  )}
+                  
+                  {showReplies[comment.id] && getRepliesForComment(comment.id).map(reply => (
+                    <div key={reply.id} className="mt-4 border-t pt-3">
+                      <div className="flex gap-2">
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={reply.author.avatar_url || ''} alt={reply.author.username || ''} />
+                          <AvatarFallback>{reply.author.username?.substring(0, 2).toUpperCase() || '??'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-sm">{reply.author.username || 'Anonymous'}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatTimestamp(reply.created_at)}
+                              </p>
                             </div>
+                          </div>
+                          <div className="mt-1">
+                            <p className="text-sm">{reply.content}</p>
+                          </div>
+                          <div className="mt-2 flex items-center gap-4">
                             <button 
-                              onClick={() => handleLikeComment(reply.id)}
-                              className={`flex items-center mt-0.5 px-1.5 py-0.5 text-xs ${
-                                likedComments[reply.id] ? 'text-red-500' : 'text-muted-foreground hover:text-primary'
-                              } transition-colors`}
-                              disabled={!user || likedComments[reply.id]}
+                              onClick={() => handleLikeComment(reply.id, reply.user_has_liked)}
+                              className="flex items-center gap-1 text-xs"
                             >
-                              <Heart size={12} className={`mr-0.5 ${likedComments[reply.id] ? 'fill-red-500' : ''}`} />
-                              <span>{reply.likes} likes</span>
+                              <Heart 
+                                className={`h-3 w-3 ${reply.user_has_liked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} 
+                              />
+                              <span>{reply.likes || 0}</span>
                             </button>
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
