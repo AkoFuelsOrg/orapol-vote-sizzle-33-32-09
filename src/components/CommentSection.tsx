@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,13 +29,8 @@ interface CommentType {
   reply_count?: number;
 }
 
-interface CommentSectionProps {
-  pollId?: string;
-}
-
-const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) => {
-  const { id: paramPollId } = useParams<{ id: string }>();
-  const pollId = propPollId || paramPollId;
+const CommentSection: React.FC = () => {
+  const { id: pollId } = useParams<{ id: string }>();
   const { user, profile } = useSupabase();
   const [comments, setComments] = useState<CommentType[]>([]);
   const [commentContent, setCommentContent] = useState('');
@@ -258,12 +252,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) =
       if (commentError) throw commentError;
       
       // Increment the comment count on the poll
-      const { error: pollError } = await supabase
+      await supabase
         .from('polls')
-        .update({ comment_count: supabase.rpc('increment_poll_views') })
+        .update({ comment_count: (polls.comment_count || 0) + 1 })
         .eq('id', pollId);
-      
-      if (pollError) throw pollError;
       
       // Add the new comment to the list
       if (commentData && commentData[0]) {
@@ -312,14 +304,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) =
         
         if (error) throw error;
         
-        // Manually decrement the likes count
-        await supabase
+        // Decrement the likes count
+        const { error: updateError } = await supabase
           .from('comments')
-          .update({ likes: (commentToUpdate) => {
-            const currLikes = commentToUpdate.likes || 0;
-            return Math.max(0, currLikes - 1);
-          }})
+          .update({ likes: Math.max(0, (comments.find(c => c.id === commentId)?.likes || 1) - 1) })
           .eq('id', commentId);
+          
+        if (updateError) throw updateError;
       } else {
         // Like the comment
         const { error } = await supabase
@@ -331,14 +322,13 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) =
         
         if (error) throw error;
         
-        // Manually increment the likes count
-        await supabase
+        // Increment the likes count
+        const { error: updateError } = await supabase
           .from('comments')
-          .update({ likes: (commentToUpdate) => {
-            const currLikes = commentToUpdate.likes || 0;
-            return currLikes + 1;
-          }})
+          .update({ likes: (comments.find(c => c.id === commentId)?.likes || 0) + 1 })
           .eq('id', commentId);
+          
+        if (updateError) throw updateError;
       }
       
       // Update the comments list
@@ -390,9 +380,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) =
       // Increment the comment count on the poll
       await supabase
         .from('polls')
-        .update({ comment_count: (pollToUpdate) => {
-          return (pollToUpdate.comment_count || 0) + 1;
-        }})
+        .update({ 
+          comment_count: (polls.comment_count || 0) + 1 
+        })
         .eq('id', pollId);
       
       // Add the new reply to the list if replies are currently shown
@@ -472,13 +462,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) =
     }
   };
 
-  // Function to determine if a comment is a top-level comment
   const isTopLevelComment = (comment: CommentType) => !comment.parent_id;
 
-  // Get only top-level comments for rendering
   const topLevelComments = comments.filter(isTopLevelComment);
 
-  // Get replies for a specific parent comment
   const getRepliesForComment = (commentId: string) => 
     comments.filter(comment => comment.parent_id === commentId);
 
@@ -594,7 +581,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) =
                     )}
                   </div>
                   
-                  {/* Reply form */}
                   {replyingTo === comment.id && (
                     <div className="mt-3 space-y-2">
                       <Textarea
@@ -628,7 +614,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({ pollId: propPollId }) =
                     </div>
                   )}
                   
-                  {/* Replies */}
                   {repliesLoading[comment.id] && (
                     <div className="mt-4 ml-2 flex justify-center">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
