@@ -62,23 +62,29 @@ const CreatePoll: React.FC = () => {
       setUploadingPollImage(true);
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${uuidv4()}.${fileExt}`;
+      const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
       
-      const { error: uploadError } = await supabase.storage
+      console.log('Attempting to upload to poll_images bucket, filepath:', filePath);
+      
+      const { error: uploadError, data } = await supabase.storage
         .from('poll_images')
-        .upload(fileName, file, { upsert: true });
+        .upload(filePath, file, { upsert: true });
         
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Error details:', uploadError);
+        throw uploadError;
+      }
       
       const { data: urlData } = supabase.storage
         .from('poll_images')
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
         
+      console.log('Upload successful, public URL:', urlData.publicUrl);
       setImageUrl(urlData.publicUrl);
       toast.success("Poll image uploaded successfully");
     } catch (error: any) {
-      toast.error(error.message || "Error uploading image");
       console.error('Error uploading poll image:', error);
+      toast.error(error.message || "Error uploading image");
     } finally {
       setUploadingPollImage(false);
     }
@@ -94,23 +100,29 @@ const CreatePoll: React.FC = () => {
       setUploadingOptionImage(index);
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${uuidv4()}.${fileExt}`;
+      const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
       
-      const { error: uploadError } = await supabase.storage
+      console.log('Attempting to upload to option_images bucket, filepath:', filePath);
+      
+      const { error: uploadError, data } = await supabase.storage
         .from('option_images')
-        .upload(fileName, file, { upsert: true });
+        .upload(filePath, file, { upsert: true });
         
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Error details:', uploadError);
+        throw uploadError;
+      }
       
       const { data: urlData } = supabase.storage
         .from('option_images')
-        .getPublicUrl(fileName);
-        
+        .getPublicUrl(filePath);
+      
+      console.log('Upload successful, public URL:', urlData.publicUrl);
       handleOptionImageChange(index, urlData.publicUrl);
       toast.success("Image uploaded successfully");
     } catch (error: any) {
-      toast.error(error.message || "Error uploading image");
       console.error('Error uploading image:', error);
+      toast.error(error.message || "Error uploading image");
     } finally {
       setUploadingOptionImage(null);
     }
