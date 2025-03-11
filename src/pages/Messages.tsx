@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -54,17 +55,17 @@ const Messages: React.FC = () => {
         <div className="container max-w-7xl mx-auto px-4 pt-8 flex-1 flex flex-col">
           <h1 className="text-2xl font-bold mb-6 animate-fade-in">Messages</h1>
           
-          <div className="flex-1 rounded-lg overflow-hidden">
+          <div className="flex-1 rounded-lg overflow-hidden desktop-messages-container">
             <ResizablePanelGroup 
               direction="horizontal" 
-              className="min-h-[750px] rounded-lg border shadow-md bg-gradient-to-br from-white to-gray-50"
+              className="max-h-[60vh] rounded-lg border shadow-md bg-gradient-to-br from-white to-gray-50"
             >
               <ResizablePanel defaultSize={30} minSize={20} className="border-r">
                 <div className="h-full flex flex-col">
                   <div className="p-4 border-b bg-gray-50/80">
                     <h2 className="font-semibold text-gray-800">Conversations</h2>
                   </div>
-                  <div className="flex-1 overflow-hidden">
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden">
                     <ConversationList 
                       onSelectConversation={handleSelectConversation} 
                     />
@@ -73,7 +74,7 @@ const Messages: React.FC = () => {
               </ResizablePanel>
               <ResizableHandle withHandle className="bg-gray-100 hover:bg-gray-200 transition-colors" />
               <ResizablePanel defaultSize={70}>
-                <div className="h-full">
+                <div className="h-full flex flex-col">
                   {selectedUserId ? (
                     <ChatInterface 
                       userId={selectedUserId} 

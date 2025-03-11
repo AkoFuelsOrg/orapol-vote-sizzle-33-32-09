@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -361,7 +362,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   
   if (isDesktop) {
     return (
-      <div className="flex flex-col h-full bg-white">
+      <div className="flex flex-col h-full bg-white desktop-chat-interface">
         <div className="desktop-chat-header shadow-sm z-10">
           <UserProfileCard 
             userId={profile.id} 
@@ -391,7 +392,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
           </div>
         ) : (
           <>
-            <ScrollArea className="flex-1 p-6 bg-gray-50">
+            <ScrollArea className="flex-1 p-6 bg-gray-50 desktop-chat-messages">
               {messages && messages.length > 0 ? (
                 <div className="space-y-5 max-w-4xl mx-auto">
                   {messages.map((message, index) => {
