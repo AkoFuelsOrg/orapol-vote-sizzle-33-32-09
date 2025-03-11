@@ -163,6 +163,23 @@
   .mobile-message-bubble {
     @apply max-w-[85%] px-3 py-2 rounded-xl text-sm;
   }
+  
+  /* Desktop optimized chat styling */
+  .desktop-chat-header {
+    @apply py-3 px-4 border-b bg-white flex items-center;
+  }
+  
+  .desktop-message-bubble-sent {
+    @apply bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3 max-w-md shadow-sm;
+  }
+  
+  .desktop-message-bubble-received {
+    @apply bg-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 max-w-md shadow-sm;
+  }
+  
+  .desktop-chat-input-container {
+    @apply p-4 border-t bg-white/80 backdrop-blur-sm;
+  }
 }
 
 #root {
@@ -177,8 +194,8 @@
 /* Custom scrollbar for desktop browsers */
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   
   ::-webkit-scrollbar-track {

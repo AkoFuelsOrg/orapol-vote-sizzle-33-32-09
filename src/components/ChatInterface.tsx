@@ -38,6 +38,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
+  const isDesktop = breakpoint === "desktop";
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', userId],
@@ -354,6 +355,204 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
         <div className="text-center text-red-500">User not found</div>
+      </div>
+    );
+  }
+  
+  if (isDesktop) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <div className="desktop-chat-header shadow-sm z-10">
+          <UserProfileCard 
+            userId={profile.id} 
+            username={profile.username || 'User'} 
+            avatarUrl={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`}
+            minimal 
+            hideFollowButton 
+          />
+          
+          <div className="ml-auto flex items-center space-x-2">
+            {/* Desktop-only action buttons could go here */}
+          </div>
+        </div>
+        
+        {!canMessage ? (
+          <div className="flex flex-col items-center justify-center flex-1 p-8 bg-gray-50/50">
+            <div className="text-center max-w-md p-6 rounded-xl bg-white shadow-sm border border-gray-100">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Cannot message this user</h3>
+              <p className="text-gray-600 mb-4">One of you needs to follow the other first</p>
+              <Button variant="outline" size="sm">Visit Profile</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <ScrollArea className="flex-1 p-6 bg-gray-50">
+              {messages && messages.length > 0 ? (
+                <div className="space-y-5 max-w-4xl mx-auto">
+                  {messages.map((message, index) => {
+                    const isOutgoing = message.sender_id === user?.id;
+                    const showAvatar = index === 0 || 
+                      (messages[index - 1] && messages[index - 1].sender_id !== message.sender_id);
+                    
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {!isOutgoing && showAvatar && (
+                          <Avatar className="h-9 w-9 mr-2 mt-1">
+                            <AvatarImage src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} />
+                            <AvatarFallback>{profile.username?.charAt(0).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                        )}
+                        
+                        <div className={isOutgoing ? 'desktop-message-bubble-sent' : 'desktop-message-bubble-received'}>
+                          {message.attachment_url && message.attachment_type && (
+                            <div className="mb-3 overflow-hidden rounded-lg">
+                              {renderAttachmentPreview(message.attachment_url, message.attachment_type)}
+                            </div>
+                          )}
+                          <p className="break-words">{message.content}</p>
+                          <p className={`text-xs mt-1 ${isOutgoing ? 'text-primary-foreground/70' : 'text-secondary-foreground/70'}`}>
+                            {formatMessageTime(message.created_at)}
+                          </p>
+                        </div>
+                        
+                        {isOutgoing && showAvatar && (
+                          <Avatar className="h-9 w-9 ml-2 mt-1 border-2 border-red-100">
+                            <AvatarImage src={user?.user_metadata?.avatar_url || ''} />
+                            <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+              ) : (
+                <div className="text-center p-10">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No messages yet</h3>
+                  <p className="text-gray-500">Send a message to start the conversation!</p>
+                </div>
+              )}
+            </ScrollArea>
+            
+            <form onSubmit={handleSendMessage} className="desktop-chat-input-container">
+              {attachmentFile && (
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg mb-3">
+                  <div className="flex items-center space-x-2 truncate">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm truncate">{attachmentFile.name}</span>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={removeAttachment}
+                    className="h-6 px-2"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+              
+              <div className="flex space-x-2">
+                <div className="flex space-x-2 mr-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setShowEmojiPicker(!showEmojiPicker);
+                      setShowGifSelector(false);
+                    }}
+                    className="h-10 w-10 rounded-full"
+                  >
+                    <Smile className="h-5 w-5 text-gray-500" />
+                  </Button>
+                  <Button
+                    type="button" 
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setShowGifSelector(!showGifSelector);
+                      setShowEmojiPicker(false);
+                    }}
+                    className="h-10 w-10 rounded-full"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 4a2 2 0 012-2h4a1 1 0 010 2H4v2a1 1 0 01-2 0V4zm16 0a2 2 0 00-2-2h-4a1 1 0 100 2h4v2a1 1 0 102 0V4zm0 12a2 2 0 01-2 2h-4a1 1 0 110-2h4v-2a1 1 0 012 0v2zM2 16a2 2 0 002 2h4a1 1 0 100-2H4v-2a1 1 0 10-2 0v2z" />
+                    </svg>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleFileSelect('document')}
+                    className="h-10 w-10 rounded-full"
+                  >
+                    <FileText className="h-5 w-5 text-gray-500" />
+                  </Button>
+                  <Button
+                    type="button" 
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleFileSelect('image')}
+                    className="h-10 w-10 rounded-full"
+                  >
+                    <Image className="h-5 w-5 text-gray-500" />
+                  </Button>
+                </div>
+                
+                <Input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1 rounded-full bg-gray-100 border-gray-200 focus:border-red-300"
+                  disabled={sending}
+                />
+                <Button type="submit" size="icon" disabled={sending || (!newMessage.trim() && !attachmentFile)} className="h-10 w-10 rounded-full">
+                  {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                </Button>
+              </div>
+              
+              {showEmojiPicker && (
+                <div className="absolute bottom-20 right-20 z-10">
+                  <EmojiPicker 
+                    onSelectEmoji={handleEmojiSelect} 
+                    onClose={() => setShowEmojiPicker(false)} 
+                  />
+                </div>
+              )}
+              
+              <div className="absolute bottom-20 right-20 z-10">
+                <GifSelector 
+                  onSelectGif={handleGifSelect} 
+                  onClose={() => setShowGifSelector(false)} 
+                  isVisible={showGifSelector}
+                />
+              </div>
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAttachmentChange}
+                className="hidden"
+              />
+            </form>
+          </>
+        )}
       </div>
     );
   }
