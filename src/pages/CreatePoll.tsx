@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, ImagePlus, Loader2, Upload } from 'lucide-react';
@@ -62,11 +61,12 @@ const CreatePoll: React.FC = () => {
       setUploadingPollImage(true);
       
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
       
       console.log('Attempting to upload to poll_images bucket, filepath:', filePath);
       
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('poll_images')
         .upload(filePath, file, { upsert: true });
         
@@ -100,11 +100,12 @@ const CreatePoll: React.FC = () => {
       setUploadingOptionImage(index);
       
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
       
       console.log('Attempting to upload to option_images bucket, filepath:', filePath);
       
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('option_images')
         .upload(filePath, file, { upsert: true });
         
