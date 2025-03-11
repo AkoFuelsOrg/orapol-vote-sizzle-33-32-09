@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -26,6 +25,7 @@ import VotedPolls from "./pages/VotedPolls";
 import Followers from "./pages/Followers";
 import Following from "./pages/Following";
 import Notifications from "./pages/Notifications";
+import SearchResults from "./pages/SearchResults";
 
 const queryClient = new QueryClient();
 
@@ -34,11 +34,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const isDesktop = breakpoint === "desktop";
   const location = useLocation();
   
-  // Don't show right chat column on messages page
   const showRightChat = isDesktop && !location.pathname.startsWith('/messages');
   
-  // Check if current route is profile, user profile, or poll detail page
-  // Profile page is always treated as a full-width page
   const isFullWidthPage = 
     location.pathname === '/profile' || 
     location.pathname.startsWith('/user/') || 
@@ -74,6 +71,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/search" element={<SearchResults />} />
                   <Route
                     path="/create"
                     element={

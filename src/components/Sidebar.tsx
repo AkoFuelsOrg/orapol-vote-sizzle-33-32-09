@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
   Plus, 
@@ -20,7 +19,6 @@ import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import Fuse from 'fuse.js';
 
 const Sidebar: React.FC = () => {
@@ -28,85 +26,21 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile, signOut, loading } = useSupabase();
   const [open, setOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<{users: any[], polls: any[]}>({users: [], polls: []});
-  const [searchLoading, setSearchLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchData, setSearchData] = useState<{users: any[], polls: any[]}>({users: [], polls: []});
-
-  // Fetch data when search dialog is opened
-  useEffect(() => {
-    if (open) {
-      fetchSearchData();
-    }
-  }, [open]);
-
-  // Fetch data for fuzzy search
-  const fetchSearchData = async () => {
-    setSearchLoading(true);
-    try {
-      const { data: users, error: usersError } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url')
-        .limit(20);
-      
-      if (usersError) throw usersError;
-      
-      const { data: polls, error: pollsError } = await supabase
-        .from('polls')
-        .select('id, question')
-        .limit(20);
-      
-      if (pollsError) throw pollsError;
-
-      setSearchData({
-        users: users || [],
-        polls: polls || []
-      });
-    } catch (error) {
-      console.error("Error fetching search data:", error);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  // Handle search input change
-  const handleSearch = (search: string) => {
-    setSearchTerm(search);
-    
-    if (!search || search.length < 2) {
-      setSearchResults({users: [], polls: []});
-      return;
-    }
-    
-    // Configure Fuse options for fuzzy search with min matching threshold of 0.4 (60% match)
-    const userFuseOptions = {
-      keys: ['username'],
-      threshold: 0.4, // Lower threshold means higher match requirement (0 is exact, 1 is match anything)
-      includeScore: true
-    };
-    
-    const pollFuseOptions = {
-      keys: ['question'],
-      threshold: 0.4,
-      includeScore: true
-    };
-    
-    const userFuse = new Fuse(searchData.users || [], userFuseOptions);
-    const pollFuse = new Fuse(searchData.polls || [], pollFuseOptions);
-    
-    const userResults = userFuse.search(search).map(result => result.item);
-    const pollResults = pollFuse.search(search).map(result => result.item);
-    
-    setSearchResults({
-      users: userResults,
-      polls: pollResults
-    });
-  };
   
+  // When search is submitted in command dialog
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim().length > 1) {
+      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      setOpen(false);
+    }
+  };
+
   const menuItems = [
     { path: '/', label: 'Polls', icon: MessageCircle },
     ...(user && !loading ? [
-      { path: '/search', label: 'Search', icon: Search, action: () => setOpen(true) },
+      { path: '#', label: 'Search', icon: Search, action: () => setOpen(true) },
       { path: '/voted-polls', label: 'Voted Polls', icon: ThumbsUp },
       { path: '/followers', label: 'Followers', icon: Users },
       { path: '/following', label: 'Following', icon: UserCheck },
@@ -115,7 +49,7 @@ const Sidebar: React.FC = () => {
       { path: '/create', label: 'Create Poll', icon: Plus },
       { path: '/profile', label: 'Profile', icon: User },
     ] : []),
-    ...(user && !loading ? [{ path: '/logout', label: 'Logout', icon: LogOut, action: signOut }] : [
+    ...(user && !loading ? [{ path: '#', label: 'Logout', icon: LogOut, action: signOut }] : [
       { path: '/auth', label: 'Login', icon: User }
     ])
   ];
@@ -123,19 +57,9 @@ const Sidebar: React.FC = () => {
   const handleItemClick = (item: typeof menuItems[0]) => {
     if (item.action) {
       item.action();
-    } else if (item.path) {
+    } else if (item.path && item.path !== '#') {
       navigate(item.path);
     }
-  };
-
-  const navigateToUser = (userId: string) => {
-    navigate(`/user/${userId}`);
-    setOpen(false);
-  };
-
-  const navigateToPoll = (pollId: string) => {
-    navigate(`/poll/${pollId}`);
-    setOpen(false);
   };
   
   return (
@@ -151,14 +75,15 @@ const Sidebar: React.FC = () => {
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const isActive = item.path === location.pathname && item.path !== '#';
               
               return (
-                <li key={item.path}>
+                <li key={item.label}>
                   <button
                     onClick={() => handleItemClick(item)}
                     className={cn(
                       "flex items-center w-full px-4 py-3 rounded-lg transition-colors group",
-                      location.pathname === item.path 
+                      isActive
                         ? "bg-red-50 text-red-500 font-medium" 
                         : "text-gray-700 hover:text-red-500 hover:bg-red-50"
                     )}
@@ -203,59 +128,21 @@ const Sidebar: React.FC = () => {
       </div>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput
-          placeholder="Search for users or polls..."
-          onValueChange={handleSearch}
-          className="border-none outline-none focus:outline-none focus:ring-0"
-          value={searchTerm}
-        />
+        <form onSubmit={handleSearchSubmit}>
+          <CommandInput
+            placeholder="Search for users or polls..."
+            onValueChange={setSearchTerm}
+            value={searchTerm}
+            className="border-none outline-none focus:outline-none focus:ring-0"
+          />
+        </form>
         <CommandList>
-          {searchLoading && (
-            <div className="py-6 text-center text-sm">
-              Searching...
+          <CommandEmpty>Type at least 2 characters and press Enter to search</CommandEmpty>
+          <CommandGroup>
+            <div className="px-4 py-3 text-sm text-gray-600">
+              Press Enter to search for "{searchTerm}"
             </div>
-          )}
-          
-          {!searchLoading && searchResults.users.length === 0 && searchResults.polls.length === 0 && searchTerm.length >= 2 && (
-            <CommandEmpty>No results found matching "{searchTerm}"</CommandEmpty>
-          )}
-          
-          {searchResults.users.length > 0 && (
-            <CommandGroup heading={`Users matching "${searchTerm}" (${searchResults.users.length})`}>
-              {searchResults.users.map((user) => (
-                <CommandItem
-                  key={user.id}
-                  onSelect={() => navigateToUser(user.id)}
-                  className="flex items-center gap-2 py-3 cursor-pointer"
-                >
-                  <Avatar className="h-8 w-8">
-                    {user.avatar_url ? (
-                      <AvatarImage src={user.avatar_url} alt={user.username || "User"} />
-                    ) : null}
-                    <AvatarFallback className="bg-red-100 text-red-500">
-                      {user.username ? user.username[0].toUpperCase() : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>{user.username}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-          
-          {searchResults.polls.length > 0 && (
-            <CommandGroup heading={`Polls matching "${searchTerm}" (${searchResults.polls.length})`}>
-              {searchResults.polls.map((poll) => (
-                <CommandItem
-                  key={poll.id}
-                  onSelect={() => navigateToPoll(poll.id)}
-                  className="py-3 cursor-pointer"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2 text-red-500" />
-                  <span className="truncate">{poll.question}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
+          </CommandGroup>
         </CommandList>
       </CommandDialog>
     </>
