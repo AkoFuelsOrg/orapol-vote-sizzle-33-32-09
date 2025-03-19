@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -186,6 +187,27 @@ const Profile: React.FC = () => {
     }
   };
   
+  // Function to convert JSON options to PollOption objects
+  const convertJsonToPollOptions = (optionsJson: any): PollOption[] => {
+    if (!optionsJson) return [];
+    
+    try {
+      const options = Array.isArray(optionsJson) 
+        ? optionsJson 
+        : (typeof optionsJson === 'string' ? JSON.parse(optionsJson) : Object.values(optionsJson));
+      
+      return options.map((option: any) => ({
+        id: option.id || String(Math.random()),
+        text: option.text || '',
+        votes: option.votes || 0,
+        imageUrl: option.imageUrl || null
+      }));
+    } catch (e) {
+      console.error('Error parsing poll options:', e);
+      return [];
+    }
+  };
+  
   const formatPollsData = (pollsData: any[], votesData: any[]): Poll[] => {
     if (!pollsData || pollsData.length === 0) return [];
     
@@ -293,6 +315,42 @@ const Profile: React.FC = () => {
       if (coverFileInputRef.current) coverFileInputRef.current.value = '';
     }
   };
+
+  // Handle password change
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    try {
+      await updatePassword(currentPassword, newPassword);
+      setIsChangingPassword(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.success('Password updated successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update password');
+    }
+  };
+  
+  // Combine polls and posts for "All Content" tab
+  const allContent = [...userPolls, ...userPosts].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateB - dateA; // Sort by newest first
+  });
   
   const avatarUrl = profile?.avatar_url || (user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : '');
   const coverUrl = profile?.cover_url || '';
