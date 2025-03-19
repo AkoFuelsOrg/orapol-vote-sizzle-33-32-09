@@ -1,3 +1,4 @@
+
 import { NavLink } from "react-router-dom";
 import { LucideIcon } from "lucide-react";
 import {
@@ -9,6 +10,7 @@ import {
   Users,
   LogOut,
   PlusCircle,
+  Store,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useSupabase } from "../context/SupabaseContext";
@@ -116,6 +118,7 @@ const Sidebar: React.FC = () => {
                 label="Notifications"
               />
               <SidebarLink to="/groups" icon={Users} label="Groups" />
+              <SidebarLink to="/marketplaces" icon={Store} label="Marketplaces" />
             </>
           )}
         </nav>

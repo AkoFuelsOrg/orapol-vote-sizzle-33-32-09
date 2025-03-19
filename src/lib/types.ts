@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -23,6 +24,7 @@ export interface Poll {
   userVoted?: string; // ID of the option the user voted for
   image?: string; // Optional image URL for the poll
   groupId?: string; // Added to support group polls
+  marketplaceId?: string; // Added to support marketplace polls
 }
 
 export interface Post {
@@ -35,6 +37,7 @@ export interface Post {
   likeCount: number;
   userLiked?: boolean; // Whether the current user liked this post
   groupId?: string; // Optional groupId for posts in groups
+  marketplaceId?: string; // Optional marketplaceId for posts in marketplaces
 }
 
 export interface Comment {
@@ -91,4 +94,27 @@ export interface GroupMember {
 
 export interface GroupPost extends Post {
   group_id: string;
+}
+
+export interface Marketplace {
+  id: string;
+  name: string;
+  description?: string;
+  avatar_url?: string;
+  cover_url?: string;
+  created_at: string;
+  created_by: string;
+  member_count: number;
+}
+
+export interface MarketplaceMember {
+  id: string;
+  marketplace_id: string;
+  user_id: string;
+  joined_at: string;
+  role: 'admin' | 'moderator' | 'member';
+  user?: {
+    username: string;
+    avatar_url: string;
+  };
 }

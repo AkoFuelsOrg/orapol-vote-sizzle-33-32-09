@@ -198,6 +198,71 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_members: {
+        Row: {
+          id: string
+          joined_at: string
+          marketplace_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          marketplace_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          marketplace_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_members_marketplace_id_fkey"
+            columns: ["marketplace_id"]
+            isOneToOne: false
+            referencedRelation: "marketplaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplaces: {
+        Row: {
+          avatar_url: string | null
+          cover_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          member_count: number
+          name: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          member_count?: number
+          name: string
+        }
+        Update: {
+          avatar_url?: string | null
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          member_count?: number
+          name?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_type: string | null
@@ -343,6 +408,7 @@ export type Database = {
           group_id: string | null
           id: string
           image: string | null
+          marketplace_id: string | null
           options: Json
           question: string
           total_votes: number | null
@@ -354,6 +420,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           image?: string | null
+          marketplace_id?: string | null
           options: Json
           question: string
           total_votes?: number | null
@@ -365,6 +432,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           image?: string | null
+          marketplace_id?: string | null
           options?: Json
           question?: string
           total_votes?: number | null
@@ -376,6 +444,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "polls_marketplace_id_fkey"
+            columns: ["marketplace_id"]
+            isOneToOne: false
+            referencedRelation: "marketplaces"
             referencedColumns: ["id"]
           },
           {
@@ -424,6 +499,7 @@ export type Database = {
           group_id: string | null
           id: string
           image: string | null
+          marketplace_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -434,6 +510,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           image?: string | null
+          marketplace_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -444,6 +521,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           image?: string | null
+          marketplace_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -453,6 +531,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_marketplace_id_fkey"
+            columns: ["marketplace_id"]
+            isOneToOne: false
+            referencedRelation: "marketplaces"
             referencedColumns: ["id"]
           },
         ]
