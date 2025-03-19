@@ -53,7 +53,7 @@ const Auth: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex ${isDesktop ? 'bg-red-500' : 'bg-gray-50'} p-4`}>
+    <div className={`min-h-screen flex ${isDesktop ? 'bg-primary' : 'bg-gray-50'} p-4`}>
       {isDesktop && (
         <div className="flex-1 flex flex-col justify-center items-center relative">
           <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-90">
@@ -74,7 +74,7 @@ const Auth: React.FC = () => {
         <div className="w-full max-w-md">
           {!isDesktop && (
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-red-500 mb-2">
+              <h1 className="text-2xl font-bold text-primary mb-2">
                 Orapol
               </h1>
               <p className="text-muted-foreground">
@@ -128,7 +128,7 @@ const Auth: React.FC = () => {
               
               <button
                 type="submit"
-                className="w-full p-3.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium btn-animate"
+                className="w-full p-3.5 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors font-medium btn-animate"
                 disabled={loading}
               >
                 {loading ? (
@@ -142,7 +142,7 @@ const Auth: React.FC = () => {
             <div className="mt-4 text-center">
               <button
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-red-500 hover:underline text-sm font-medium"
+                className="text-primary hover:underline text-sm font-medium"
               >
                 {isSignUp ? 'Already have an account? Sign In' : 'Don\'t have an account? Sign Up'}
               </button>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -82,7 +83,7 @@ const Sidebar: React.FC = () => {
       <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 pt-16 shadow-sm">
         <div className="p-6">
           <Link to="/" className="flex items-center">
-            <h1 className="text-xl font-bold text-red-500">Orapol</h1>
+            <h1 className="text-xl font-bold text-primary">Orapol</h1>
           </Link>
         </div>
         
@@ -99,8 +100,8 @@ const Sidebar: React.FC = () => {
                     className={cn(
                       "flex items-center w-full px-4 py-3 rounded-lg transition-colors group",
                       isActive
-                        ? "bg-red-50 text-red-500 font-medium" 
-                        : "text-gray-700 hover:text-red-500 hover:bg-red-50"
+                        ? "bg-primary/10 text-primary font-medium" 
+                        : "text-gray-700 hover:text-primary hover:bg-primary/10"
                     )}
                   >
                     <Icon size={18} className="mr-3" />
@@ -115,7 +116,7 @@ const Sidebar: React.FC = () => {
         
         {user && !loading && (
           <div className="p-4 mt-auto border-t border-gray-200">
-            <Link to="/profile" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-red-50 transition-colors">
+            <Link to="/profile" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-primary/10 transition-colors">
               {profile?.avatar_url ? (
                 <Avatar>
                   <AvatarImage
