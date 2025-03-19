@@ -3,16 +3,21 @@ import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { usePollContext } from '../context/PollContext';
 import { toast } from "sonner";
+import { useSupabase } from '../context/SupabaseContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CreatePollModalProps {
   isOpen?: boolean;
   onClose: () => void;
+  groupId?: string;
 }
 
-const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) => {
+const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, groupId }) => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
+  const [loading, setLoading] = useState(false);
   const { addPoll } = usePollContext();
+  const { user } = useSupabase();
 
   const handleAddOption = () => {
     if (options.length >= 6) {
@@ -36,8 +41,13 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) =>
     setOptions(newOptions);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error("You must be logged in to create a poll");
+      return;
+    }
     
     if (!question.trim()) {
       toast.error("Please enter a question");
@@ -50,10 +60,52 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) =>
       return;
     }
     
-    addPoll(question, validOptions);
-    setQuestion('');
-    setOptions(['', '']);
-    onClose();
+    setLoading(true);
+    
+    try {
+      // If this is a group poll, save it to the database
+      if (groupId) {
+        // First create the poll in the polls table
+        const { data: pollData, error: pollError } = await supabase
+          .from('polls')
+          .insert({
+            question: question,
+            user_id: user.id,
+            group_id: groupId
+          })
+          .select('id')
+          .single();
+          
+        if (pollError) throw pollError;
+        
+        // Then create options for the poll
+        const optionsToInsert = validOptions.map(text => ({
+          poll_id: pollData.id,
+          text: text,
+          votes: 0
+        }));
+        
+        const { error: optionsError } = await supabase
+          .from('poll_options')
+          .insert(optionsToInsert);
+          
+        if (optionsError) throw optionsError;
+        
+        toast.success("Poll created in group successfully");
+      } else {
+        // Use the context method for regular polls
+        addPoll(question, validOptions);
+      }
+      
+      setQuestion('');
+      setOptions(['', '']);
+      onClose();
+    } catch (error: any) {
+      console.error("Error creating poll:", error);
+      toast.error(error.message || "Failed to create poll");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -65,7 +117,9 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) =>
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Create New Poll</h2>
+          <h2 className="text-lg font-semibold">
+            {groupId ? "Create Group Poll" : "Create New Poll"}
+          </h2>
           <button 
             onClick={onClose}
             className="p-1 rounded-full hover:bg-secondary transition-colors"
@@ -87,6 +141,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) =>
               placeholder="What would you like to ask?"
               className="w-full p-2.5 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
               maxLength={100}
+              disabled={loading}
             />
           </div>
           
@@ -104,12 +159,14 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) =>
                     placeholder={`Option ${index + 1}`}
                     className="flex-1 p-2.5 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
                     maxLength={50}
+                    disabled={loading}
                   />
                   {options.length > 2 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveOption(index)}
                       className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      disabled={loading}
                     >
                       <X size={18} />
                     </button>
@@ -122,6 +179,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) =>
                   type="button"
                   onClick={handleAddOption}
                   className="w-full p-2 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
+                  disabled={loading}
                 >
                   <Plus size={18} className="mr-1" />
                   <span>Add Option</span>
@@ -135,14 +193,16 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) =>
               type="button"
               onClick={onClose}
               className="px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors"
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors btn-animate"
+              disabled={loading}
             >
-              Create Poll
+              {loading ? "Creating..." : "Create Poll"}
             </button>
           </div>
         </form>

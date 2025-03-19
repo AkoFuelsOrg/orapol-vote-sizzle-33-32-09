@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Image, PlusCircle } from 'lucide-react';
+import { Image, PlusCircle, BarChart } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
+import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { useGroup } from '../context/GroupContext';
 import { Button } from './ui/button';
@@ -11,7 +12,8 @@ interface GroupPostInterfaceProps {
 }
 
 const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [postModalOpen, setPostModalOpen] = useState(false);
+  const [pollModalOpen, setPollModalOpen] = useState(false);
   const { user } = useSupabase();
   const { isGroupMember } = useGroup();
   const [isMember, setIsMember] = useState(false);
@@ -42,7 +44,7 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
             className="w-10 h-10 rounded-full border-2 border-red-500 object-cover"
           />
           <button 
-            onClick={() => setModalOpen(true)}
+            onClick={() => setPostModalOpen(true)}
             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-500 text-left rounded-full px-4 py-2.5 transition-colors"
           >
             Share something with the group...
@@ -51,7 +53,7 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
         
         <div className="flex justify-between border-t pt-3">
           <Button 
-            onClick={() => setModalOpen(true)}
+            onClick={() => setPostModalOpen(true)}
             variant="ghost"
             className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
           >
@@ -60,7 +62,16 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
           </Button>
           
           <Button 
-            onClick={() => setModalOpen(true)}
+            onClick={() => setPollModalOpen(true)}
+            variant="ghost"
+            className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
+          >
+            <BarChart size={20} className="text-purple-500" />
+            <span className="text-sm font-medium text-gray-700">Poll</span>
+          </Button>
+          
+          <Button 
+            onClick={() => setPostModalOpen(true)}
             variant="ghost"
             className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
           >
@@ -71,9 +82,14 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
       </div>
       
       <CreatePostModal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
+        isOpen={postModalOpen} 
+        onClose={() => setPostModalOpen(false)} 
         groupId={groupId}
+      />
+      
+      <CreatePollModal 
+        isOpen={pollModalOpen} 
+        onClose={() => setPollModalOpen(false)}
       />
     </>
   );

@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -10,6 +9,7 @@ export interface PollOption {
   text: string;
   votes: number;
   imageUrl?: string | null; // Added imageUrl field for option images
+  poll_id?: string; // Added for database relationships
 }
 
 export interface Poll {
@@ -22,6 +22,7 @@ export interface Poll {
   commentCount: number;
   userVoted?: string; // ID of the option the user voted for
   image?: string; // Optional image URL for the poll
+  groupId?: string; // Added to support group polls
 }
 
 export interface Post {
