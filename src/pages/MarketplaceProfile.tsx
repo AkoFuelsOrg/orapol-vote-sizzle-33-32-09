@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -5,7 +6,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, Users, ImageOff, Calendar, UserMinus } from 'lucide-react';
+import { UserPlus, Users, ImageOff, Calendar, UserMinus, Info } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -278,55 +279,65 @@ const MarketplaceProfile = () => {
     <div className="space-y-6">
       {/* Cover and profile section */}
       <div className="relative">
-        <div className="h-48 w-full rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 overflow-hidden">
+        {/* Cover Image - Enhanced with gradient overlay for better text visibility */}
+        <div className="h-64 w-full rounded-xl overflow-hidden relative">
           {marketplace.cover_url ? (
-            <img 
-              src={marketplace.cover_url} 
-              alt={`${marketplace.name} cover`}
-              className="w-full h-full object-cover"
-            />
+            <>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 z-10"></div>
+              <img 
+                src={marketplace.cover_url} 
+                alt={`${marketplace.name} cover`}
+                className="w-full h-full object-cover transition-transform hover:scale-105 duration-700"
+              />
+            </>
           ) : (
-            <div className="flex items-center justify-center h-full text-white">
-              <ImageOff className="h-12 w-12 opacity-20" />
+            <div className="flex items-center justify-center h-full bg-gradient-to-r from-purple-500/80 to-blue-500/80 text-white">
+              <ImageOff className="h-12 w-12 opacity-30" />
             </div>
           )}
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 px-4">
+        {/* Profile Info - Reworked for better layout and readability */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mt-[-4rem] px-6 relative z-20">
           <div className="flex items-end">
-            <Avatar className="h-24 w-24 border-4 border-white shadow-md">
+            <Avatar className="h-28 w-28 border-4 border-white shadow-lg ring-2 ring-primary/10">
               <AvatarImage 
-                src={marketplace.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(marketplace.name)}`} 
+                src={marketplace.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(marketplace.name)}&background=6366f1&color=fff`} 
                 alt={marketplace.name} 
+                className="object-cover"
               />
-              <AvatarFallback>{marketplace.name.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="bg-primary/60 text-white text-2xl">{marketplace.name.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="ml-4 mb-2">
-              <h1 className="text-2xl font-bold">{marketplace.name}</h1>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Users className="h-4 w-4 mr-1" />
-                <span>{marketplace.member_count} members</span>
-                <span className="mx-2">•</span>
-                <Calendar className="h-4 w-4 mr-1" />
-                <span>Created {formatDistanceToNow(new Date(marketplace.created_at), { addSuffix: true })}</span>
+            <div className="ml-4 mb-2 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 shadow-sm">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{marketplace.name}</h1>
+              <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
+                <div className="flex items-center text-gray-600 bg-gray-100 rounded-full py-1 px-3">
+                  <Users className="h-3.5 w-3.5 mr-1.5" />
+                  <span className="font-medium">{marketplace.member_count} {marketplace.member_count === 1 ? 'member' : 'members'}</span>
+                </div>
+                <div className="flex items-center text-gray-600 bg-gray-100 rounded-full py-1 px-3">
+                  <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                  <span className="font-medium">Created {formatDistanceToNow(new Date(marketplace.created_at), { addSuffix: true })}</span>
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="mt-4 md:mt-0">
+          <div className="mt-4 md:mt-0 ml-32 md:ml-0 mb-2">
             {user ? (
               isMember ? (
                 <Button 
                   variant="outline" 
                   onClick={handleLeaveMarketplace}
                   disabled={isLeaving}
+                  className="shadow-sm"
                 >
                   {isLeaving ? (
                     "Leaving..."
                   ) : (
                     <>
                       <UserMinus className="mr-2 h-4 w-4" />
-                      Leave
+                      Leave Marketplace
                     </>
                   )}
                 </Button>
@@ -334,19 +345,20 @@ const MarketplaceProfile = () => {
                 <Button 
                   onClick={handleJoinMarketplace}
                   disabled={isJoining}
+                  className="shadow-sm"
                 >
                   {isJoining ? (
                     "Joining..."
                   ) : (
                     <>
                       <UserPlus className="mr-2 h-4 w-4" />
-                      Join
+                      Join Marketplace
                     </>
                   )}
                 </Button>
               )
             ) : (
-              <Button onClick={() => navigate('/auth')}>
+              <Button onClick={() => navigate('/auth')} className="shadow-sm">
                 Sign in to join
               </Button>
             )}
@@ -356,23 +368,26 @@ const MarketplaceProfile = () => {
       
       {/* Marketplace description */}
       {marketplace.description && (
-        <Card className="p-4">
-          <p className="text-sm text-gray-600">{marketplace.description}</p>
+        <Card className="p-5 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100">
+          <div className="flex items-start">
+            <Info className="h-5 w-5 mr-2 text-primary/70 mt-0.5 flex-shrink-0" />
+            <p className="text-gray-700">{marketplace.description}</p>
+          </div>
         </Card>
       )}
       
       {/* Tabs for content */}
-      <Tabs defaultValue="feed" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="feed">Feed</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
+      <Tabs defaultValue="feed" value={activeTab} onValueChange={setActiveTab} className="mt-4">
+        <TabsList className="grid w-full grid-cols-2 mb-2">
+          <TabsTrigger value="feed" className="text-sm md:text-base py-2">Feed</TabsTrigger>
+          <TabsTrigger value="members" className="text-sm md:text-base py-2">Members</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="feed" className="pt-4">
+        <TabsContent value="feed" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
           {isMember && <MarketplacePostInterface marketplaceId={id as string} />}
           
           {polls.length === 0 && posts.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg mt-4">
+            <div className="text-center py-8 bg-gray-50 rounded-xl mt-4 border border-gray-100">
               <p className="text-muted-foreground">No content in this marketplace yet</p>
               {isMember && (
                 <p className="text-sm mt-2">Be the first to share something!</p>
@@ -393,33 +408,37 @@ const MarketplaceProfile = () => {
           )}
         </TabsContent>
         
-        <TabsContent value="members" className="pt-4">
+        <TabsContent value="members" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Members ({membersList.length})</h3>
+            <h3 className="text-lg font-medium flex items-center">
+              <Users className="h-4 w-4 mr-2 text-primary/70" />
+              Members ({membersList.length})
+            </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {membersList.map(member => (
-                <Card key={member.id} className="p-4 flex items-center">
+                <Card key={member.id} className="p-4 flex items-center hover:shadow-md transition-shadow border-gray-100 bg-white/95">
                   <Avatar className="h-10 w-10 mr-3">
                     <AvatarImage 
-                      src={member.user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.user?.username || 'U')}`} 
+                      src={member.user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.user?.username || 'U')}&background=6366f1&color=fff`} 
                       alt={member.user?.username || 'User'} 
                     />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-primary/60 text-white">
                       {member.user?.username ? member.user.username[0].toUpperCase() : 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="font-medium">{member.user?.username || 'Unknown user'}</div>
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {member.role}
+                    <div className="text-xs text-gray-500 flex items-center">
+                      <span className={`inline-block w-2 h-2 rounded-full ${member.role === 'admin' ? 'bg-purple-500' : 'bg-green-500'} mr-1`}></span>
+                      <span className="capitalize">{member.role}</span>
                     </div>
                   </div>
                 </Card>
               ))}
               
               {membersList.length === 0 && (
-                <div className="col-span-full text-center py-8 bg-gray-50 rounded-lg">
+                <div className="col-span-full text-center py-8 bg-gray-50 rounded-lg border border-gray-100">
                   <p className="text-muted-foreground">No members found</p>
                 </div>
               )}
