@@ -98,7 +98,8 @@ const Index: React.FC = () => {
           created_at,
           image,
           comment_count,
-          profiles:user_id (id, username, avatar_url)
+          user_id,
+          profiles(id, username, avatar_url)
         `)
         .eq('id', postId)
         .single();
@@ -132,9 +133,9 @@ const Index: React.FC = () => {
         id: postData.id,
         content: postData.content,
         author: {
-          id: postData.profiles.id,
-          name: postData.profiles.username || 'Anonymous',
-          avatar: postData.profiles.avatar_url || 'https://i.pravatar.cc/150'
+          id: postData.profiles?.id || '',
+          name: postData.profiles?.username || 'Anonymous',
+          avatar: postData.profiles?.avatar_url || 'https://i.pravatar.cc/150'
         },
         createdAt: postData.created_at,
         image: postData.image,
@@ -170,7 +171,7 @@ const Index: React.FC = () => {
           total_votes,
           comment_count,
           image,
-          profiles:user_id (id, username, avatar_url)
+          profiles:user_id(id, username, avatar_url)
         `)
         .eq('id', pollId)
         .single();
@@ -239,14 +240,14 @@ const Index: React.FC = () => {
           total_votes,
           comment_count,
           image,
-          profiles:user_id (id, username, avatar_url)
+          profiles:user_id(id, username, avatar_url)
         `)
         .order('created_at', { ascending: false })
         .limit(10);
       
       if (pollsError) throw pollsError;
       
-      // Fetch posts with author information
+      // Fetch posts with author information - Fixed query
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -255,7 +256,8 @@ const Index: React.FC = () => {
           created_at,
           image,
           comment_count,
-          profiles:user_id (id, username, avatar_url)
+          user_id,
+          profiles(id, username, avatar_url)
         `)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -332,9 +334,9 @@ const Index: React.FC = () => {
         id: post.id,
         content: post.content,
         author: {
-          id: post.profiles.id,
-          name: post.profiles.username || 'Anonymous',
-          avatar: post.profiles.avatar_url || 'https://i.pravatar.cc/150'
+          id: post.profiles?.id || '',
+          name: post.profiles?.username || 'Anonymous',
+          avatar: post.profiles?.avatar_url || 'https://i.pravatar.cc/150'
         },
         createdAt: post.created_at,
         image: post.image,
@@ -343,7 +345,7 @@ const Index: React.FC = () => {
         userLiked: userLikes[post.id] || false
       })) : [];
       
-      // Combine and sort by creation date
+      // Set the formatted data
       setPolls(formattedPolls);
       setPosts(formattedPosts);
     } catch (error: any) {
@@ -405,7 +407,7 @@ const Index: React.FC = () => {
           <div className="space-y-4">
             {allContent.map((item, index) => (
               <div 
-                key={'id' in item ? item.id : index} 
+                key={item.id} 
                 className={`transition-opacity duration-500 ${
                   animateItems 
                     ? 'opacity-100' 
