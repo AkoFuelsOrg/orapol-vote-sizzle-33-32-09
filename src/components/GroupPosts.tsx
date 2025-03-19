@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import PostCard from './PostCard';
 import PollCard from './PollCard';
-import { Post, Poll } from '../lib/types';
+import { Post, Poll, PollOption } from '../lib/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -128,11 +128,22 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           }
         }
         
+        // Convert the raw options from the database to the PollOption type
+        const typedOptions: PollOption[] = Array.isArray(poll.options) 
+          ? poll.options.map((option: any) => ({
+              id: option.id || '',
+              text: option.text || '',
+              votes: option.votes || 0,
+              imageUrl: option.imageUrl || null,
+              poll_id: option.poll_id || poll.id
+            }))
+          : [];
+        
         // Format the poll object to match the PollCard expectations
         return {
           id: poll.id,
           question: poll.question,
-          options: Array.isArray(poll.options) ? poll.options : [],
+          options: typedOptions,
           createdAt: poll.created_at,
           image: poll.image,
           commentCount: poll.comment_count || 0,
