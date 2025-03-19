@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { Link } from 'react-router-dom';
@@ -11,7 +12,7 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { useSupabase } from '../context/SupabaseContext';
-import { Loader2, Users, Plus, Store } from 'lucide-react';
+import { Loader2, Users, Plus, Store, Storefront } from 'lucide-react';
 import { toast } from 'sonner';
 
 const CreateMarketplaceForm: React.FC<{
@@ -272,6 +273,7 @@ const Marketplaces: React.FC = () => {
     }
   };
   
+  // Mobile drawer for creating marketplaces
   const [sheetOpen, setSheetOpen] = useState(false);
   
   if (loadingMarketplaces) {
@@ -316,10 +318,11 @@ const Marketplaces: React.FC = () => {
         
         {user && (
           <>
+            {/* Desktop dialog for creating marketplaces */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="hidden sm:flex">
-                  <Store className="h-4 w-4 mr-2" />
+                  <Storefront className="h-4 w-4 mr-2" />
                   Create Marketplace
                 </Button>
               </DialogTrigger>
@@ -337,9 +340,10 @@ const Marketplaces: React.FC = () => {
               </DialogContent>
             </Dialog>
             
+            {/* Mobile sheet for creating marketplaces */}
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <Button onClick={() => setSheetOpen(true)} className="sm:hidden w-full">
-                <Store className="h-4 w-4 mr-2" />
+                <Storefront className="h-4 w-4 mr-2" />
                 Create Marketplace
               </Button>
               <SheetContent>
