@@ -53,7 +53,7 @@ const Auth: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen flex ${isDesktop ? 'bg-primary' : 'bg-gray-50'} p-4`}>
+    <div className={`min-h-screen flex ${isDesktop ? 'bg-[#3eb0ff]' : 'bg-[#3eb0ff]'} p-4`}>
       {isDesktop && (
         <div className="flex-1 flex flex-col justify-center items-center relative">
           <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-90">
@@ -74,10 +74,10 @@ const Auth: React.FC = () => {
         <div className="w-full max-w-md">
           {!isDesktop && (
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-primary mb-2">
+              <h1 className="text-2xl font-bold text-white mb-2">
                 Orapol
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-white/90">
                 {isSignUp ? 'Create an account to get started' : 'Sign in to your account'}
               </p>
             </div>
