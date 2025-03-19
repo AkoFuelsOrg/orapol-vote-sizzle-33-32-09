@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -384,8 +383,8 @@ const UserProfile: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="pt-14 w-full mx-auto pb-20">
-        <div className="mb-2 animate-fade-in px-4">
+      <main className="pt-10 w-full mx-auto pb-20">
+        <div className="mb-1 animate-fade-in px-4">
           <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={18} className="mr-1" />
             <span>Back</span>
