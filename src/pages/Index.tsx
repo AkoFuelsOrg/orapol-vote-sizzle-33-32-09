@@ -89,7 +89,7 @@ const Index: React.FC = () => {
 
   const fetchPostWithDetails = async (postId: string) => {
     try {
-      // Fetch the post with author information
+      // First fetch the post
       const { data: postData, error: postError } = await supabase
         .from('posts')
         .select(`
@@ -98,13 +98,24 @@ const Index: React.FC = () => {
           created_at,
           image,
           comment_count,
-          user_id,
-          profiles(id, username, avatar_url)
+          user_id
         `)
         .eq('id', postId)
         .single();
       
       if (postError) throw postError;
+      
+      // Then fetch profile data separately
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .eq('id', postData.user_id)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        // Continue with default profile values
+      }
       
       // Check if the user has liked this post
       let userLiked = false;
@@ -133,9 +144,9 @@ const Index: React.FC = () => {
         id: postData.id,
         content: postData.content,
         author: {
-          id: postData.profiles?.id || '',
-          name: postData.profiles?.username || 'Anonymous',
-          avatar: postData.profiles?.avatar_url || 'https://i.pravatar.cc/150'
+          id: profileData?.id || postData.user_id,
+          name: profileData?.username || 'Anonymous',
+          avatar: profileData?.avatar_url || 'https://i.pravatar.cc/150'
         },
         createdAt: postData.created_at,
         image: postData.image,
@@ -247,7 +258,7 @@ const Index: React.FC = () => {
       
       if (pollsError) throw pollsError;
       
-      // Fetch posts with author information - Fixed query
+      // Fetch posts and user profiles separately
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -256,13 +267,34 @@ const Index: React.FC = () => {
           created_at,
           image,
           comment_count,
-          user_id,
-          profiles(id, username, avatar_url)
+          user_id
         `)
         .order('created_at', { ascending: false })
         .limit(10);
       
       if (postsError) throw postsError;
+      
+      // Get all profile IDs from posts
+      const profileIds = postsData ? postsData.map(post => post.user_id) : [];
+      
+      // Fetch all needed profiles in a single query
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', profileIds);
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Continue without profile data, we'll use defaults
+      }
+      
+      // Create a map of profiles for easy lookup
+      const profilesMap = new Map();
+      if (profilesData) {
+        profilesData.forEach(profile => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
       
       // Fetch user votes if the user is logged in
       let userVotes: Record<string, string> = {};
@@ -330,20 +362,25 @@ const Index: React.FC = () => {
       })) : [];
       
       // Format posts for our application
-      const formattedPosts: Post[] = postsData ? postsData.map(post => ({
-        id: post.id,
-        content: post.content,
-        author: {
-          id: post.profiles?.id || '',
-          name: post.profiles?.username || 'Anonymous',
-          avatar: post.profiles?.avatar_url || 'https://i.pravatar.cc/150'
-        },
-        createdAt: post.created_at,
-        image: post.image,
-        commentCount: post.comment_count || 0,
-        likeCount: likeCountMap[post.id] || 0,
-        userLiked: userLikes[post.id] || false
-      })) : [];
+      const formattedPosts: Post[] = postsData ? postsData.map(post => {
+        // Get profile from map or use default
+        const profile = profilesMap.get(post.user_id);
+        
+        return {
+          id: post.id,
+          content: post.content,
+          author: {
+            id: profile?.id || post.user_id,
+            name: profile?.username || 'Anonymous',
+            avatar: profile?.avatar_url || 'https://i.pravatar.cc/150'
+          },
+          createdAt: post.created_at,
+          image: post.image,
+          commentCount: post.comment_count || 0,
+          likeCount: likeCountMap[post.id] || 0,
+          userLiked: userLikes[post.id] || false
+        };
+      }) : [];
       
       // Set the formatted data
       setPolls(formattedPolls);
