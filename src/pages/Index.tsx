@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Masonry from 'react-masonry-css';
@@ -36,9 +37,9 @@ const Index: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch posts
-      const { data: postsData, error: postsError } = await (supabase
-        .from('posts') as any)
+      // Fetch posts with type assertion to handle type issues
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
         .select(`
           id,
           content,
@@ -59,8 +60,8 @@ const Index: React.FC = () => {
       
       if (user) {
         // Check which posts the user has liked
-        const { data: likedData } = await (supabase
-          .from('post_likes') as any)
+        const { data: likedData } = await supabase
+          .from('post_likes')
           .select('post_id')
           .eq('user_id', user.id);
         
@@ -73,8 +74,8 @@ const Index: React.FC = () => {
       }
       
       // Count likes for each post
-      const { data: likeCounts } = await (supabase
-        .from('post_likes') as any)
+      const { data: likeCounts } = await supabase
+        .from('post_likes')
         .select('post_id, count')
         .eq('user_id', user?.id || '')
         .gt('count', 0)
@@ -87,14 +88,14 @@ const Index: React.FC = () => {
         });
       }
       
-      // Format posts data
+      // Format posts data with type safety
       const formattedPosts = (postsData || []).map((post: any) => ({
         id: post.id,
         content: post.content,
         author: {
-          id: post.profiles.id,
-          name: post.profiles.username || 'Anonymous',
-          avatar: post.profiles.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles.id}`
+          id: post.profiles?.id,
+          name: post.profiles?.username || 'Anonymous',
+          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id}`
         },
         createdAt: post.created_at,
         image: post.image,
@@ -196,9 +197,9 @@ const Index: React.FC = () => {
       
       const lastPost = posts[posts.length - 1];
       
-      // Fetch more posts
-      const { data: morePosts, error: postsError } = await (supabase
-        .from('posts') as any)
+      // Fetch more posts with type assertion
+      const { data: morePosts, error: postsError } = await supabase
+        .from('posts')
         .select(`
           id,
           content,
@@ -222,8 +223,8 @@ const Index: React.FC = () => {
       
       if (user) {
         // Check which posts the user has liked
-        const { data: likedData } = await (supabase
-          .from('post_likes') as any)
+        const { data: likedData } = await supabase
+          .from('post_likes')
           .select('post_id')
           .eq('user_id', user.id);
         
@@ -235,14 +236,14 @@ const Index: React.FC = () => {
         }
       }
       
-      // Format more posts
+      // Format more posts with type safety
       const formattedMorePosts = morePosts.map((post: any) => ({
         id: post.id,
         content: post.content,
         author: {
-          id: post.profiles.id,
-          name: post.profiles.username || 'Anonymous',
-          avatar: post.profiles.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles.id}`
+          id: post.profiles?.id,
+          name: post.profiles?.username || 'Anonymous',
+          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id}`
         },
         createdAt: post.created_at,
         image: post.image,

@@ -36,9 +36,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     
     try {
       if (!hasLiked) {
-        // Add like
-        const { error } = await (supabase
-          .from('post_likes') as any)
+        // Add like with type-safe approach
+        const { error } = await supabase
+          .from('post_likes')
           .insert({
             post_id: post.id,
             user_id: user.id
@@ -50,9 +50,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         setLikeCount(prev => prev + 1);
         toast.success("Post liked");
       } else {
-        // Remove like
-        const { error } = await (supabase
-          .from('post_likes') as any)
+        // Remove like with type-safe approach
+        const { error } = await supabase
+          .from('post_likes')
           .delete()
           .eq('post_id', post.id)
           .eq('user_id', user.id);

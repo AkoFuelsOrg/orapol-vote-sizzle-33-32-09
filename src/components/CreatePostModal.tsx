@@ -95,9 +95,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
         imageUrl = publicUrl;
       }
       
-      // Create post
-      const { error } = await (supabase
-        .from('posts') as any)
+      // Create post with type-safe approach
+      const { error } = await supabase
+        .from('posts')
         .insert({
           content,
           user_id: user.id,
