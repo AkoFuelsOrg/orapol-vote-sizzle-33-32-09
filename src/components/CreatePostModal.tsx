@@ -34,6 +34,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
   const [selectedGif, setSelectedGif] = useState<string | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -58,6 +59,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   
   const handleEmojiSelect = (emoji: string) => {
     setContent(prev => prev + emoji);
+    setShowEmojiPicker(false);
   };
   
   const handleSubmit = async () => {
@@ -170,8 +172,25 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
               </label>
             </Button>
             
-            <GifSelector onSelect={handleGifSelected} />
-            <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            <GifSelector onGifSelected={handleGifSelected} />
+            
+            <div className="relative">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="flex items-center gap-1"
+              >
+                <span>😀</span>
+                <span>Emoji</span>
+              </Button>
+              
+              {showEmojiPicker && (
+                <div className="absolute bottom-full mb-2 z-10">
+                  <EmojiPicker onSelectEmoji={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
         

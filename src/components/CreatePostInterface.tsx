@@ -51,8 +51,9 @@ const CreatePostInterface = () => {
       </div>
       
       <CreatePostModal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
+        open={modalOpen} 
+        onOpenChange={setModalOpen} 
+        onPostCreated={() => {}} 
       />
     </>
   );
