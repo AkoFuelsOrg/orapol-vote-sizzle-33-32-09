@@ -13,6 +13,7 @@ import { Json } from '@/integrations/supabase/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -383,22 +384,39 @@ const UserProfile: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="pt-20 px-4 w-full mx-auto pb-20">
-        <div className="mb-4 animate-fade-in">
+      <main className="pt-20 w-full mx-auto pb-20">
+        <div className="mb-4 animate-fade-in px-4">
           <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={18} className="mr-1" />
             <span>Back</span>
           </Link>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in">
+        {/* Cover Image */}
+        <div className="w-full h-48 md:h-64 bg-gray-200 relative animate-fade-in overflow-hidden">
+          {profile.cover_url ? (
+            <img 
+              src={profile.cover_url} 
+              alt="Cover" 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-blue-100 to-indigo-100"></div>
+          )}
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in relative mt-[-3rem] mx-4">
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 rounded-full border-2 border-red-500 overflow-hidden">
-              <img 
-                src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
-                alt={profile.username || 'User'} 
-                className="w-full h-full object-cover"
-              />
+            <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white mt-[-4rem]">
+              <Avatar className="w-full h-full">
+                <AvatarImage
+                  src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`}
+                  alt={profile.username || 'User'}
+                />
+                <AvatarFallback>
+                  {profile.username ? profile.username.charAt(0).toUpperCase() : 'U'}
+                </AvatarFallback>
+              </Avatar>
             </div>
             
             <div className="mt-4 text-center">
@@ -466,7 +484,7 @@ const UserProfile: React.FC = () => {
         
         <Tabs 
           defaultValue="content" 
-          className="w-full animate-fade-in"
+          className="w-full animate-fade-in px-4"
           onValueChange={(value) => {
             setActiveTab(value);
           }}
