@@ -1,4 +1,3 @@
-
 import { NavLink } from "react-router-dom";
 import { LucideIcon } from "lucide-react";
 import {
@@ -10,7 +9,6 @@ import {
   Users,
   LogOut,
   PlusCircle,
-  ShieldCheck,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useSupabase } from "../context/SupabaseContext";
@@ -147,8 +145,8 @@ const Sidebar: React.FC = () => {
                 </DialogTrigger>
               </div>
               <DialogContent className="sm:max-w-[600px] p-0">
-                {createType === "poll" && <CreatePollModal onClose={handleDialogClose} />}
-                {createType === "post" && <CreatePostModal onClose={handleDialogClose} />}
+                {createType === "poll" && <CreatePollModal isOpen={true} onClose={handleDialogClose} />}
+                {createType === "post" && <CreatePostModal isOpen={true} onClose={handleDialogClose} />}
               </DialogContent>
             </Dialog>
 

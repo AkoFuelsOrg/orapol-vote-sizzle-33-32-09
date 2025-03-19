@@ -29,7 +29,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         .from('posts')
         .select(`
           *,
-          profiles:user_id (id, username, avatar_url)
+          profiles:user_id(id, username, avatar_url)
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: false });
@@ -70,9 +70,9 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           likeCount: likeCount || 0,
           userLiked,
           author: {
-            id: post.profiles.id,
-            name: post.profiles.username || 'Anonymous',
-            avatar: post.profiles.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
+            id: post.profiles?.id || 'unknown',
+            name: post.profiles?.username || 'Anonymous',
+            avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
           },
           groupId: post.group_id,
         };
@@ -110,7 +110,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         <PostCard 
           key={post.id} 
           post={post}
-          onPostUpdate={fetchGroupPosts}
         />
       ))}
     </div>

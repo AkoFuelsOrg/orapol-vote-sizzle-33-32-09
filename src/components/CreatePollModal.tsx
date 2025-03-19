@@ -5,7 +5,7 @@ import { usePollContext } from '../context/PollContext';
 import { toast } from "sonner";
 
 interface CreatePollModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
 }
 

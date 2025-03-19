@@ -10,12 +10,12 @@ import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface CreatePostModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   groupId?: string; // Optional group ID for creating posts in a group
 }
 
-const CreatePostModal = ({ isOpen, onClose, groupId }: CreatePostModalProps) => {
+const CreatePostModal = ({ isOpen = false, onClose, groupId }: CreatePostModalProps) => {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);

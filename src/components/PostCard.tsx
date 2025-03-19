@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
 
 interface PostCardProps {
   post: Post;
+  onPostUpdate?: () => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   const { user } = useSupabase();
   const [isImageExpanded, setIsImageExpanded] = React.useState(false);
   const [hasLiked, setHasLiked] = React.useState(post.userLiked || false);
@@ -61,6 +62,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         
         setHasLiked(false);
         setLikeCount(prev => prev - 1);
+      }
+      
+      // Call the update callback if provided
+      if (onPostUpdate) {
+        onPostUpdate();
       }
     } catch (error: any) {
       console.error('Error liking post:', error);
