@@ -64,8 +64,14 @@ const Auth: React.FC = () => {
             />
           </div>
           <div className="z-10 text-center">
-            <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-md">TUWAYE</h1>
-            <p className="text-xl text-white/90 drop-shadow-md">Lets Talk</p>
+            <div className="mb-4 flex flex-col items-center">
+              <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-md">TUWAYE</h1>
+              <img 
+                src="/lovable-uploads/a9a6666f-a21a-4a74-b484-3fb5f3184fdc.png" 
+                alt="Let's Talk" 
+                className="w-64 h-auto drop-shadow-lg animate-float"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -77,9 +83,11 @@ const Auth: React.FC = () => {
               <h1 className="text-2xl font-bold text-white mb-2">
                 TUWAYE
               </h1>
-              <p className="text-white/90">
-                {isSignUp ? 'Create an account to get started' : 'Sign in to your account'}
-              </p>
+              <img 
+                src="/lovable-uploads/a9a6666f-a21a-4a74-b484-3fb5f3184fdc.png" 
+                alt="Let's Talk" 
+                className="w-48 h-auto mx-auto mt-2 drop-shadow-md"
+              />
             </div>
           )}
           
@@ -89,7 +97,7 @@ const Auth: React.FC = () => {
             </div>
           )}
           
-          <div className="bg-white shadow-sm rounded-xl border border-border/50 p-6 animate-scale-in">
+          <div className="bg-white shadow-sm rounded-xl border border-border/50 p-6 animate-scale-in backdrop-blur-sm bg-white/95">
             <h2 className="text-xl font-semibold mb-4 text-center">
               {isSignUp ? 'Create an Account' : 'Sign In'}
             </h2>
