@@ -89,9 +89,9 @@ const CreatePostModal = ({ isOpen, onClose }: CreatePostModalProps) => {
         imageUrl = publicUrl;
       }
       
-      // Create the post
-      const { error: postError } = await supabase
-        .from('posts')
+      // Use type assertion to workaround type issues
+      const { error: postError } = await (supabase
+        .from('posts') as any)
         .insert({
           content: content.trim(),
           user_id: user.id,

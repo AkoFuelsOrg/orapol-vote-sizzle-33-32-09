@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -71,7 +70,6 @@ const Index: React.FC = () => {
     if (Array.isArray(jsonOptions)) {
       return jsonOptions.map(opt => {
         if (typeof opt === 'object' && opt !== null) {
-          // Use type assertion with optional chaining to safely access properties
           const option = opt as Record<string, unknown>;
           return {
             id: String(option?.id || ''),
@@ -89,9 +87,8 @@ const Index: React.FC = () => {
 
   const fetchPostWithDetails = async (postId: string) => {
     try {
-      // Fetch the post with author information
-      const { data: postData, error: postError } = await supabase
-        .from('posts')
+      const { data: postData, error: postError } = await (supabase
+        .from('posts') as any)
         .select(`
           id,
           content,
@@ -105,12 +102,11 @@ const Index: React.FC = () => {
       
       if (postError) throw postError;
       
-      // Check if the user has liked this post
       let userLiked = false;
       
       if (user) {
-        const { data: likeData } = await supabase
-          .from('post_likes')
+        const { data: likeData } = await (supabase
+          .from('post_likes') as any)
           .select('id')
           .eq('post_id', postId)
           .eq('user_id', user.id)
@@ -119,15 +115,13 @@ const Index: React.FC = () => {
         userLiked = !!likeData;
       }
       
-      // Get like count
-      const { data: likeCountData, error: likeCountError } = await supabase
-        .from('post_likes')
+      const { data: likeCountData, error: likeCountError } = await (supabase
+        .from('post_likes') as any)
         .select('id', { count: 'exact' })
         .eq('post_id', postId);
       
       if (likeCountError) throw likeCountError;
       
-      // Format the post for our application
       const formattedPost: Post = {
         id: postData.id,
         content: postData.content,
@@ -143,7 +137,6 @@ const Index: React.FC = () => {
         userLiked
       };
       
-      // Add to posts without duplicates
       setPosts(prevPosts => {
         const postExists = prevPosts.some(p => p.id === formattedPost.id);
         if (postExists) {
@@ -159,7 +152,6 @@ const Index: React.FC = () => {
 
   const fetchPollWithDetails = async (pollId: string) => {
     try {
-      // Fetch the poll with author information
       const { data: pollData, error: pollError } = await supabase
         .from('polls')
         .select(`
@@ -177,7 +169,6 @@ const Index: React.FC = () => {
       
       if (pollError) throw pollError;
       
-      // Check if the user has voted on this poll
       let userVoted = undefined;
       
       if (user) {
@@ -193,7 +184,6 @@ const Index: React.FC = () => {
         }
       }
       
-      // Format the poll for our application
       const formattedPoll: Poll = {
         id: pollData.id,
         question: pollData.question,
@@ -210,7 +200,6 @@ const Index: React.FC = () => {
         image: pollData.image
       };
       
-      // Add to polls without duplicates
       setPolls(prevPolls => {
         const pollExists = prevPolls.some(p => p.id === formattedPoll.id);
         if (pollExists) {
@@ -228,7 +217,6 @@ const Index: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch polls with author information
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select(`
@@ -246,9 +234,8 @@ const Index: React.FC = () => {
       
       if (pollsError) throw pollsError;
       
-      // Fetch posts with author information
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
+      const { data: postsData, error: postsError } = await (supabase
+        .from('posts') as any)
         .select(`
           id,
           content,
@@ -262,7 +249,6 @@ const Index: React.FC = () => {
       
       if (postsError) throw postsError;
       
-      // Fetch user votes if the user is logged in
       let userVotes: Record<string, string> = {};
       
       if (user) {
@@ -279,12 +265,11 @@ const Index: React.FC = () => {
         }
       }
       
-      // Fetch user likes if the user is logged in
       let userLikes: Record<string, boolean> = {};
       
       if (user) {
-        const { data: likesData, error: likesError } = await supabase
-          .from('post_likes')
+        const { data: likesData, error: likesError } = await (supabase
+          .from('post_likes') as any)
           .select('post_id')
           .eq('user_id', user.id);
         
@@ -296,21 +281,19 @@ const Index: React.FC = () => {
         }
       }
       
-      // Get like counts for all posts
-      const { data: likeCounts, error: likeCountsError } = await supabase
-        .from('post_likes')
+      const { data: likeCounts, error: likeCountsError } = await (supabase
+        .from('post_likes') as any)
         .select('post_id');
       
       if (likeCountsError) throw likeCountsError;
       
       const likeCountMap: Record<string, number> = {};
       if (likeCounts) {
-        likeCounts.forEach(like => {
+        likeCounts.forEach((like: any) => {
           likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
         });
       }
       
-      // Format polls for our application
       const formattedPolls: Poll[] = pollsData ? pollsData.map(poll => ({
         id: poll.id,
         question: poll.question,
@@ -327,8 +310,7 @@ const Index: React.FC = () => {
         image: poll.image
       })) : [];
       
-      // Format posts for our application
-      const formattedPosts: Post[] = postsData ? postsData.map(post => ({
+      const formattedPosts: Post[] = postsData ? postsData.map((post: any) => ({
         id: post.id,
         content: post.content,
         author: {
@@ -343,7 +325,6 @@ const Index: React.FC = () => {
         userLiked: userLikes[post.id] || false
       })) : [];
       
-      // Combine and sort by creation date
       setPolls(formattedPolls);
       setPosts(formattedPosts);
     } catch (error: any) {
@@ -354,7 +335,6 @@ const Index: React.FC = () => {
     }
   };
   
-  // Combine and sort all content items by creation date
   const allContent = [...polls, ...posts].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
