@@ -1,208 +1,175 @@
+import { NavLink } from "react-router-dom";
+import { LucideIcon } from "lucide-react";
+import {
+  Home,
+  User,
+  PieChart,
+  MessageSquare,
+  Bell,
+  Users,
+  LogOut,
+  PlusCircle,
+} from "lucide-react";
+import { Button } from "./ui/button";
+import { useSupabase } from "../context/SupabaseContext";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import CreatePollModal from "./CreatePollModal";
+import CreatePostModal from "./CreatePostModal";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ScrollArea } from './ui/scroll-area';
-import { Separator } from './ui/separator';
-import { 
-  Home, 
-  User, 
-  BarChart3, 
-  Activity, 
-  MessageSquare, 
-  Users, 
-  UserCheck, 
-  Store 
-} from 'lucide-react';
-import { cn } from '../lib/utils';
-import { useSupabase } from '../context/SupabaseContext';
-import { Button } from './ui/button';
-import { useMarketplace } from '../context/MarketplaceContext';
-import { useGroup } from '../context/GroupContext';
-
-export interface SidebarNavItem {
-  name: string;
-  href: string;
-  icon: React.ReactNode;
+interface SidebarLinkProps {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  count?: number;
+  highlight?: boolean;
 }
 
-interface SidebarProps {
-  onLinkClick?: () => void;
-}
+const SidebarLink: React.FC<SidebarLinkProps> = ({
+  to,
+  icon: Icon,
+  label,
+  count,
+  highlight,
+}) => {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `flex items-center py-3 px-4 rounded-lg mb-1 transition-colors ${
+          isActive
+            ? "bg-primary/10 text-primary font-medium"
+            : "hover:bg-primary/5 text-gray-600 hover:text-primary"
+        } ${highlight ? "font-semibold" : ""}`
+      }
+    >
+      <Icon
+        size={20}
+        className={`mr-3 shrink-0 ${highlight ? "text-primary" : ""}`}
+      />
+      <span>{label}</span>
+      {count !== undefined && count > 0 && (
+        <span className="ml-auto bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </NavLink>
+  );
+};
 
-const Sidebar: React.FC<SidebarProps> = ({ onLinkClick }) => {
-  const location = useLocation();
-  const { user, profile } = useSupabase();
-  const { joinedGroups } = useGroup();
-  const { joinedMarketplaces } = useMarketplace();
+const Sidebar: React.FC = () => {
+  const { user, profile, signOut } = useSupabase();
+  const [createType, setCreateType] = useState<"poll" | "post" | null>(null);
 
-  if (!user) return null;
+  const handleCreateClick = (type: "poll" | "post") => {
+    setCreateType(type);
+  };
 
-  const routes: SidebarNavItem[] = [
-    {
-      name: 'Home',
-      href: '/',
-      icon: <Home size={20} />,
-    },
-    {
-      name: 'Profile',
-      href: `/user/${user.id}`,
-      icon: <User size={20} />,
-    },
-    {
-      name: 'My Polls',
-      href: '/polls/voted',
-      icon: <BarChart3 size={20} />,
-    },
-    {
-      name: 'Activity',
-      href: '/activity',
-      icon: <Activity size={20} />,
-    },
-    {
-      name: 'Messages',
-      href: '/messages',
-      icon: <MessageSquare size={20} />,
-    },
-  ];
+  const handleDialogClose = () => {
+    setCreateType(null);
+  };
 
   return (
-    <aside className="pb-12 h-full w-full flex flex-col">
-      <ScrollArea className="flex-1">
-        <div className="px-3 py-2">
-          <div className="my-1 mb-4">
-            <h2 className="mb-1 px-2 text-lg font-semibold tracking-tight">
-              Navigation
-            </h2>
-            <div className="space-y-1">
-              {routes.map((route) => (
-                <Button
-                  key={route.href}
-                  variant={location.pathname === route.href ? "secondary" : "ghost"}
-                  size="sm"
-                  className={cn("w-full justify-start", 
-                    location.pathname === route.href ? "font-medium" : "font-normal"
-                  )}
-                  asChild
-                  onClick={onLinkClick}
-                >
-                  <Link to={route.href}>
-                    {route.icon} <span className="ml-2">{route.name}</span>
-                  </Link>
-                </Button>
-              ))}
+    <div className="w-64 border-r border-input bg-background fixed left-0 top-0 h-screen pt-14 z-10">
+      <div className="py-4 px-3 flex flex-col h-full">
+        {user && profile && (
+          <div className="mb-6 flex items-center px-3">
+            <Avatar className="h-10 w-10 mr-3">
+              <AvatarImage
+                src={profile.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`}
+                alt={profile?.username || 'User'}
+              />
+              <AvatarFallback>
+                {profile?.username ? profile.username[0].toUpperCase() : "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="truncate">
+              <div className="font-medium truncate">
+                {profile?.username || "User"}
+              </div>
+              <div className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="py-2">
-            <h2 className="mb-1 px-2 flex items-center justify-between text-lg font-semibold tracking-tight">
-              Groups
-              <Link to="/groups" onClick={onLinkClick}>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                  <Users size={16} />
-                </Button>
-              </Link>
-            </h2>
-            <div className="space-y-1">
-              {joinedGroups.length > 0 ? (
-                joinedGroups.slice(0, 5).map((group) => (
+        <nav className="space-y-1 mb-6">
+          <SidebarLink to="/" icon={Home} label="Home" />
+          {user && (
+            <>
+              <SidebarLink to="/profile" icon={User} label="Profile" />
+              <SidebarLink
+                to="/voted-polls"
+                icon={PieChart}
+                label="Your Polls"
+              />
+              <SidebarLink
+                to="/messages"
+                icon={MessageSquare}
+                label="Messages"
+              />
+              <SidebarLink
+                to="/notifications"
+                icon={Bell}
+                label="Notifications"
+              />
+              <SidebarLink to="/groups" icon={Users} label="Groups" />
+            </>
+          )}
+        </nav>
+
+        {user && (
+          <div className="mt-auto space-y-4">
+            <Dialog open={createType !== null} onOpenChange={handleDialogClose}>
+              <div className="space-y-2">
+                <DialogTrigger asChild>
                   <Button
-                    key={group.id}
-                    variant={location.pathname === `/group/${group.id}` ? "secondary" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start text-sm overflow-hidden"
-                    asChild
-                    onClick={onLinkClick}
+                    onClick={() => handleCreateClick("poll")}
+                    className="w-full justify-start"
                   >
-                    <Link to={`/group/${group.id}`} className="truncate">
-                      <div className="flex items-center w-full">
-                        <div className="h-6 w-6 rounded-full overflow-hidden mr-2 flex-shrink-0">
-                          <img 
-                            src={group.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(group.name)}&background=random`}
-                            alt={group.name}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <span className="truncate">{group.name}</span>
-                      </div>
-                    </Link>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Create Poll
                   </Button>
-                ))
-              ) : (
-                <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                  No groups joined yet
-                </div>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-full justify-start font-normal"
-                asChild
-                onClick={onLinkClick}
-              >
-                <Link to="/groups">
-                  <UserCheck size={16} className="mr-2" /> View All Groups
-                </Link>
-              </Button>
-            </div>
-          </div>
-
-          <Separator className="my-2" />
-
-          <div className="py-2">
-            <h2 className="mb-1 px-2 flex items-center justify-between text-lg font-semibold tracking-tight">
-              Marketplaces
-              <Link to="/marketplaces" onClick={onLinkClick}>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                  <Store size={16} />
-                </Button>
-              </Link>
-            </h2>
-            <div className="space-y-1">
-              {joinedMarketplaces.length > 0 ? (
-                joinedMarketplaces.slice(0, 5).map((marketplace) => (
+                </DialogTrigger>
+                <DialogTrigger asChild>
                   <Button
-                    key={marketplace.id}
-                    variant={location.pathname === `/marketplace/${marketplace.id}` ? "secondary" : "ghost"}
-                    size="sm"
-                    className="w-full justify-start text-sm overflow-hidden"
-                    asChild
-                    onClick={onLinkClick}
+                    onClick={() => handleCreateClick("post")}
+                    className="w-full justify-start"
+                    variant="outline"
                   >
-                    <Link to={`/marketplace/${marketplace.id}`} className="truncate">
-                      <div className="flex items-center w-full">
-                        <div className="h-6 w-6 rounded-full overflow-hidden mr-2 flex-shrink-0">
-                          <img 
-                            src={marketplace.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(marketplace.name)}&background=random`}
-                            alt={marketplace.name}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <span className="truncate">{marketplace.name}</span>
-                      </div>
-                    </Link>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Create Post
                   </Button>
-                ))
-              ) : (
-                <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                  No marketplaces joined yet
-                </div>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-full justify-start font-normal"
-                asChild
-                onClick={onLinkClick}
-              >
-                <Link to="/marketplaces">
-                  <Store size={16} className="mr-2" /> View All Marketplaces
-                </Link>
-              </Button>
-            </div>
+                </DialogTrigger>
+              </div>
+              <DialogContent className="sm:max-w-[600px] p-0">
+                {createType === "poll" && <CreatePollModal isOpen={true} onClose={handleDialogClose} />}
+                {createType === "post" && <CreatePostModal isOpen={true} onClose={handleDialogClose} />}
+              </DialogContent>
+            </Dialog>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+              onClick={signOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
-        </div>
-      </ScrollArea>
-    </aside>
+        )}
+
+        {!user && (
+          <div className="mt-auto space-y-2">
+            <Button asChild className="w-full">
+              <NavLink to="/auth">Sign in</NavLink>
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

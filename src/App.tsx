@@ -1,121 +1,172 @@
 
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
-import Index from './pages/Index';
-import Auth from './pages/Auth';
-import Profile from './pages/Profile';
-import ProtectedRoute from './components/ProtectedRoute';
-import { SupabaseProvider } from './context/SupabaseContext';
-import { Toaster } from './components/ui/sonner';
-import { AppLoader } from './components/AppLoader';
-import { ThemeProvider } from 'next-themes';
-import VotedPolls from './pages/VotedPolls';
-import Groups from './pages/Groups';
-import GroupProfile from './pages/GroupProfile'; 
-import CreatePoll from './pages/CreatePoll';
-import PollDetail from './pages/PollDetail';
-import Followers from './pages/Followers';
-import Following from './pages/Following';
-import UserProfile from './pages/UserProfile';
-import SearchResults from './pages/SearchResults';
-import Notifications from './pages/Notifications';
-import Messages from './pages/Messages';
-import NotFound from './pages/NotFound';
-import { GroupProvider } from './context/GroupContext';
-import { MarketplaceProvider } from './context/MarketplaceContext';
-import Marketplaces from './pages/Marketplaces';
-import MarketplaceProfile from './pages/MarketplaceProfile';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { PollProvider } from "./context/PollContext";
+import { SupabaseProvider } from "./context/SupabaseContext";
+import { GroupProvider } from "./context/GroupContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import UserProfile from "./pages/UserProfile";
+import AppLoader from "./components/AppLoader";
+import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
+import TopHeader from "./components/TopHeader";
+import RightChatColumn from "./components/RightChatColumn";
+import { useBreakpoint } from "./hooks/use-mobile";
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    children: [
-      {
-        path: '/',
-        element: <ProtectedRoute><Index /></ProtectedRoute>
-      },
-      {
-        path: '/auth',
-        element: <Auth />
-      },
-      {
-        path: '/profile',
-        element: <ProtectedRoute><Profile /></ProtectedRoute>
-      },
-      {
-        path: '/polls/voted',
-        element: <ProtectedRoute><VotedPolls /></ProtectedRoute>
-      },
-      {
-        path: '/create',
-        element: <ProtectedRoute><CreatePoll /></ProtectedRoute>
-      },
-      {
-        path: '/poll/:id',
-        element: <ProtectedRoute><PollDetail /></ProtectedRoute>
-      },
-      {
-        path: '/groups',
-        element: <ProtectedRoute><Groups /></ProtectedRoute>
-      },
-      {
-        path: '/group/:id',
-        element: <ProtectedRoute><GroupProfile /></ProtectedRoute>
-      },
-      {
-        path: '/marketplaces',
-        element: <ProtectedRoute><Marketplaces /></ProtectedRoute>
-      },
-      {
-        path: '/marketplace/:id',
-        element: <ProtectedRoute><MarketplaceProfile /></ProtectedRoute>
-      },
-      {
-        path: '/user/:id/followers',
-        element: <ProtectedRoute><Followers /></ProtectedRoute>
-      },
-      {
-        path: '/user/:id/following',
-        element: <ProtectedRoute><Following /></ProtectedRoute>
-      },
-      {
-        path: '/user/:id',
-        element: <ProtectedRoute><UserProfile /></ProtectedRoute>
-      },
-      {
-        path: '/search',
-        element: <ProtectedRoute><SearchResults /></ProtectedRoute>
-      },
-      {
-        path: '/notifications',
-        element: <ProtectedRoute><Notifications /></ProtectedRoute>
-      },
-      {
-        path: '/messages',
-        element: <ProtectedRoute><Messages /></ProtectedRoute>
-      },
-      {
-        path: '*',
-        element: <NotFound />
-      }
-    ]
-  },
-]);
+import Index from "./pages/Index";
+import CreatePoll from "./pages/CreatePoll";
+import PollDetail from "./pages/PollDetail";
+import Profile from "./pages/Profile";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
+import Messages from "./pages/Messages";
+import VotedPolls from "./pages/VotedPolls";
+import Followers from "./pages/Followers";
+import Following from "./pages/Following";
+import Notifications from "./pages/Notifications";
+import SearchResults from "./pages/SearchResults";
+import Groups from "./pages/Groups";
+import GroupProfile from "./pages/GroupProfile";
 
-function App() {
+const queryClient = new QueryClient();
+
+const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
+  const breakpoint = useBreakpoint();
+  const isDesktop = breakpoint === "desktop";
+  const location = useLocation();
+  
+  // Don't render the layout for the Auth page
+  if (location.pathname === '/auth') {
+    return <>{children}</>;
+  }
+  
+  const showRightChat = isDesktop && !location.pathname.startsWith('/messages');
+  
+  const isFullWidthPage = 
+    location.pathname === '/profile' || 
+    location.pathname.startsWith('/user/') ||
+    location.pathname.startsWith('/group/') ||
+    location.pathname.startsWith('/poll/');
+  
   return (
-    <ThemeProvider attribute="class" defaultTheme="light">
-      <SupabaseProvider>
-        <GroupProvider>
-          <MarketplaceProvider>
-            <AppLoader>
-              <RouterProvider router={router} />
-              <Toaster position="top-center" richColors />
-            </AppLoader>
-          </MarketplaceProvider>
-        </GroupProvider>
-      </SupabaseProvider>
-    </ThemeProvider>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <TopHeader />
+      <div className="flex flex-1">
+        {isDesktop && <Sidebar />}
+        {!isDesktop && <Header />}
+        <div className={`flex-1 ${isDesktop ? 'ml-64' : ''} ${showRightChat ? 'mr-80' : ''}`}>
+          <div className={`${isDesktop ? 'w-[85%] mx-auto mt-16' : 'w-full mt-0'} px-4 py-6 ${!isFullWidthPage && !showRightChat ? 'max-w-3xl' : ''}`}>
+            <main className="flex-1 w-full">{children}</main>
+          </div>
+        </div>
+        {showRightChat && <RightChatColumn />}
+      </div>
+    </div>
   );
-}
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <BrowserRouter>
+        <SupabaseProvider>
+          <PollProvider>
+            <GroupProvider>
+              <Toaster />
+              <Sonner position="top-center" closeButton={true} />
+              <AppLoader>
+                <ResponsiveLayout>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/search" element={<SearchResults />} />
+                    <Route
+                      path="/create"
+                      element={
+                        <ProtectedRoute>
+                          <CreatePoll />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/poll/:id" element={<PollDetail />} />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/user/:id" element={<UserProfile />} />
+                    <Route
+                      path="/messages"
+                      element={
+                        <ProtectedRoute>
+                          <Messages />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/messages/:id"
+                      element={
+                        <ProtectedRoute>
+                          <Messages />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/voted-polls"
+                      element={
+                        <ProtectedRoute>
+                          <VotedPolls />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/followers"
+                      element={
+                        <ProtectedRoute>
+                          <Followers />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/following"
+                      element={
+                        <ProtectedRoute>
+                          <Following />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/notifications"
+                      element={
+                        <ProtectedRoute>
+                          <Notifications />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/groups"
+                      element={<Groups />}
+                    />
+                    <Route
+                      path="/group/:id"
+                      element={<GroupProfile />}
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </ResponsiveLayout>
+              </AppLoader>
+            </GroupProvider>
+          </PollProvider>
+        </SupabaseProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
