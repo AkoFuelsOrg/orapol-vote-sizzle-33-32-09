@@ -80,7 +80,7 @@ const Sidebar: React.FC = () => {
             <Avatar className="h-10 w-10 mr-3">
               <AvatarImage
                 src={profile.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`}
-                alt={profile.username || 'User'}
+                alt={profile?.username || 'User'}
               />
               <AvatarFallback>
                 {profile?.username ? profile.username[0].toUpperCase() : "U"}

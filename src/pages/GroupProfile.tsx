@@ -7,7 +7,7 @@ import { Group, GroupMember } from '../lib/types';
 import { Button } from '../components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
@@ -16,6 +16,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { toast } from 'sonner';
 import { Users, UserPlus, UserCheck, ArrowLeft, Edit, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
+import GroupPostInterface from '../components/GroupPostInterface';
+import GroupPosts from '../components/GroupPosts';
 
 const GroupProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +41,7 @@ const GroupProfile: React.FC = () => {
     avatarPreview: '',
     coverPreview: '',
   });
+  const [activeTab, setActiveTab] = useState('posts');
   
   useEffect(() => {
     if (id) {
@@ -446,11 +449,17 @@ const GroupProfile: React.FC = () => {
         </CardHeader>
       </Card>
       
-      <Tabs defaultValue="members" className="mt-6">
+      <Tabs defaultValue="posts" className="mt-6" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
+          <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="about">About</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="posts" className="mt-0">
+          {id && isMember && <GroupPostInterface groupId={id} />}
+          {id && <GroupPosts groupId={id} />}
+        </TabsContent>
         
         <TabsContent value="members" className="mt-0">
           <Card>

@@ -33,6 +33,7 @@ export interface Post {
   commentCount: number;
   likeCount: number;
   userLiked?: boolean; // Whether the current user liked this post
+  groupId?: string; // Optional groupId for posts in groups
 }
 
 export interface Comment {
@@ -85,4 +86,8 @@ export interface GroupMember {
     username: string;
     avatar_url: string;
   };
+}
+
+export interface GroupPost extends Post {
+  group_id: string;
 }

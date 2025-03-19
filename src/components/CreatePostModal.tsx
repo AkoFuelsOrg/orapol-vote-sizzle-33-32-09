@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
@@ -9,18 +9,28 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-interface CreatePostModalProps {
+export interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
+  groupId?: string; // Optional group ID for creating posts in a group
 }
 
-const CreatePostModal = ({ isOpen, onClose }: CreatePostModalProps) => {
+const CreatePostModal = ({ isOpen, onClose, groupId }: CreatePostModalProps) => {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useSupabase();
+  
+  useEffect(() => {
+    // Reset form when modal is opened
+    if (isOpen) {
+      setContent('');
+      setImageFile(null);
+      setImagePreview(null);
+    }
+  }, [isOpen]);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,14 +99,17 @@ const CreatePostModal = ({ isOpen, onClose }: CreatePostModalProps) => {
         imageUrl = publicUrl;
       }
       
-      // Create the post
+      // Create the post with or without groupId
+      const postData = {
+        content: content.trim(),
+        user_id: user.id,
+        image: imageUrl,
+        ...(groupId ? { group_id: groupId } : {}) // Add group_id if provided
+      };
+      
       const { error: postError } = await supabase
         .from('posts')
-        .insert({
-          content: content.trim(),
-          user_id: user.id,
-          image: imageUrl
-        });
+        .insert(postData);
       
       if (postError) throw postError;
       
@@ -121,7 +134,9 @@ const CreatePostModal = ({ isOpen, onClose }: CreatePostModalProps) => {
       if (!open) onClose();
     }}>
       <DialogContent className="max-w-lg">
-        <DialogTitle className="text-center font-bold text-lg">Create Post</DialogTitle>
+        <DialogTitle className="text-center font-bold text-lg">
+          {groupId ? 'Create Group Post' : 'Create Post'}
+        </DialogTitle>
         
         <div className="flex items-start gap-3 mt-4">
           {user && (
@@ -136,7 +151,7 @@ const CreatePostModal = ({ isOpen, onClose }: CreatePostModalProps) => {
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="What's on your mind?"
+              placeholder={groupId ? "Share something with the group..." : "What's on your mind?"}
               className="resize-none border-0 p-0 focus-visible:ring-0 text-base h-32"
             />
             

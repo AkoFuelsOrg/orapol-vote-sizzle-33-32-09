@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import { useSupabase } from './SupabaseContext';
@@ -52,7 +51,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     setLoadingGroups(true);
     try {
-      // Fetch all groups
       const { data: allGroups, error: allGroupsError } = await supabase
         .from('groups')
         .select('*')
@@ -60,7 +58,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (allGroupsError) throw allGroupsError;
       
-      // Fetch groups created by the current user
       const { data: createdGroups, error: createdGroupsError } = await supabase
         .from('groups')
         .select('*')
@@ -69,7 +66,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (createdGroupsError) throw createdGroupsError;
       
-      // Fetch groups the user has joined
       const { data: memberships, error: membershipsError } = await supabase
         .from('group_members')
         .select('group_id')
@@ -113,7 +109,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       let avatarUrl: string | undefined;
       let coverUrl: string | undefined;
       
-      // Upload avatar if provided
       if (avatar) {
         const fileExt = avatar.name.split('.').pop();
         const filePath = `groups/${user.id}/avatar-${Date.now()}.${fileExt}`;
@@ -131,7 +126,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         avatarUrl = urlData.publicUrl;
       }
       
-      // Upload cover if provided
       if (cover) {
         const fileExt = cover.name.split('.').pop();
         const filePath = `groups/${user.id}/cover-${Date.now()}.${fileExt}`;
@@ -149,7 +143,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         coverUrl = urlData.publicUrl;
       }
       
-      // Create the group
       const { data, error } = await supabase
         .from('groups')
         .insert({
@@ -164,7 +157,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (error) throw error;
       
-      // Add the creator as a member with 'admin' role
       const { error: memberError } = await supabase
         .from('group_members')
         .insert({
@@ -192,14 +184,12 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     try {
-      // Check if already a member
       const isMember = await isGroupMember(groupId);
       if (isMember) {
         toast.info('You are already a member of this group');
         return true;
       }
       
-      // Join the group
       const { error } = await supabase
         .from('group_members')
         .insert({
@@ -227,7 +217,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     try {
-      // Check if creator (creators can't leave their own groups)
       const { data: group, error: groupError } = await supabase
         .from('groups')
         .select('created_by')
@@ -241,7 +230,6 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return false;
       }
       
-      // Leave the group
       const { error } = await supabase
         .from('group_members')
         .delete()
@@ -280,7 +268,7 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const fetchGroupMembers = async (groupId: string) => {
+  const fetchGroupMembers = async (groupId: string): Promise<GroupMember[]> => {
     try {
       const { data, error } = await supabase
         .from('group_members')
@@ -302,10 +290,10 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         group_id: member.group_id,
         user_id: member.user_id,
         joined_at: member.joined_at,
-        role: member.role,
+        role: member.role as 'admin' | 'moderator' | 'member',
         user: {
           username: member.profiles?.username || 'Anonymous',
-          avatar_url: member.profiles?.avatar_url,
+          avatar_url: member.profiles?.avatar_url || '',
         }
       }));
     } catch (error) {
