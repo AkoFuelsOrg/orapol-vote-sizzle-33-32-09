@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2, ChevronDown, ChevronUp, X, Maximize } from 'lucide-react';
+import { MessageCircle, Loader2, ChevronDown, ChevronUp, X, Maximize, Share2 } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -10,6 +10,8 @@ import { Json } from '@/integrations/supabase/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 interface PollCardProps {
   poll: Poll;
@@ -100,22 +102,12 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     e.preventDefault(); // Prevent navigation when double-clicking
     e.stopPropagation(); // Stop event propagation
     setIsExpanded(!isExpanded);
-    console.log("Double clicked, isExpanded set to:", !isExpanded); // Debug log
   };
   
-  const handleImageDoubleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsImageExpanded(!isImageExpanded);
-    console.log("Image double clicked, expanded:", !isImageExpanded);
-  };
-
   const handleOptionImageClick = (e: React.MouseEvent, imageUrl: string) => {
-    // This is critical to make sure this event doesn't trigger the voting function
     e.preventDefault();
     e.stopPropagation();
     setExpandedOptionImage(imageUrl);
-    console.log("Option image clicked, expanded:", imageUrl);
   };
 
   const renderOptionImage = (option: PollOption) => {
@@ -124,18 +116,14 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     return (
       <div 
         className="flex-shrink-0 h-12 w-12 rounded-md overflow-hidden relative group cursor-pointer"
-        onClick={(e) => {
-          handleOptionImageClick(e, option.imageUrl!);
-        }}
+        onClick={(e) => handleOptionImageClick(e, option.imageUrl!)}
       >
         <img 
           src={option.imageUrl} 
           alt={option.text} 
           className="w-full h-full object-cover"
         />
-        <div 
-          className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer z-20"
-        >
+        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer z-20">
           <Maximize size={16} className="text-white" />
         </div>
       </div>
@@ -146,7 +134,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
     return (
       <div
         key={option.id}
-        className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group
+        className={`w-full relative p-3 rounded-lg border text-left transition-all duration-200 group mb-2
           ${poll.userVoted === option.id 
             ? 'border-primary bg-primary/5' 
             : poll.userVoted 
@@ -161,7 +149,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
             onClick={(e) => handleVote(option.id, e)}
           >
             <span className="text-sm font-medium">{option.text}</span>
-            <span className="text-xs font-medium">
+            <span className="text-xs font-medium text-primary">
               {calculatePercentage(option.votes)}%
             </span>
           </div>
@@ -180,95 +168,96 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   };
 
   const cardContent = (
-    <>
-      <div className="mb-4 flex items-center justify-between">
-        <Link 
-          to={`/user/${poll.author.id}`}
-          className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-          onClick={(e) => e.stopPropagation()} // Prevent double-click handler from triggering
-        >
-          <img 
-            src={poll.author.avatar} 
-            alt={poll.author.name} 
-            className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
-          />
-          <div>
-            <p className="text-sm font-medium text-red-500">{poll.author.name}</p>
-            <p className="text-xs text-muted-foreground">{formatDate(poll.createdAt)}</p>
-          </div>
-        </Link>
-        <div className="pill bg-secondary text-secondary-foreground">
+    <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow">
+      <CardHeader className="p-4 pb-2 flex justify-between items-start">
+        <div className="flex items-center space-x-2">
+          <Link 
+            to={`/user/${poll.author.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center space-x-3"
+          >
+            <Avatar className="h-10 w-10 border-2 border-primary">
+              <AvatarImage src={poll.author.avatar} alt={poll.author.name} />
+              <AvatarFallback>{poll.author.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium text-sm text-primary">{poll.author.name}</p>
+              <p className="text-xs text-muted-foreground">{formatDate(poll.createdAt)}</p>
+            </div>
+          </Link>
+        </div>
+        <div className="px-2 py-1 rounded-full bg-secondary/80 text-xs font-medium">
           {poll.totalVotes} votes
         </div>
-      </div>
+      </CardHeader>
       
-      <h3 className="text-lg font-semibold mb-4">{poll.question}</h3>
-      
-      {poll.image && (
-        <>
-          <div 
-            className="mb-4 rounded-lg overflow-hidden relative cursor-pointer"
-            onDoubleClick={handleImageDoubleClick}
-          >
+      <CardContent className="p-4 pt-2">
+        <h3 className="text-base font-semibold mb-4 text-foreground">{poll.question}</h3>
+        
+        {poll.image && (
+          <div className="mb-4 rounded-lg overflow-hidden relative">
             <img 
               src={poll.image} 
               alt={poll.question} 
-              className="w-full h-48 object-cover"
+              className="w-full h-48 object-cover cursor-pointer"
+              onClick={() => setIsImageExpanded(true)}
             />
+            <div className="absolute inset-0 bg-black/10 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
+              <Maximize size={20} className="text-white drop-shadow-lg" />
+            </div>
+          </div>
+        )}
+        
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded} className="w-full">
+          <div className="space-y-2 relative">
+            {isVoting && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+            
+            {poll.options.slice(0, 2).map((option) => renderOptionContent(option))}
           </div>
           
-          {isImageExpanded && (
-            <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
-              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
-                <DialogTitle className="sr-only">Poll Image</DialogTitle>
-                <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
-                  <X size={24} />
-                </DialogClose>
-                <div className="relative w-full overflow-hidden rounded-lg p-1">
-                  <img 
-                    src={poll.image} 
-                    alt={poll.question} 
-                    className="w-full h-auto max-h-[80vh] object-contain"
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-        </>
-      )}
-      
-      <Collapsible 
-        open={isExpanded} 
-        onOpenChange={setIsExpanded} 
-        className="w-full"
-      >
-        <div className="space-y-2.5 mb-4 relative">
-          {isVoting && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          )}
+          <CollapsibleContent className="space-y-2 py-1">
+            {poll.options.slice(2).map((option) => renderOptionContent(option))}
+          </CollapsibleContent>
           
-          {poll.options.slice(0, 2).map((option) => renderOptionContent(option))}
+          {poll.options.length > 2 && (
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-center p-2 text-sm text-muted-foreground hover:text-foreground transition-colors mt-1">
+                <span>{isExpanded ? "Show less" : "Show more options"}</span>
+                {isExpanded ? (
+                  <ChevronUp className="ml-1 h-4 w-4" />
+                ) : (
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+          )}
+        </Collapsible>
+      </CardContent>
+      
+      <CardFooter className="px-4 py-3 border-t flex justify-between items-center">
+        <div className="flex items-center">
+          <button className="flex items-center space-x-1 p-1.5 rounded-md hover:bg-gray-100 text-muted-foreground">
+            <MessageCircle size={18} />
+            <span className="text-xs">{poll.commentCount}</span>
+          </button>
         </div>
         
-        <CollapsibleContent className="space-y-2.5">
-          {poll.options.slice(2).map((option) => renderOptionContent(option))}
-        </CollapsibleContent>
-        
-        {poll.options.length > 2 && (
-          <CollapsibleTrigger asChild>
-            <button className="w-full flex items-center justify-center p-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <span>{isExpanded ? "Show less" : "Show more options"}</span>
-              {isExpanded ? (
-                <ChevronUp className="ml-1 h-4 w-4" />
-              ) : (
-                <ChevronDown className="ml-1 h-4 w-4" />
-              )}
-            </button>
-          </CollapsibleTrigger>
-        )}
-      </Collapsible>
+        <button 
+          className="p-1.5 rounded-md hover:bg-gray-100 text-muted-foreground"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigator.clipboard.writeText(window.location.origin + `/poll/${poll.id}`);
+            toast.success("Link copied to clipboard");
+          }}
+        >
+          <Share2 size={18} />
+        </button>
+      </CardFooter>
       
       {expandedOptionImage && (
         <Dialog open={!!expandedOptionImage} onOpenChange={(open) => !open && setExpandedOptionImage(null)}>
@@ -288,27 +277,34 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
         </Dialog>
       )}
       
-      <div className="flex items-center">
-        <MessageCircle size={15} className="mr-1 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">{poll.commentCount} comments</span>
-      </div>
-    </>
+      {isImageExpanded && (
+        <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+            <DialogTitle className="sr-only">Poll Image</DialogTitle>
+            <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+              <X size={24} />
+            </DialogClose>
+            <div className="relative w-full overflow-hidden rounded-lg p-1">
+              <img 
+                src={poll.image} 
+                alt={poll.question} 
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </Card>
   );
 
   return (
-    <div 
-      className={`bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in ${!preview ? 'block' : ''}`}
-      onDoubleClick={handleDoubleClick}
-    >
+    <div className="animate-fade-in">
       {!preview ? (
-        <Link 
-          to={`/poll/${poll.id}`}
-          className="block"
-        >
+        <Link to={`/poll/${poll.id}`}>
           {cardContent}
         </Link>
       ) : (
-        <div className="block">
+        <div>
           {cardContent}
         </div>
       )}

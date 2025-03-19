@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import Masonry from 'react-masonry-css';
 import { useInView } from 'react-intersection-observer';
 import { useSupabase } from '../context/SupabaseContext';
@@ -16,6 +15,7 @@ import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import CreatePostInterface from '@/components/CreatePostInterface';
 
 const Index: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -36,7 +36,7 @@ const Index: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch posts with type assertion to handle type issues
+      // Fetch posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -45,7 +45,8 @@ const Index: React.FC = () => {
           created_at,
           image,
           comment_count,
-          profiles:user_id (id, username, avatar_url)
+          user_id,
+          profiles(id, username, avatar_url)
         `)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -54,6 +55,8 @@ const Index: React.FC = () => {
         console.error('Error fetching posts:', postsError);
         return;
       }
+      
+      console.log("Posts data:", postsData);
       
       let userLikedMap: Record<string, boolean> = {};
       
@@ -72,18 +75,19 @@ const Index: React.FC = () => {
         }
       }
       
-      // Count likes for each post
-      // Modified to remove the unsupported group method
+      // Count likes for each post - remove unsupported group method
       const { data: likeCounts } = await supabase
         .from('post_likes')
-        .select('post_id, count')
-        .eq('user_id', user?.id || '')
-        .gt('count', 0);
+        .select('post_id, count');
       
       const likeCountMap: Record<string, number> = {};
       if (likeCounts) {
         likeCounts.forEach((item: any) => {
-          likeCountMap[item.post_id] = parseInt(item.count);
+          if (likeCountMap[item.post_id]) {
+            likeCountMap[item.post_id] += 1;
+          } else {
+            likeCountMap[item.post_id] = 1;
+          }
         });
       }
       
@@ -92,9 +96,9 @@ const Index: React.FC = () => {
         id: post.id,
         content: post.content,
         author: {
-          id: post.profiles?.id,
+          id: post.profiles?.id || post.user_id,
           name: post.profiles?.username || 'Anonymous',
-          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id}`
+          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id || post.user_id}`
         },
         createdAt: post.created_at,
         image: post.image,
@@ -103,6 +107,7 @@ const Index: React.FC = () => {
         userLiked: !!userLikedMap[post.id]
       }));
       
+      console.log("Formatted posts:", formattedPosts);
       setPosts(formattedPosts);
     } catch (error) {
       console.error('Error in fetchPosts:', error);
@@ -127,6 +132,8 @@ const Index: React.FC = () => {
         return;
       }
       
+      console.log("Polls data:", data);
+      
       setPolls(
         data.map((poll) => ({
           id: poll.id,
@@ -136,9 +143,9 @@ const Index: React.FC = () => {
           commentCount: poll.comment_count,
           createdAt: poll.created_at,
           author: {
-            id: poll.profiles.id,
-            name: poll.profiles.username || 'Anonymous',
-            avatar: poll.profiles.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles.id}`
+            id: poll.profiles?.id || poll.user_id,
+            name: poll.profiles?.username || 'Anonymous',
+            avatar: poll.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles?.id || poll.user_id}`
           },
           image: poll.image
         }))
@@ -172,9 +179,9 @@ const Index: React.FC = () => {
   
   const renderItem = (item: any) => {
     if (item.question) {
-      return <PollCard key={item.id} poll={item} />;
+      return <PollCard key={`poll-${item.id}`} poll={item} />;
     } else if (item.content) {
-      return <PostCard key={item.id} post={item} />;
+      return <PostCard key={`post-${item.id}`} post={item} />;
     }
     return null;
   };
@@ -196,7 +203,7 @@ const Index: React.FC = () => {
       
       const lastPost = posts[posts.length - 1];
       
-      // Fetch more posts with type assertion
+      // Fetch more posts
       const { data: morePosts, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -205,7 +212,8 @@ const Index: React.FC = () => {
           created_at,
           image,
           comment_count,
-          profiles:user_id (id, username, avatar_url)
+          user_id,
+          profiles(id, username, avatar_url)
         `)
         .lt('created_at', lastPost.createdAt)
         .order('created_at', { ascending: false })
@@ -240,14 +248,14 @@ const Index: React.FC = () => {
         id: post.id,
         content: post.content,
         author: {
-          id: post.profiles?.id,
+          id: post.profiles?.id || post.user_id,
           name: post.profiles?.username || 'Anonymous',
-          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id}`
+          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id || post.user_id}`
         },
         createdAt: post.created_at,
         image: post.image,
         commentCount: post.comment_count || 0,
-        likeCount: 0, // We'll need a separate query to get this right
+        likeCount: 0,
         userLiked: !!userLikedMap[post.id]
       }));
       
@@ -357,6 +365,8 @@ const Index: React.FC = () => {
           </div>
         </div>
         
+        <CreatePostInterface />
+        
         <div className="mb-6">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-[180px]">
@@ -385,9 +395,7 @@ const Index: React.FC = () => {
               className="my-masonry-grid"
               columnClassName="my-masonry-grid_column"
             >
-              {filteredItems.map(item => (
-                renderItem(item)
-              ))}
+              {filteredItems.map(item => renderItem(item))}
             </Masonry>
             
             {hasMore && filter !== 'polls' && (

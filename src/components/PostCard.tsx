@@ -7,6 +7,9 @@ import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
+import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Button } from './ui/button';
 
 interface PostCardProps {
   post: Post;
@@ -28,7 +31,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     }).format(date);
   };
 
-  const handleLike = async () => {
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!user) {
       toast.error("Please sign in to like posts");
       return;
@@ -69,39 +75,33 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in">
+    <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-shadow animate-fade-in">
       <Link to={`/post/${post.id}`} className="block">
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
+        <CardHeader className="p-4 pb-2 flex flex-row justify-between items-start space-y-0">
           <Link 
             to={`/user/${post.author.id}`}
-            className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-            onClick={(e) => e.stopPropagation()} // Prevent event propagation
+            className="flex items-center space-x-3"
+            onClick={(e) => e.stopPropagation()}
           >
-            <img 
-              src={post.author.avatar} 
-              alt={post.author.name} 
-              className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
-            />
+            <Avatar className="h-10 w-10 border-2 border-primary">
+              <AvatarImage src={post.author.avatar} alt={post.author.name} />
+              <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+            </Avatar>
             <div>
-              <p className="text-sm font-medium text-red-500">{post.author.name}</p>
+              <p className="font-medium text-sm text-primary">{post.author.name}</p>
               <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
             </div>
           </Link>
-        </div>
+        </CardHeader>
         
-        {/* Content */}
-        <div className="mb-4">
-          <p className="text-base whitespace-pre-line break-words">
+        <CardContent className="p-4 pt-2">
+          <p className="text-base whitespace-pre-line break-words mb-4">
             {post.content}
           </p>
-        </div>
-        
-        {/* Image */}
-        {post.image && (
-          <>
+          
+          {post.image && (
             <div 
-              className="mb-4 rounded-lg overflow-hidden relative cursor-pointer"
+              className="rounded-lg overflow-hidden relative cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -117,50 +117,35 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 <Maximize size={24} className="text-white drop-shadow-lg" />
               </div>
             </div>
-            
-            {isImageExpanded && (
-              <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
-                <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
-                  <DialogTitle className="sr-only">Post Image</DialogTitle>
-                  <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
-                    <X size={24} />
-                  </DialogClose>
-                  <div className="relative w-full overflow-hidden rounded-lg p-1">
-                    <img 
-                      src={post.image} 
-                      alt="Post" 
-                      className="w-full h-auto max-h-[80vh] object-contain"
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </>
-        )}
+          )}
+        </CardContent>
         
-        {/* Post stats */}
-        <div className="flex items-center justify-between py-2 border-t border-b my-2">
-          <div className="flex items-center space-x-2" onClick={(e) => e.preventDefault()}>
-            <button 
-              className={`flex items-center space-x-1 p-1.5 rounded-md hover:bg-gray-100 ${hasLiked ? 'text-red-500' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleLike();
-              }}
+        <CardFooter className="px-4 py-3 border-t flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`flex items-center space-x-1 p-1 rounded-md hover:bg-gray-100 ${hasLiked ? 'text-primary' : 'text-muted-foreground'}`}
+              onClick={handleLike}
             >
-              <Heart size={18} className={hasLiked ? 'fill-red-500' : ''} />
+              <Heart size={18} className={hasLiked ? 'fill-primary' : ''} />
               <span>{likeCount}</span>
-            </button>
+            </Button>
             
-            <button className="flex items-center space-x-1 p-1.5 rounded-md hover:bg-gray-100">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-1 p-1 rounded-md hover:bg-gray-100 text-muted-foreground"
+            >
               <MessageCircle size={18} />
               <span>{post.commentCount}</span>
-            </button>
+            </Button>
           </div>
           
-          <button 
-            className="p-1.5 rounded-md hover:bg-gray-100"
+          <Button 
+            variant="ghost"
+            size="sm"
+            className="p-1 rounded-md hover:bg-gray-100 text-muted-foreground"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -169,10 +154,28 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             }}
           >
             <Share2 size={18} />
-          </button>
-        </div>
+          </Button>
+        </CardFooter>
       </Link>
-    </div>
+
+      {isImageExpanded && (
+        <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+            <DialogTitle className="sr-only">Post Image</DialogTitle>
+            <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+              <X size={24} />
+            </DialogClose>
+            <div className="relative w-full overflow-hidden rounded-lg p-1">
+              <img 
+                src={post.image} 
+                alt="Post" 
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </Card>
   );
 };
 
