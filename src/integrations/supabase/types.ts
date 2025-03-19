@@ -411,6 +411,7 @@ export type Database = {
           comment_count: number | null
           content: string
           created_at: string | null
+          group_id: string | null
           id: string
           image: string | null
           updated_at: string | null
@@ -420,6 +421,7 @@ export type Database = {
           comment_count?: number | null
           content: string
           created_at?: string | null
+          group_id?: string | null
           id?: string
           image?: string | null
           updated_at?: string | null
@@ -429,12 +431,21 @@ export type Database = {
           comment_count?: number | null
           content?: string
           created_at?: string | null
+          group_id?: string | null
           id?: string
           image?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

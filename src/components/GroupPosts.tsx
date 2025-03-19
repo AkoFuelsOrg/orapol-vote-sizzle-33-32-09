@@ -25,12 +25,11 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   const fetchGroupPosts = async () => {
     setLoading(true);
     try {
+      // Instead of using a nested select that relies on relationships,
+      // we'll fetch posts and manually fetch profile data
       const { data: postsData, error } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles:user_id(id, username, avatar_url)
-        `)
+        .select('*')
         .eq('group_id', groupId)
         .order('created_at', { ascending: false });
       
@@ -38,6 +37,17 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
       
       // Get like counts and user's like status
       const formattedPosts = await Promise.all((postsData || []).map(async (post) => {
+        // Get profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .eq('id', post.user_id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        }
+        
         // Get like count
         const { count: likeCount, error: likeCountError } = await supabase
           .from('post_likes')
@@ -70,9 +80,9 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           likeCount: likeCount || 0,
           userLiked,
           author: {
-            id: post.profiles?.id || 'unknown',
-            name: post.profiles?.username || 'Anonymous',
-            avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
+            id: profileData?.id || 'unknown',
+            name: profileData?.username || 'Anonymous',
+            avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
           },
           groupId: post.group_id,
         };
@@ -110,6 +120,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         <PostCard 
           key={post.id} 
           post={post}
+          onPostUpdate={fetchGroupPosts}
         />
       ))}
     </div>

@@ -270,32 +270,39 @@ export const GroupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const fetchGroupMembers = async (groupId: string): Promise<GroupMember[]> => {
     try {
-      const { data, error } = await supabase
+      const { data: membersData, error: membersError } = await supabase
         .from('group_members')
-        .select(`
-          id,
-          group_id,
-          user_id,
-          joined_at,
-          role,
-          profiles:user_id (username, avatar_url)
-        `)
+        .select('id, group_id, user_id, joined_at, role')
         .eq('group_id', groupId)
         .order('joined_at', { ascending: false });
       
-      if (error) throw error;
+      if (membersError) throw membersError;
       
-      return (data || []).map(member => ({
-        id: member.id,
-        group_id: member.group_id,
-        user_id: member.user_id,
-        joined_at: member.joined_at,
-        role: member.role as 'admin' | 'moderator' | 'member',
-        user: {
-          username: member.profiles?.username || 'Anonymous',
-          avatar_url: member.profiles?.avatar_url || '',
+      const members = await Promise.all((membersData || []).map(async (member) => {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', member.user_id)
+          .maybeSingle();
+          
+        if (profileError) {
+          console.error('Error fetching member profile:', profileError);
         }
+        
+        return {
+          id: member.id,
+          group_id: member.group_id,
+          user_id: member.user_id,
+          joined_at: member.joined_at,
+          role: member.role as 'admin' | 'moderator' | 'member',
+          user: {
+            username: profileData?.username || 'Anonymous',
+            avatar_url: profileData?.avatar_url || '',
+          }
+        };
       }));
+      
+      return members;
     } catch (error) {
       console.error('Error fetching group members:', error);
       return [];
