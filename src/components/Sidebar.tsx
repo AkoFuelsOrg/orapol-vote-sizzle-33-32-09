@@ -1,180 +1,177 @@
 
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  MessageCircle, 
-  Plus, 
-  User, 
-  LogOut, 
+import { NavLink } from "react-router-dom";
+import { LucideIcon } from "lucide-react";
+import {
+  Home,
+  User,
+  PieChart,
   MessageSquare,
-  ThumbsUp,
-  Users,
-  UserCheck, 
   Bell,
-  ChevronRight,
-  Search
-} from 'lucide-react';
-import { useSupabase } from '../context/SupabaseContext';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { cn } from '@/lib/utils';
-import { Input } from './ui/input';
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { supabase } from '@/integrations/supabase/client';
-import Fuse from 'fuse.js';
+  Users,
+  LogOut,
+  PlusCircle,
+  ShieldCheck,
+} from "lucide-react";
+import { Button } from "./ui/button";
+import { useSupabase } from "../context/SupabaseContext";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import CreatePollModal from "./CreatePollModal";
+import CreatePostModal from "./CreatePostModal";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+
+interface SidebarLinkProps {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  count?: number;
+  highlight?: boolean;
+}
+
+const SidebarLink: React.FC<SidebarLinkProps> = ({
+  to,
+  icon: Icon,
+  label,
+  count,
+  highlight,
+}) => {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `flex items-center py-3 px-4 rounded-lg mb-1 transition-colors ${
+          isActive
+            ? "bg-primary/10 text-primary font-medium"
+            : "hover:bg-primary/5 text-gray-600 hover:text-primary"
+        } ${highlight ? "font-semibold" : ""}`
+      }
+    >
+      <Icon
+        size={20}
+        className={`mr-3 shrink-0 ${highlight ? "text-primary" : ""}`}
+      />
+      <span>{label}</span>
+      {count !== undefined && count > 0 && (
+        <span className="ml-auto bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </NavLink>
+  );
+};
 
 const Sidebar: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, profile, signOut, loading } = useSupabase();
-  const [open, setOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // When search is submitted in command dialog
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim().length > 1) {
-      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-      setOpen(false);
-      setSearchTerm('');
-    }
+  const { user, profile, signOut } = useSupabase();
+  const [createType, setCreateType] = useState<"poll" | "post" | null>(null);
+
+  const handleCreateClick = (type: "poll" | "post") => {
+    setCreateType(type);
   };
 
-  // Handle keyboard events for Command dialog
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (open && e.key === 'Enter' && searchTerm.trim().length > 1) {
-        navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-        setOpen(false);
-        setSearchTerm('');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, searchTerm, navigate]);
-
-  const menuItems = [
-    { path: '/', label: 'Polls', icon: MessageCircle },
-    ...(user && !loading ? [
-      { path: '#', label: 'Search', icon: Search, action: () => setOpen(true) },
-      { path: '/voted-polls', label: 'Voted Polls', icon: ThumbsUp },
-      { path: '/followers', label: 'Followers', icon: Users },
-      { path: '/following', label: 'Following', icon: UserCheck },
-      { path: '/messages', label: 'Messages', icon: MessageSquare },
-      { path: '/notifications', label: 'Notifications', icon: Bell },
-      { path: '/create', label: 'Create Poll', icon: Plus },
-      { path: '/profile', label: 'Profile', icon: User },
-    ] : []),
-    ...(user && !loading ? [{ path: '#', label: 'Logout', icon: LogOut, action: signOut }] : [
-      { path: '/auth', label: 'Login', icon: User }
-    ])
-  ];
-
-  const handleItemClick = (item: typeof menuItems[0]) => {
-    if (item.action) {
-      item.action();
-    } else if (item.path && item.path !== '#') {
-      navigate(item.path);
-    }
+  const handleDialogClose = () => {
+    setCreateType(null);
   };
-  
+
   return (
-    <>
-      <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 pt-16 shadow-sm">
-        <div className="p-6">
-          <Link to="/" className="flex items-center">
-            <h1 className="text-xl font-bold text-primary">TUWAYE</h1>
-          </Link>
-        </div>
-        
-        <nav className="flex-1 px-4 py-2 overflow-y-auto">
-          <ul className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = item.path === location.pathname && item.path !== '#';
-              
-              return (
-                <li key={item.label}>
-                  <button
-                    onClick={() => handleItemClick(item)}
-                    className={cn(
-                      "flex items-center w-full px-4 py-3 rounded-lg transition-colors group",
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium" 
-                        : "text-gray-700 hover:text-primary hover:bg-primary/10"
-                    )}
-                  >
-                    <Icon size={18} className="mr-3" />
-                    <span>{item.label}</span>
-                    <ChevronRight size={16} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-        
-        {user && !loading && (
-          <div className="p-4 mt-auto border-t border-gray-200">
-            <Link to="/profile" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-primary/10 transition-colors">
-              {profile?.avatar_url ? (
-                <Avatar>
-                  <AvatarImage
-                    src={profile.avatar_url}
-                    alt={profile.username || user.email || "Profile"}
-                  />
-                  <AvatarFallback>
-                    <User size={18} />
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <Avatar>
-                  <AvatarFallback>
-                    <User size={18} />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div>
-                <p className="font-medium">{profile?.username || user.email?.split('@')[0]}</p>
-                <p className="text-xs text-muted-foreground truncate max-w-[140px]">{user.email}</p>
+    <div className="w-64 border-r border-input bg-background fixed left-0 top-0 h-screen pt-14 z-10">
+      <div className="py-4 px-3 flex flex-col h-full">
+        {user && profile && (
+          <div className="mb-6 flex items-center px-3">
+            <Avatar className="h-10 w-10 mr-3">
+              <AvatarImage
+                src={profile.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`}
+                alt={profile.username || 'User'}
+              />
+              <AvatarFallback>
+                {profile?.username ? profile.username[0].toUpperCase() : "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="truncate">
+              <div className="font-medium truncate">
+                {profile?.username || "User"}
               </div>
-            </Link>
+              <div className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <nav className="space-y-1 mb-6">
+          <SidebarLink to="/" icon={Home} label="Home" />
+          {user && (
+            <>
+              <SidebarLink to="/profile" icon={User} label="Profile" />
+              <SidebarLink
+                to="/voted-polls"
+                icon={PieChart}
+                label="Your Polls"
+              />
+              <SidebarLink
+                to="/messages"
+                icon={MessageSquare}
+                label="Messages"
+              />
+              <SidebarLink
+                to="/notifications"
+                icon={Bell}
+                label="Notifications"
+              />
+              <SidebarLink to="/groups" icon={Users} label="Groups" />
+            </>
+          )}
+        </nav>
+
+        {user && (
+          <div className="mt-auto space-y-4">
+            <Dialog open={createType !== null} onOpenChange={handleDialogClose}>
+              <div className="space-y-2">
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => handleCreateClick("poll")}
+                    className="w-full justify-start"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Create Poll
+                  </Button>
+                </DialogTrigger>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => handleCreateClick("post")}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Create Post
+                  </Button>
+                </DialogTrigger>
+              </div>
+              <DialogContent className="sm:max-w-[600px] p-0">
+                {createType === "poll" && <CreatePollModal onClose={handleDialogClose} />}
+                {createType === "post" && <CreatePostModal onClose={handleDialogClose} />}
+              </DialogContent>
+            </Dialog>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+              onClick={signOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        )}
+
+        {!user && (
+          <div className="mt-auto space-y-2">
+            <Button asChild className="w-full">
+              <NavLink to="/auth">Sign in</NavLink>
+            </Button>
           </div>
         )}
       </div>
-
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <form onSubmit={handleSearchSubmit}>
-          <CommandInput
-            placeholder="Search for users or polls..."
-            onValueChange={setSearchTerm}
-            value={searchTerm}
-            className="border-none outline-none focus:outline-none focus:ring-0"
-            autoFocus
-          />
-        </form>
-        <CommandList>
-          <CommandEmpty>Type at least 2 characters and press Enter to search</CommandEmpty>
-          <CommandGroup>
-            <div className="px-4 py-3 text-sm text-gray-600">
-              Press Enter to search for "{searchTerm}"
-            </div>
-            {searchTerm.trim().length > 1 && (
-              <CommandItem 
-                onSelect={() => {
-                  navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-                  setOpen(false);
-                }}
-                className="cursor-pointer"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                <span>Search for "{searchTerm}"</span>
-              </CommandItem>
-            )}
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
-    </>
+    </div>
   );
 };
 

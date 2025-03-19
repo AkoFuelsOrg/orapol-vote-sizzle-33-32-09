@@ -63,3 +63,26 @@ export interface Message {
   attachment_url?: string;
   attachment_type?: 'image' | 'video' | 'document' | 'gif' | 'emoji';
 }
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  avatar_url?: string;
+  cover_url?: string;
+  created_at: string;
+  created_by: string;
+  member_count: number;
+}
+
+export interface GroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  joined_at: string;
+  role: 'admin' | 'moderator' | 'member';
+  user?: {
+    username: string;
+    avatar_url: string;
+  };
+}
