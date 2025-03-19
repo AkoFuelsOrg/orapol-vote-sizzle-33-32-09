@@ -64,8 +64,8 @@ const Auth: React.FC = () => {
             />
           </div>
           <div className="z-10 text-center">
-            <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-md">Orapol</h1>
-            <p className="text-xl text-white/90 drop-shadow-md">The World's Opinion Platform</p>
+            <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-md">TUWAYE</h1>
+            <p className="text-xl text-white/90 drop-shadow-md">Lets Talk</p>
           </div>
         </div>
       )}
@@ -75,7 +75,7 @@ const Auth: React.FC = () => {
           {!isDesktop && (
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-white mb-2">
-                Orapol
+                TUWAYE
               </h1>
               <p className="text-white/90">
                 {isSignUp ? 'Create an account to get started' : 'Sign in to your account'}

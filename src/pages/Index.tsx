@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -214,7 +215,7 @@ const Index: React.FC = () => {
         
         {!user && (
           <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 text-center animate-fade-in">
-            <h3 className="text-lg font-medium mb-2">Join Orapol Today</h3>
+            <h3 className="text-lg font-medium mb-2">Join TUWAYE Today</h3>
             <p className="text-muted-foreground mb-4">Sign up to create your own polls and vote on others</p>
             <Link 
               to="/auth" 

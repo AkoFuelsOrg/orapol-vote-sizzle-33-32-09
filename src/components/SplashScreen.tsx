@@ -9,8 +9,8 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ message }) => {
   return (
     <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50 animate-fade-in">
-      <h1 className="text-4xl font-bold text-red-500 mb-6 animate-pulse-slow">
-        Orapol
+      <h1 className="text-4xl font-bold text-primary mb-6 animate-pulse-slow">
+        TUWAYE
       </h1>
       
       <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />

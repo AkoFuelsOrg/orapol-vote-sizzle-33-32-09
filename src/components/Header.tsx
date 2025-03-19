@@ -21,7 +21,7 @@ const Header: React.FC = () => {
       <div className="max-w-lg mx-auto h-full flex items-center justify-between">
         <Link to="/" className="flex items-center">
           <h1 className="text-xl font-bold text-primary">
-            Orapol
+            TUWAYE
           </h1>
         </Link>
         

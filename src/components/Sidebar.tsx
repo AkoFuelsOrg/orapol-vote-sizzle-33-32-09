@@ -83,7 +83,7 @@ const Sidebar: React.FC = () => {
       <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col fixed left-0 top-0 pt-16 shadow-sm">
         <div className="p-6">
           <Link to="/" className="flex items-center">
-            <h1 className="text-xl font-bold text-primary">Orapol</h1>
+            <h1 className="text-xl font-bold text-primary">TUWAYE</h1>
           </Link>
         </div>
         
