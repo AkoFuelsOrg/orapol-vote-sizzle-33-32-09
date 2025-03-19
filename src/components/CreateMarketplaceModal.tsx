@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from '../components/ui/use-toast';
 
 interface CreateMarketplaceModalProps {
   isOpen: boolean;
@@ -51,20 +52,28 @@ const CreateMarketplaceModal: React.FC<CreateMarketplaceModalProps> = ({ isOpen,
   };
 
   const uploadImage = async (file: File, path: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `${path}/${fileName}`;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `${path}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('marketplaces')
-      .upload(filePath, file);
+      console.log(`Uploading file to: ${filePath} in bucket: marketplaces`);
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('marketplaces')
+        .upload(filePath, file);
 
-    if (uploadError) {
-      throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      const { data: urlData } = supabase.storage.from('marketplaces').getPublicUrl(filePath);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
     }
-
-    const { data } = supabase.storage.from('marketplaces').getPublicUrl(filePath);
-    return data.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,6 +113,11 @@ const CreateMarketplaceModal: React.FC<CreateMarketplaceModalProps> = ({ isOpen,
       }
     } catch (error) {
       console.error('Error creating marketplace:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create marketplace. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
