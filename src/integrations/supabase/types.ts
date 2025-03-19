@@ -340,6 +340,7 @@ export type Database = {
         Row: {
           comment_count: number | null
           created_at: string | null
+          group_id: string | null
           id: string
           image: string | null
           options: Json
@@ -350,6 +351,7 @@ export type Database = {
         Insert: {
           comment_count?: number | null
           created_at?: string | null
+          group_id?: string | null
           id?: string
           image?: string | null
           options: Json
@@ -360,6 +362,7 @@ export type Database = {
         Update: {
           comment_count?: number | null
           created_at?: string | null
+          group_id?: string | null
           id?: string
           image?: string | null
           options?: Json
@@ -368,6 +371,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "polls_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "polls_user_id_fkey"
             columns: ["user_id"]
