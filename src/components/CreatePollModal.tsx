@@ -65,42 +65,32 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
     try {
       // If this is a group poll, save it to the database
       if (groupId) {
-        // First create the poll in the polls table
+        // Create the options array in the format expected by the database
+        const optionsArray = validOptions.map(text => ({
+          text: text,
+          votes: 0
+        }));
+        
+        // Create the complete poll object with options
         const pollData = {
           question: question,
-          user_id: user.id
+          user_id: user.id,
+          group_id: groupId,
+          options: optionsArray, // This is the JSON field that the database expects
+          total_votes: 0,
+          comment_count: 0
         };
         
-        // Add group_id if it exists
-        if (groupId) {
-          const pollWithGroup = {
-            ...pollData,
-            group_id: groupId
-          };
+        // Insert the poll into the database
+        const { data: poll, error: pollError } = await supabase
+          .from('polls')
+          .insert(pollData)
+          .select('id')
+          .single();
           
-          const { data: poll, error: pollError } = await supabase
-            .from('polls')
-            .insert(pollWithGroup)
-            .select('id')
-            .single();
-            
-          if (pollError) throw pollError;
-          
-          // Then create options for the poll
-          const optionsToInsert = validOptions.map(text => ({
-            poll_id: poll.id,
-            text: text,
-            votes: 0
-          }));
-          
-          const { error: optionsError } = await supabase
-            .from('poll_options')
-            .insert(optionsToInsert);
-            
-          if (optionsError) throw optionsError;
-          
-          toast.success("Poll created in group successfully");
-        }
+        if (pollError) throw pollError;
+        
+        toast.success("Poll created in group successfully");
       } else {
         // Use the context method for regular polls
         addPoll(question, validOptions);
