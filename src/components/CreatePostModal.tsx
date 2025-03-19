@@ -35,6 +35,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
   const [selectedGif, setSelectedGif] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifSelector, setShowGifSelector] = useState(false);
   
   const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -45,10 +46,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
   };
   
-  const handleGifSelected = (url: string) => {
+  const handleGifSelected = async (url: string) => {
     setSelectedGif(url);
     setSelectedImage(null); // Clear image if a GIF is selected
     setSelectedImageUrl('');
+    setShowGifSelector(false);
   };
   
   const removeSelectedMedia = () => {
@@ -172,7 +174,14 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
               </label>
             </Button>
             
-            <GifSelector onGifSelected={handleGifSelected} />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowGifSelector(!showGifSelector)}
+              className="flex items-center gap-1"
+            >
+              <span>GIF</span>
+            </Button>
             
             <div className="relative">
               <Button 
@@ -192,6 +201,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
               )}
             </div>
           </div>
+          
+          {showGifSelector && (
+            <div className="mt-4">
+              <GifSelector 
+                onSelectGif={handleGifSelected} 
+                onClose={() => setShowGifSelector(false)} 
+                isVisible={showGifSelector}
+              />
+            </div>
+          )}
         </div>
         
         <DialogFooter>
