@@ -66,32 +66,41 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
       // If this is a group poll, save it to the database
       if (groupId) {
         // First create the poll in the polls table
-        const { data: pollData, error: pollError } = await supabase
-          .from('polls')
-          .insert({
-            question: question,
-            user_id: user.id,
+        const pollData = {
+          question: question,
+          user_id: user.id
+        };
+        
+        // Add group_id if it exists
+        if (groupId) {
+          const pollWithGroup = {
+            ...pollData,
             group_id: groupId
-          })
-          .select('id')
-          .single();
+          };
           
-        if (pollError) throw pollError;
-        
-        // Then create options for the poll
-        const optionsToInsert = validOptions.map(text => ({
-          poll_id: pollData.id,
-          text: text,
-          votes: 0
-        }));
-        
-        const { error: optionsError } = await supabase
-          .from('poll_options')
-          .insert(optionsToInsert);
+          const { data: poll, error: pollError } = await supabase
+            .from('polls')
+            .insert(pollWithGroup)
+            .select('id')
+            .single();
+            
+          if (pollError) throw pollError;
           
-        if (optionsError) throw optionsError;
-        
-        toast.success("Poll created in group successfully");
+          // Then create options for the poll
+          const optionsToInsert = validOptions.map(text => ({
+            poll_id: poll.id,
+            text: text,
+            votes: 0
+          }));
+          
+          const { error: optionsError } = await supabase
+            .from('poll_options')
+            .insert(optionsToInsert);
+            
+          if (optionsError) throw optionsError;
+          
+          toast.success("Poll created in group successfully");
+        }
       } else {
         // Use the context method for regular polls
         addPoll(question, validOptions);

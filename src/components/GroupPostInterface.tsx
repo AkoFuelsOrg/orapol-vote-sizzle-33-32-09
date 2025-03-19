@@ -90,6 +90,7 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
       <CreatePollModal 
         isOpen={pollModalOpen} 
         onClose={() => setPollModalOpen(false)}
+        groupId={groupId}
       />
     </>
   );
