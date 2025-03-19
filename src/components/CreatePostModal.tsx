@@ -1,233 +1,206 @@
 
-import React, { useState } from 'react';
-import { X, Image, PlusCircle, List, Loader2, Upload } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Image, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 import { useSupabase } from '../context/SupabaseContext';
-import { toast } from "sonner";
-import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
-import { Textarea } from "./ui/textarea";
+import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose }) => {
-  const { user } = useSupabase();
+const CreatePostModal = ({ isOpen, onClose }: CreatePostModalProps) => {
   const [content, setContent] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'post' | 'poll'>('post');
-
-  const handleUploadImage = async (file: File) => {
-    if (!user) {
-      toast.error("You must be logged in to upload images");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useSupabase();
+  
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
       return;
     }
-
+    
+    // Check file type
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+      toast.error('Only JPEG, PNG, GIF and WEBP images are allowed');
+      return;
+    }
+    
+    setImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setImagePreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+  
+  const handleSubmit = async () => {
+    if (!user) {
+      toast.error('You must be logged in to create a post');
+      return;
+    }
+    
+    if (!content.trim() && !imageFile) {
+      toast.error('Please add some content or an image to your post');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
-      setUploadingImage(true);
+      let imageUrl = null;
       
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('post_images')
-        .upload(filePath, file, { upsert: true });
+      // If there's an image, upload it first
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
         
-      if (uploadError) {
-        throw uploadError;
+        const { error: uploadError, data } = await supabase.storage
+          .from('post_images')
+          .upload(filePath, imageFile);
+        
+        if (uploadError) throw uploadError;
+        
+        // Get the public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('post_images')
+          .getPublicUrl(filePath);
+        
+        imageUrl = publicUrl;
       }
       
-      const { data: urlData } = supabase.storage
-        .from('post_images')
-        .getPublicUrl(filePath);
-        
-      setImageUrl(urlData.publicUrl);
-      toast.success("Image uploaded successfully");
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      toast.error(error.message || "Error uploading image");
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const handleSubmitPost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!content.trim()) {
-      toast.error("Please enter some content");
-      return;
-    }
-
-    if (!user) {
-      toast.error("You must be logged in to create a post");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      // Insert the post into Supabase
-      const { data, error } = await supabase
+      // Create the post
+      const { error: postError } = await supabase
         .from('posts')
         .insert({
           content: content.trim(),
           user_id: user.id,
-          image: imageUrl || null
-        })
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success("Post created successfully");
+          image: imageUrl
+        });
+      
+      if (postError) throw postError;
+      
+      toast.success('Post created successfully!');
+      
+      // Reset form and close modal
       setContent('');
-      setImageUrl('');
+      setImageFile(null);
+      setImagePreview(null);
       onClose();
+      
     } catch (error: any) {
       console.error('Error creating post:', error);
-      toast.error(error.message || "Failed to create post");
+      toast.error(error.message || 'Failed to create post');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleGoToPoll = () => {
-    onClose();
-    window.location.href = '/create';
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
-      <div 
-        className="w-full max-w-md bg-white rounded-xl shadow-xl animate-scale-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Create Post</h2>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-secondary transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
+      <DialogContent className="max-w-lg">
+        <DialogTitle className="text-center font-bold text-lg">Create Post</DialogTitle>
         
-        <Tabs defaultValue="post" className="w-full" onValueChange={(val) => setActiveTab(val as 'post' | 'poll')}>
-          <div className="px-4 pt-2">
-            <TabsList className="w-full">
-              <TabsTrigger value="post" className="flex-1">Post</TabsTrigger>
-              <TabsTrigger value="poll" className="flex-1">Poll</TabsTrigger>
-            </TabsList>
-          </div>
+        <div className="flex items-start gap-3 mt-4">
+          {user && (
+            <img 
+              src={user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
+              alt="Your avatar" 
+              className="w-10 h-10 rounded-full border-2 border-red-500 shrink-0"
+            />
+          )}
           
-          <TabsContent value="post" className="p-4 focus:outline-none">
-            <form onSubmit={handleSubmitPost} className="space-y-4">
-              <div>
-                <Textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="What's on your mind?"
-                  className="w-full p-2.5 min-h-[120px] border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-                  maxLength={500}
+          <div className="flex-1">
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="What's on your mind?"
+              className="resize-none border-0 p-0 focus-visible:ring-0 text-base h-32"
+            />
+            
+            {imagePreview && (
+              <div className="relative mt-3 rounded-lg overflow-hidden">
+                <img 
+                  src={imagePreview} 
+                  alt="Post preview" 
+                  className="w-full h-auto max-h-[300px] object-contain bg-gray-100"
                 />
-              </div>
-              
-              {imageUrl ? (
-                <div className="relative rounded-lg overflow-hidden border border-border">
-                  <img 
-                    src={imageUrl} 
-                    alt="Post image preview" 
-                    className="w-full max-h-[200px] object-cover"
-                    onError={() => {
-                      toast.error("Invalid image");
-                      setImageUrl('');
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setImageUrl('')}
-                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex items-center justify-center h-[100px] rounded-lg border border-dashed border-primary/30 bg-secondary/30 cursor-pointer hover:bg-secondary/50 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleUploadImage(e.target.files[0]);
-                      }
-                    }}
-                    disabled={uploadingImage}
-                  />
-                  <div className="text-center text-muted-foreground">
-                    {uploadingImage ? (
-                      <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-                    ) : (
-                      <>
-                        <Upload className="mx-auto h-8 w-8 mb-1" />
-                        <p className="text-sm">Click to upload an image</p>
-                      </>
-                    )}
-                  </div>
-                </label>
-              )}
-              
-              <div className="pt-2 flex gap-3 justify-end">
                 <button
                   type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors"
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !content.trim()}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 btn-animate"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Posting...
-                    </div>
-                  ) : (
-                    "Post"
-                  )}
+                  <X size={16} />
                 </button>
               </div>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="poll" className="p-4 focus:outline-none">
-            <div className="text-center p-4">
-              <List className="h-12 w-12 mx-auto mb-2 text-primary/70" />
-              <h3 className="text-lg font-medium mb-1">Create a Poll</h3>
-              <p className="text-muted-foreground mb-4">Ask a question and set up voting options</p>
-              <button
-                onClick={handleGoToPoll}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors btn-animate"
+            )}
+          </div>
+        </div>
+        
+        <div className="border-t border-b py-2 mt-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Add to your post</p>
+            
+            <div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="post-image-upload"
+              />
+              <label 
+                htmlFor="post-image-upload" 
+                className="cursor-pointer p-2 rounded-full hover:bg-gray-100 inline-flex items-center justify-center transition-colors"
               >
-                Create Poll
-              </button>
+                <Image size={18} className="text-blue-500" />
+              </label>
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit}
+            disabled={isSubmitting || (!content.trim() && !imageFile)}
+            className="bg-red-500 hover:bg-red-600 text-white"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 size={16} className="mr-2 animate-spin" />
+                Posting...
+              </>
+            ) : 'Post'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

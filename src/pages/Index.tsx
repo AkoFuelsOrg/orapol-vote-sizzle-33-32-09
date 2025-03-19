@@ -40,7 +40,7 @@ const Index: React.FC = () => {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'posts' },
-        (payload) => {
+        (payload: any) => {
           fetchPostWithDetails(payload.new.id);
         }
       )
@@ -304,12 +304,14 @@ const Index: React.FC = () => {
       if (likeCountsError) throw likeCountsError;
       
       const likeCountMap: Record<string, number> = {};
-      likeCounts.forEach(like => {
-        likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
-      });
+      if (likeCounts) {
+        likeCounts.forEach(like => {
+          likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
+        });
+      }
       
       // Format polls for our application
-      const formattedPolls: Poll[] = pollsData.map(poll => ({
+      const formattedPolls: Poll[] = pollsData ? pollsData.map(poll => ({
         id: poll.id,
         question: poll.question,
         options: convertJsonToPollOptions(poll.options),
@@ -323,10 +325,10 @@ const Index: React.FC = () => {
         commentCount: poll.comment_count || 0,
         userVoted: userVotes[poll.id],
         image: poll.image
-      }));
+      })) : [];
       
       // Format posts for our application
-      const formattedPosts: Post[] = postsData.map(post => ({
+      const formattedPosts: Post[] = postsData ? postsData.map(post => ({
         id: post.id,
         content: post.content,
         author: {
@@ -339,7 +341,7 @@ const Index: React.FC = () => {
         commentCount: post.comment_count || 0,
         likeCount: likeCountMap[post.id] || 0,
         userLiked: userLikes[post.id] || false
-      }));
+      })) : [];
       
       // Combine and sort by creation date
       setPolls(formattedPolls);

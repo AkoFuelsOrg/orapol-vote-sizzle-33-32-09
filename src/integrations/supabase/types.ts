@@ -312,6 +312,65 @@ export type Database = {
           },
         ]
       }
+      post_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          comment_count: number | null
+          content: string
+          created_at: string | null
+          id: string
+          image: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_count?: number | null
+          content: string
+          created_at?: string | null
+          id?: string
+          image?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_count?: number | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          image?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
