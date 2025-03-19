@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Masonry from 'react-masonry-css';
@@ -74,12 +73,12 @@ const Index: React.FC = () => {
       }
       
       // Count likes for each post
+      // Modified to remove the unsupported group method
       const { data: likeCounts } = await supabase
         .from('post_likes')
         .select('post_id, count')
         .eq('user_id', user?.id || '')
-        .gt('count', 0)
-        .group('post_id');
+        .gt('count', 0);
       
       const likeCountMap: Record<string, number> = {};
       if (likeCounts) {
