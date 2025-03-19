@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import PostCard from './PostCard';
-import { Post } from '../lib/types';
+import PollCard from './PollCard';
+import { Post, Poll } from '../lib/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,6 +14,7 @@ interface GroupPostsProps {
 
 const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useSupabase();
   
@@ -25,8 +27,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   const fetchGroupPosts = async () => {
     setLoading(true);
     try {
-      // Instead of using a nested select that relies on relationships,
-      // we'll fetch posts and manually fetch profile data
+      // Fetch posts for the group
       const { data: postsData, error } = await supabase
         .from('posts')
         .select('*')
@@ -35,7 +36,16 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
       
       if (error) throw error;
       
-      // Get like counts and user's like status
+      // Fetch polls for the group
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('polls')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: false });
+        
+      if (pollsError) throw pollsError;
+      
+      // Get like counts and user's like status for posts
       const formattedPosts = await Promise.all((postsData || []).map(async (post) => {
         // Get profile data
         const { data: profileData, error: profileError } = await supabase
@@ -88,10 +98,60 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         };
       }));
       
+      // Format polls
+      const formattedPolls = await Promise.all((pollsData || []).map(async (poll) => {
+        // Get profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .eq('id', poll.user_id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        }
+        
+        // Check if current user has voted on this poll
+        let userVoted = null;
+        if (user) {
+          const { data: voteData, error: voteError } = await supabase
+            .from('poll_votes')
+            .select('option_id')
+            .eq('poll_id', poll.id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (voteError) throw voteError;
+          
+          if (voteData) {
+            userVoted = voteData.option_id;
+          }
+        }
+        
+        // Format the poll object to match the PollCard expectations
+        return {
+          id: poll.id,
+          question: poll.question,
+          options: Array.isArray(poll.options) ? poll.options : [],
+          createdAt: poll.created_at,
+          image: poll.image,
+          commentCount: poll.comment_count || 0,
+          totalVotes: poll.total_votes || 0,
+          userVoted,
+          author: {
+            id: profileData?.id || 'unknown',
+            name: profileData?.username || 'Anonymous',
+            avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${poll.user_id}`,
+          },
+          groupId: poll.group_id,
+        };
+      }));
+      
       setPosts(formattedPosts);
+      setPolls(formattedPolls);
     } catch (error: any) {
-      console.error('Error fetching group posts:', error);
-      toast.error('Failed to load group posts');
+      console.error('Error fetching group content:', error);
+      toast.error('Failed to load group content');
     } finally {
       setLoading(false);
     }
@@ -105,10 +165,15 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
     );
   }
   
-  if (posts.length === 0) {
+  // Combine and sort posts and polls by creation date
+  const combinedContent = [...posts, ...polls].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  
+  if (combinedContent.length === 0) {
     return (
       <div className="text-center py-10 bg-white rounded-xl p-8 shadow-sm">
-        <h3 className="text-lg font-medium mb-2">No posts yet</h3>
+        <h3 className="text-lg font-medium mb-2">No content yet</h3>
         <p className="text-muted-foreground">Be the first to post in this group!</p>
       </div>
     );
@@ -116,12 +181,12 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   
   return (
     <div className="space-y-6">
-      {posts.map((post) => (
-        <PostCard 
-          key={post.id} 
-          post={post}
-          onPostUpdate={fetchGroupPosts}
-        />
+      {combinedContent.map((item) => (
+        'question' in item ? (
+          <PollCard key={item.id} poll={item} />
+        ) : (
+          <PostCard key={item.id} post={item} onPostUpdate={fetchGroupPosts} />
+        )
       ))}
     </div>
   );
