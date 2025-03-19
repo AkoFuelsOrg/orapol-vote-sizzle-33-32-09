@@ -285,32 +285,50 @@ export const MarketplaceProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchMarketplaceMembers = async (marketplaceId: string) => {
     try {
-      const { data, error } = await supabase
+      // First get all member ids
+      const { data: memberData, error: memberError } = await supabase
         .from("marketplace_members")
-        .select(`
-          id,
-          marketplace_id,
-          user_id,
-          joined_at,
-          role,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
-        `)
+        .select("id, marketplace_id, user_id, joined_at, role")
         .eq("marketplace_id", marketplaceId);
 
-      if (error) {
-        throw error;
+      if (memberError) throw memberError;
+      
+      if (!memberData || memberData.length === 0) return [];
+      
+      // Then get profile info for each user
+      const members: MarketplaceMember[] = [];
+      
+      for (const member of memberData) {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("username, avatar_url")
+          .eq("id", member.user_id)
+          .single();
+          
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          // Continue with next member even if there's an error
+          members.push({
+            ...member,
+            user: {
+              username: "Unknown User",
+              avatar_url: "",
+            },
+          });
+          continue;
+        }
+        
+        members.push({
+          ...member,
+          user: {
+            username: profileData?.username || "Unknown User",
+            avatar_url: profileData?.avatar_url || "",
+          },
+        });
       }
-
-      return data.map((member) => ({
-        ...member,
-        user: {
-          username: member.profiles?.username || "Unknown",
-          avatar_url: member.profiles?.avatar_url || "",
-        },
-      })) as MarketplaceMember[];
+      
+      return members;
+      
     } catch (error) {
       console.error("Error fetching marketplace members:", error);
       return [];

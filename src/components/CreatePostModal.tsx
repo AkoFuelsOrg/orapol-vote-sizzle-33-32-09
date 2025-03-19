@@ -13,9 +13,10 @@ export interface CreatePostModalProps {
   isOpen?: boolean;
   onClose: () => void;
   groupId?: string; // Optional group ID for creating posts in a group
+  marketplaceId?: string; // Added marketplaceId prop
 }
 
-const CreatePostModal = ({ isOpen = false, onClose, groupId }: CreatePostModalProps) => {
+const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: CreatePostModalProps) => {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -99,12 +100,13 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId }: CreatePostModalPr
         imageUrl = publicUrl;
       }
       
-      // Create the post with or without groupId
+      // Create the post with groupId or marketplaceId if provided
       const postData = {
         content: content.trim(),
         user_id: user.id,
         image: imageUrl,
-        ...(groupId ? { group_id: groupId } : {}) // Add group_id if provided
+        ...(groupId ? { group_id: groupId } : {}),
+        ...(marketplaceId ? { marketplace_id: marketplaceId } : {})
       };
       
       const { error: postError } = await supabase
@@ -135,7 +137,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId }: CreatePostModalPr
     }}>
       <DialogContent className="max-w-lg">
         <DialogTitle className="text-center font-bold text-lg">
-          {groupId ? 'Create Group Post' : 'Create Post'}
+          {marketplaceId ? 'Create Marketplace Post' : groupId ? 'Create Group Post' : 'Create Post'}
         </DialogTitle>
         
         <div className="flex items-start gap-3 mt-4">
@@ -151,7 +153,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId }: CreatePostModalPr
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder={groupId ? "Share something with the group..." : "What's on your mind?"}
+              placeholder={marketplaceId ? "Share something with the marketplace..." : groupId ? "Share something with the group..." : "What's on your mind?"}
               className="resize-none border-0 p-0 focus-visible:ring-0 text-base h-32"
             />
             

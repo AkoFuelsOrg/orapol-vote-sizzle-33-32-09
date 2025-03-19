@@ -10,9 +10,10 @@ interface CreatePollModalProps {
   isOpen?: boolean;
   onClose: () => void;
   groupId?: string;
+  marketplaceId?: string; // Added marketplaceId prop
 }
 
-const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, groupId }) => {
+const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, groupId, marketplaceId }) => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
   const [loading, setLoading] = useState(false);
@@ -63,8 +64,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
     setLoading(true);
     
     try {
-      // If this is a group poll, save it to the database
-      if (groupId) {
+      // If this is a group or marketplace poll, save it to the database
+      if (groupId || marketplaceId) {
         // Create the options array in the format expected by the database
         const optionsArray = validOptions.map(text => ({
           text: text,
@@ -75,7 +76,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
         const pollData = {
           question: question,
           user_id: user.id,
-          group_id: groupId,
+          group_id: groupId || null,
+          marketplace_id: marketplaceId || null,
           options: optionsArray, // This is the JSON field that the database expects
           total_votes: 0,
           comment_count: 0
@@ -90,7 +92,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
           
         if (pollError) throw pollError;
         
-        toast.success("Poll created in group successfully");
+        toast.success(marketplaceId ? "Poll created in marketplace successfully" : "Poll created in group successfully");
       } else {
         // Use the context method for regular polls
         addPoll(question, validOptions);
@@ -117,7 +119,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
       >
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">
-            {groupId ? "Create Group Poll" : "Create New Poll"}
+            {marketplaceId ? "Create Marketplace Poll" : groupId ? "Create Group Poll" : "Create New Poll"}
           </h2>
           <button 
             onClick={onClose}

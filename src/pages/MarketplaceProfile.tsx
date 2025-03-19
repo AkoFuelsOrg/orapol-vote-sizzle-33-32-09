@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/components/ui/use-toast';
 import MarketplacePostInterface from '@/components/MarketplacePostInterface';
-import { MarketplaceMember, Post, Poll } from '@/lib/types';
+import { MarketplaceMember, Post, Poll, PollOption } from '@/lib/types';
 import PostCard from '@/components/PostCard';
 import PollCard from '@/components/PollCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,6 +87,7 @@ const MarketplaceProfile = () => {
     if (!id) return;
     
     try {
+      // Get posts from supabase
       const { data: postsData, error } = await supabase
         .from('posts')
         .select(`
@@ -95,8 +96,7 @@ const MarketplaceProfile = () => {
           image,
           created_at,
           comment_count,
-          user_id,
-          profiles:user_id (username, avatar_url)
+          user_id
         `)
         .eq('marketplace_id', id)
         .order('created_at', { ascending: false });
@@ -104,20 +104,36 @@ const MarketplaceProfile = () => {
       if (error) throw error;
       
       if (postsData) {
-        const formattedPosts = postsData.map(post => ({
-          id: post.id,
-          content: post.content,
-          image: post.image,
-          createdAt: post.created_at,
-          commentCount: post.comment_count || 0,
-          likeCount: 0, // We'll need to get this separately if needed
-          author: {
-            id: post.user_id,
-            name: post.profiles?.username || 'Unknown User',
-            avatar: post.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.username || 'U')}`
-          },
-          marketplaceId: id
-        }));
+        const formattedPosts: Post[] = [];
+        
+        // Get user profiles for each post
+        for (const post of postsData) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', post.user_id)
+            .single();
+            
+          if (profileError) {
+            console.error("Error fetching user profile:", profileError);
+            continue;
+          }
+          
+          formattedPosts.push({
+            id: post.id,
+            content: post.content,
+            image: post.image,
+            createdAt: post.created_at,
+            commentCount: post.comment_count || 0,
+            likeCount: 0, // We'll need to get this separately if needed
+            author: {
+              id: post.user_id,
+              name: profileData?.username || 'Unknown User',
+              avatar: profileData?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.username || 'U')}`
+            },
+            marketplaceId: id
+          });
+        }
         
         setPosts(formattedPosts);
       }
@@ -140,8 +156,7 @@ const MarketplaceProfile = () => {
           created_at,
           total_votes,
           comment_count,
-          user_id,
-          profiles:user_id (username, avatar_url)
+          user_id
         `)
         .eq('marketplace_id', id)
         .order('created_at', { ascending: false });
@@ -149,21 +164,52 @@ const MarketplaceProfile = () => {
       if (error) throw error;
       
       if (pollsData) {
-        const formattedPolls = pollsData.map(poll => ({
-          id: poll.id,
-          question: poll.question,
-          options: Array.isArray(poll.options) ? poll.options : [],
-          image: poll.image,
-          createdAt: poll.created_at,
-          totalVotes: poll.total_votes || 0,
-          commentCount: poll.comment_count || 0,
-          author: {
-            id: poll.user_id,
-            name: poll.profiles?.username || 'Unknown User',
-            avatar: poll.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(poll.profiles?.username || 'U')}`
-          },
-          marketplaceId: id
-        }));
+        const formattedPolls: Poll[] = [];
+        
+        // Get user profiles for each poll
+        for (const poll of pollsData) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', poll.user_id)
+            .single();
+            
+          if (profileError) {
+            console.error("Error fetching user profile:", profileError);
+            continue;
+          }
+          
+          // Convert JSON options to PollOption type
+          const options: PollOption[] = [];
+          if (Array.isArray(poll.options)) {
+            for (const option of poll.options) {
+              if (typeof option === 'object' && option !== null) {
+                options.push({
+                  id: option.id || `option-${Math.random().toString(36).substr(2, 9)}`,
+                  text: option.text || '',
+                  votes: option.votes || 0,
+                  imageUrl: option.imageUrl || null
+                });
+              }
+            }
+          }
+          
+          formattedPolls.push({
+            id: poll.id,
+            question: poll.question,
+            options: options,
+            image: poll.image,
+            createdAt: poll.created_at,
+            totalVotes: poll.total_votes || 0,
+            commentCount: poll.comment_count || 0,
+            author: {
+              id: poll.user_id,
+              name: profileData?.username || 'Unknown User',
+              avatar: profileData?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.username || 'U')}`
+            },
+            marketplaceId: id
+          });
+        }
         
         setPolls(formattedPolls);
       }
