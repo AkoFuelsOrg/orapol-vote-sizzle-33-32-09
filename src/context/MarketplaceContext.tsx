@@ -310,6 +310,7 @@ export const MarketplaceProvider = ({ children }: { children: ReactNode }) => {
           // Continue with next member even if there's an error
           members.push({
             ...member,
+            role: member.role as 'admin' | 'moderator' | 'member', // Cast role to union type
             user: {
               username: "Unknown User",
               avatar_url: "",
@@ -320,6 +321,7 @@ export const MarketplaceProvider = ({ children }: { children: ReactNode }) => {
         
         members.push({
           ...member,
+          role: member.role as 'admin' | 'moderator' | 'member', // Cast role to union type
           user: {
             username: profileData?.username || "Unknown User",
             avatar_url: profileData?.avatar_url || "",

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -185,10 +184,10 @@ const MarketplaceProfile = () => {
             for (const option of poll.options) {
               if (typeof option === 'object' && option !== null) {
                 options.push({
-                  id: option.id || `option-${Math.random().toString(36).substr(2, 9)}`,
-                  text: option.text || '',
-                  votes: option.votes || 0,
-                  imageUrl: option.imageUrl || null
+                  id: (option as any).id || `option-${Math.random().toString(36).substr(2, 9)}`,
+                  text: (option as any).text || '',
+                  votes: (option as any).votes || 0,
+                  imageUrl: (option as any).imageUrl || null
                 });
               }
             }
