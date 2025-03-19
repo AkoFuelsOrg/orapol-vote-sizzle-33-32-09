@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
+import PostCard from '../components/PostCard';
 import Header from '../components/Header';
 import { useSupabase } from '../context/SupabaseContext';
 import { Pencil, Upload, Loader2, UserCircle, Users, Lock } from 'lucide-react';
@@ -9,7 +10,7 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import UserList from '../components/UserList';
 import { supabase } from '../integrations/supabase/client';
-import { Poll, PollOption } from '../lib/types';
+import { Poll, PollOption, Post } from '../lib/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
@@ -26,14 +27,17 @@ const Profile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [userPolls, setUserPolls] = useState<Poll[]>([]);
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [isLoadingPolls, setIsLoadingPolls] = useState(true);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (user) {
       fetchFollowCounts();
       fetchUserPolls();
+      fetchUserPosts();
     }
   }, [user]);
   
@@ -102,6 +106,88 @@ const Profile: React.FC = () => {
     }
   };
   
+  const fetchUserPosts = async () => {
+    if (!user) return;
+    
+    setIsLoadingPosts(true);
+    try {
+      // Fetch posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          created_at,
+          image,
+          comment_count,
+          user_id
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (postsError) throw postsError;
+      
+      // Get like counts for posts
+      const { data: likeCounts, error: likeCountsError } = await supabase
+        .from('post_likes')
+        .select('post_id');
+        
+      if (likeCountsError) {
+        console.error('Error fetching like counts:', likeCountsError);
+      }
+      
+      // Calculate like count per post
+      const likeCountMap: Record<string, number> = {};
+      if (likeCounts) {
+        likeCounts.forEach(like => {
+          likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
+        });
+      }
+      
+      // Check if user has liked the posts
+      let userLikes: Record<string, boolean> = {};
+      
+      if (user) {
+        const { data: likesData, error: likesError } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+          
+        if (!likesError && likesData) {
+          userLikes = likesData.reduce((acc, like) => {
+            acc[like.post_id] = true;
+            return acc;
+          }, {} as Record<string, boolean>);
+        }
+      }
+      
+      // Format posts
+      const formattedPosts: Post[] = postsData ? postsData.map(post => {
+        return {
+          id: post.id,
+          content: post.content,
+          author: {
+            id: user.id,
+            name: profile?.username || 'Anonymous',
+            avatar: profile?.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`
+          },
+          createdAt: post.created_at,
+          image: post.image,
+          commentCount: post.comment_count || 0,
+          likeCount: likeCountMap[post.id] || 0,
+          userLiked: userLikes[post.id] || false
+        };
+      }) : [];
+      
+      setUserPosts(formattedPosts);
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+      toast.error('Failed to load your posts');
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
+  
   const formatPollsData = (pollsData: any[], votesData: any[]): Poll[] => {
     if (!pollsData || pollsData.length === 0) return [];
     
@@ -129,6 +215,11 @@ const Profile: React.FC = () => {
       };
     });
   };
+  
+  // Combine and sort all content items by creation date
+  const allContent = [...userPolls, ...userPosts].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
   
   const convertJsonToPollOptions = (jsonOptions: any): PollOption[] => {
     if (typeof jsonOptions === 'string') {
@@ -389,6 +480,10 @@ const Profile: React.FC = () => {
               <p className="text-sm text-muted-foreground">Polls</p>
             </div>
             <div className="text-center">
+              <p className="text-2xl font-bold">{userPosts.length}</p>
+              <p className="text-sm text-muted-foreground">Posts</p>
+            </div>
+            <div className="text-center">
               <p className="text-2xl font-bold">{followCounts.followers}</p>
               <p className="text-sm text-muted-foreground">Followers</p>
             </div>
@@ -399,13 +494,46 @@ const Profile: React.FC = () => {
           </div>
         </div>
         
-        <Tabs defaultValue="polls" className="w-full animate-fade-in">
-          <TabsList className="grid grid-cols-4 mb-4">
-            <TabsTrigger value="polls">My Polls</TabsTrigger>
-            <TabsTrigger value="voted">Voted</TabsTrigger>
+        <Tabs defaultValue="all" className="w-full animate-fade-in">
+          <TabsList className="grid grid-cols-5 mb-4">
+            <TabsTrigger value="all">All Content</TabsTrigger>
+            <TabsTrigger value="polls">Polls</TabsTrigger>
+            <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="followers">Followers</TabsTrigger>
             <TabsTrigger value="following">Following</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="all" className="mt-0">
+            {isLoadingPolls || isLoadingPosts ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : allContent.length > 0 ? (
+              <div className="space-y-4">
+                {allContent.map(item => (
+                  <div key={item.id}>
+                    {'question' in item ? (
+                      <PollCard poll={item as Poll} />
+                    ) : (
+                      <PostCard post={item as Post} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">You haven't created any content yet.</p>
+                <div className="inline-block">
+                  <a 
+                    href="/create" 
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Create Your First Poll
+                  </a>
+                </div>
+              </div>
+            )}
+          </TabsContent>
           
           <TabsContent value="polls" className="mt-0">
             {isLoadingPolls ? (
@@ -433,20 +561,20 @@ const Profile: React.FC = () => {
             )}
           </TabsContent>
           
-          <TabsContent value="voted" className="mt-0">
-            {isLoadingPolls ? (
+          <TabsContent value="posts" className="mt-0">
+            {isLoadingPosts ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : votedPolls.length > 0 ? (
+            ) : userPosts.length > 0 ? (
               <div className="space-y-4">
-                {votedPolls.map(poll => (
-                  <PollCard key={poll.id} poll={poll} />
+                {userPosts.map(post => (
+                  <PostCard key={post.id} post={post} />
                 ))}
               </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
-                <p>You haven't voted on any polls yet.</p>
+                <p className="mb-4">You haven't created any posts yet.</p>
               </div>
             )}
           </TabsContent>

@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import Header from '../components/Header';
 import PollCard from '../components/PollCard';
+import PostCard from '../components/PostCard';
 import UserList from '../components/UserList';
 import { useSupabase } from '../context/SupabaseContext';
 import { ArrowLeft, Loader2, UserPlus, UserCheck, MessageSquare } from 'lucide-react';
-import { Poll, PollOption } from '../lib/types';
+import { Poll, PollOption, Post } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
@@ -17,18 +19,19 @@ const UserProfile: React.FC = () => {
   const { user, followUser, unfollowUser, isFollowing } = useSupabase();
   const [profile, setProfile] = useState<any | null>(null);
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isLoadingPolls, setIsLoadingPolls] = useState(true);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [userIsFollowing, setUserIsFollowing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [canSendMessage, setCanSendMessage] = useState(false);
-  const [activeTab, setActiveTab] = useState("polls");
+  const [activeTab, setActiveTab] = useState("content");
   
   useEffect(() => {
     if (id) {
       fetchUserProfile(id);
-      fetchUserPolls(id);
+      fetchUserContent(id);
       fetchFollowCounts();
       
       if (user) {
@@ -62,9 +65,24 @@ const UserProfile: React.FC = () => {
     }
   };
   
+  const fetchUserContent = async (userId: string) => {
+    try {
+      setIsLoadingContent(true);
+      
+      // Fetch polls
+      await fetchUserPolls(userId);
+      
+      // Fetch posts
+      await fetchUserPosts(userId);
+    } catch (error: any) {
+      console.error('Error fetching user content:', error);
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
+  
   const fetchUserPolls = async (userId: string) => {
     try {
-      setIsLoadingPolls(true);
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select(`
@@ -110,8 +128,93 @@ const UserProfile: React.FC = () => {
       setPolls(formattedPolls);
     } catch (error: any) {
       console.error('Error fetching user polls:', error);
-    } finally {
-      setIsLoadingPolls(false);
+    }
+  };
+  
+  const fetchUserPosts = async (userId: string) => {
+    try {
+      // Fetch posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          created_at,
+          image,
+          comment_count,
+          user_id
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (postsError) throw postsError;
+      
+      // Fetch profile for the user
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      }
+      
+      // Get like counts for posts
+      const { data: likeCounts, error: likeCountsError } = await supabase
+        .from('post_likes')
+        .select('post_id');
+        
+      if (likeCountsError) {
+        console.error('Error fetching like counts:', likeCountsError);
+      }
+      
+      // Calculate like count per post
+      const likeCountMap: Record<string, number> = {};
+      if (likeCounts) {
+        likeCounts.forEach(like => {
+          likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
+        });
+      }
+      
+      // Check if user has liked the posts
+      let userLikes: Record<string, boolean> = {};
+      
+      if (user) {
+        const { data: likesData, error: likesError } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+          
+        if (!likesError && likesData) {
+          userLikes = likesData.reduce((acc, like) => {
+            acc[like.post_id] = true;
+            return acc;
+          }, {} as Record<string, boolean>);
+        }
+      }
+      
+      // Format posts
+      const formattedPosts: Post[] = postsData ? postsData.map(post => {
+        return {
+          id: post.id,
+          content: post.content,
+          author: {
+            id: profileData?.id || userId,
+            name: profileData?.username || 'Anonymous',
+            avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${userId}`
+          },
+          createdAt: post.created_at,
+          image: post.image,
+          commentCount: post.comment_count || 0,
+          likeCount: likeCountMap[post.id] || 0,
+          userLiked: userLikes[post.id] || false
+        };
+      }) : [];
+      
+      setPosts(formattedPosts);
+    } catch (error: any) {
+      console.error('Error fetching user posts:', error);
     }
   };
   
@@ -241,6 +344,11 @@ const UserProfile: React.FC = () => {
     }
   };
   
+  // Combine and sort all content items by creation date
+  const allContent = [...polls, ...posts].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+  
   if (isLoadingProfile) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -279,7 +387,7 @@ const UserProfile: React.FC = () => {
         <div className="mb-4 animate-fade-in">
           <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={18} className="mr-1" />
-            <span>Back to Polls</span>
+            <span>Back</span>
           </Link>
         </div>
         
@@ -301,6 +409,10 @@ const UserProfile: React.FC = () => {
               <div className="text-center">
                 <p className="text-2xl font-bold">{polls.length}</p>
                 <p className="text-sm text-muted-foreground">Polls</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{posts.length}</p>
+                <p className="text-sm text-muted-foreground">Posts</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold">{followCounts.followers}</p>
@@ -353,32 +465,38 @@ const UserProfile: React.FC = () => {
         </div>
         
         <Tabs 
-          defaultValue="polls" 
+          defaultValue="content" 
           className="w-full animate-fade-in"
           onValueChange={(value) => {
             setActiveTab(value);
           }}
         >
           <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="polls">Polls</TabsTrigger>
+            <TabsTrigger value="content">Content</TabsTrigger>
             <TabsTrigger value="followers">Followers</TabsTrigger>
             <TabsTrigger value="following">Following</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="polls" className="mt-0">
-            {isLoadingPolls ? (
+          <TabsContent value="content" className="mt-0">
+            {isLoadingContent ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : polls.length > 0 ? (
+            ) : allContent.length > 0 ? (
               <div className="space-y-4">
-                {polls.map(poll => (
-                  <PollCard key={poll.id} poll={poll} />
+                {allContent.map(item => (
+                  <div key={item.id}>
+                    {'question' in item ? (
+                      <PollCard poll={item as Poll} />
+                    ) : (
+                      <PostCard post={item as Post} />
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
-                <p>No polls created yet.</p>
+                <p>No content created yet.</p>
               </div>
             )}
           </TabsContent>
