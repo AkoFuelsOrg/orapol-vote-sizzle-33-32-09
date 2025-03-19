@@ -1,42 +1,252 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import Masonry from 'react-masonry-css';
-import { useInView } from 'react-intersection-observer';
+
+import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
-import { Post } from '../lib/types';
-import PostCard from '../components/PostCard';
-import CreatePostModal from '../components/CreatePostModal';
+import { Link } from 'react-router-dom';
 import PollCard from '../components/PollCard';
-import CreatePollModal from '../components/CreatePollModal';
+import PostCard from '../components/PostCard';
+import CreatePostInterface from '../components/CreatePostInterface';
 import Header from '../components/Header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
-import CreatePostInterface from '@/components/CreatePostInterface';
+import { supabase } from '@/integrations/supabase/client';
+import { Poll, PollOption, Post } from '../lib/types';
+import { toast } from 'sonner';
+import { Json } from '@/integrations/supabase/types';
 
 const Index: React.FC = () => {
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [polls, setPolls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [hasMorePolls, setHasMorePolls] = useState(true);
-  const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
-  const [isCreatePollModalOpen, setIsCreatePollModalOpen] = useState(false);
+  const [animateItems, setAnimateItems] = useState(false);
   const { user } = useSupabase();
-  const [filter, setFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
-  const [ref, inView] = useInView();
-  const [pollRef, pollInView] = useInView();
   
-  const fetchPosts = async () => {
+  useEffect(() => {
+    fetchContent();
+    
+    // Set up realtime subscription for polls
+    const pollsChannel = supabase
+      .channel('public:polls')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'polls' },
+        (payload) => {
+          fetchPollWithDetails(payload.new.id);
+        }
+      )
+      .subscribe();
+    
+    // Set up realtime subscription for posts
+    const postsChannel = supabase
+      .channel('public:posts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        (payload: any) => {
+          fetchPostWithDetails(payload.new.id);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(pollsChannel);
+      supabase.removeChannel(postsChannel);
+    };
+  }, []);
+  
+  useEffect(() => {
+    // Trigger animations after a small delay for a staggered effect
+    setAnimateItems(true);
+  }, [polls, posts]);
+  
+  // Function to convert JSON options from Supabase to PollOption type
+  const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
+    if (typeof jsonOptions === 'string') {
+      try {
+        return JSON.parse(jsonOptions);
+      } catch (error) {
+        console.error('Error parsing JSON options:', error);
+        return [];
+      }
+    }
+    
+    if (Array.isArray(jsonOptions)) {
+      return jsonOptions.map(opt => {
+        if (typeof opt === 'object' && opt !== null) {
+          // Use type assertion with optional chaining to safely access properties
+          const option = opt as Record<string, unknown>;
+          return {
+            id: String(option?.id || ''),
+            text: String(option?.text || ''),
+            votes: Number(option?.votes || 0),
+            imageUrl: option?.imageUrl as string | undefined
+          };
+        }
+        return { id: '', text: '', votes: 0 };
+      });
+    }
+    
+    return [];
+  };
+
+  const fetchPostWithDetails = async (postId: string) => {
+    try {
+      // Fetch the post with author information
+      const { data: postData, error: postError } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          created_at,
+          image,
+          comment_count,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .eq('id', postId)
+        .single();
+      
+      if (postError) throw postError;
+      
+      // Check if the user has liked this post
+      let userLiked = false;
+      
+      if (user) {
+        const { data: likeData } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        userLiked = !!likeData;
+      }
+      
+      // Get like count
+      const { data: likeCountData, error: likeCountError } = await supabase
+        .from('post_likes')
+        .select('id', { count: 'exact' })
+        .eq('post_id', postId);
+      
+      if (likeCountError) throw likeCountError;
+      
+      // Format the post for our application
+      const formattedPost: Post = {
+        id: postData.id,
+        content: postData.content,
+        author: {
+          id: postData.profiles.id,
+          name: postData.profiles.username || 'Anonymous',
+          avatar: postData.profiles.avatar_url || 'https://i.pravatar.cc/150'
+        },
+        createdAt: postData.created_at,
+        image: postData.image,
+        commentCount: postData.comment_count || 0,
+        likeCount: likeCountData.length,
+        userLiked
+      };
+      
+      // Add to posts without duplicates
+      setPosts(prevPosts => {
+        const postExists = prevPosts.some(p => p.id === formattedPost.id);
+        if (postExists) {
+          return prevPosts.map(p => p.id === formattedPost.id ? formattedPost : p);
+        } else {
+          return [formattedPost, ...prevPosts];
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching post details:', error);
+    }
+  };
+
+  const fetchPollWithDetails = async (pollId: string) => {
+    try {
+      // Fetch the poll with author information
+      const { data: pollData, error: pollError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .eq('id', pollId)
+        .single();
+      
+      if (pollError) throw pollError;
+      
+      // Check if the user has voted on this poll
+      let userVoted = undefined;
+      
+      if (user) {
+        const { data: voteData } = await supabase
+          .from('poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (voteData) {
+          userVoted = voteData.option_id;
+        }
+      }
+      
+      // Format the poll for our application
+      const formattedPoll: Poll = {
+        id: pollData.id,
+        question: pollData.question,
+        options: convertJsonToPollOptions(pollData.options),
+        author: {
+          id: pollData.profiles.id,
+          name: pollData.profiles.username || 'Anonymous',
+          avatar: pollData.profiles.avatar_url || 'https://i.pravatar.cc/150'
+        },
+        createdAt: pollData.created_at,
+        totalVotes: pollData.total_votes || 0,
+        commentCount: pollData.comment_count || 0,
+        userVoted,
+        image: pollData.image
+      };
+      
+      // Add to polls without duplicates
+      setPolls(prevPolls => {
+        const pollExists = prevPolls.some(p => p.id === formattedPoll.id);
+        if (pollExists) {
+          return prevPolls.map(p => p.id === formattedPoll.id ? formattedPoll : p);
+        } else {
+          return [formattedPoll, ...prevPolls];
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching poll details:', error);
+    }
+  };
+  
+  const fetchContent = async () => {
     try {
       setLoading(true);
       
-      // Fetch posts
+      // Fetch polls with author information
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id (id, username, avatar_url)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (pollsError) throw pollsError;
+      
+      // Fetch posts with author information
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -45,397 +255,174 @@ const Index: React.FC = () => {
           created_at,
           image,
           comment_count,
-          user_id,
-          profiles(id, username, avatar_url)
+          profiles:user_id (id, username, avatar_url)
         `)
         .order('created_at', { ascending: false })
         .limit(10);
-        
-      if (postsError) {
-        console.error('Error fetching posts:', postsError);
-        return;
-      }
       
-      console.log("Posts data:", postsData);
+      if (postsError) throw postsError;
       
-      let userLikedMap: Record<string, boolean> = {};
+      // Fetch user votes if the user is logged in
+      let userVotes: Record<string, string> = {};
       
       if (user) {
-        // Check which posts the user has liked
-        const { data: likedData } = await supabase
+        const { data: votesData, error: votesError } = await supabase
+          .from('poll_votes')
+          .select('poll_id, option_id')
+          .eq('user_id', user.id);
+        
+        if (!votesError && votesData) {
+          userVotes = votesData.reduce((acc, vote) => {
+            acc[vote.poll_id] = vote.option_id;
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+      
+      // Fetch user likes if the user is logged in
+      let userLikes: Record<string, boolean> = {};
+      
+      if (user) {
+        const { data: likesData, error: likesError } = await supabase
           .from('post_likes')
           .select('post_id')
           .eq('user_id', user.id);
         
-        if (likedData) {
-          userLikedMap = likedData.reduce((acc: Record<string, boolean>, item: any) => {
-            acc[item.post_id] = true;
+        if (!likesError && likesData) {
+          userLikes = likesData.reduce((acc, like) => {
+            acc[like.post_id] = true;
             return acc;
-          }, {});
+          }, {} as Record<string, boolean>);
         }
       }
       
-      // Count likes for each post - remove unsupported group method
-      const { data: likeCounts } = await supabase
+      // Get like counts for all posts
+      const { data: likeCounts, error: likeCountsError } = await supabase
         .from('post_likes')
-        .select('post_id, count');
+        .select('post_id');
+      
+      if (likeCountsError) throw likeCountsError;
       
       const likeCountMap: Record<string, number> = {};
       if (likeCounts) {
-        likeCounts.forEach((item: any) => {
-          if (likeCountMap[item.post_id]) {
-            likeCountMap[item.post_id] += 1;
-          } else {
-            likeCountMap[item.post_id] = 1;
-          }
+        likeCounts.forEach(like => {
+          likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
         });
       }
       
-      // Format posts data with type safety
-      const formattedPosts = (postsData || []).map((post: any) => ({
+      // Format polls for our application
+      const formattedPolls: Poll[] = pollsData ? pollsData.map(poll => ({
+        id: poll.id,
+        question: poll.question,
+        options: convertJsonToPollOptions(poll.options),
+        author: {
+          id: poll.profiles.id,
+          name: poll.profiles.username || 'Anonymous',
+          avatar: poll.profiles.avatar_url || 'https://i.pravatar.cc/150'
+        },
+        createdAt: poll.created_at,
+        totalVotes: poll.total_votes || 0,
+        commentCount: poll.comment_count || 0,
+        userVoted: userVotes[poll.id],
+        image: poll.image
+      })) : [];
+      
+      // Format posts for our application
+      const formattedPosts: Post[] = postsData ? postsData.map(post => ({
         id: post.id,
         content: post.content,
         author: {
-          id: post.profiles?.id || post.user_id,
-          name: post.profiles?.username || 'Anonymous',
-          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id || post.user_id}`
+          id: post.profiles.id,
+          name: post.profiles.username || 'Anonymous',
+          avatar: post.profiles.avatar_url || 'https://i.pravatar.cc/150'
         },
         createdAt: post.created_at,
         image: post.image,
         commentCount: post.comment_count || 0,
         likeCount: likeCountMap[post.id] || 0,
-        userLiked: !!userLikedMap[post.id]
-      }));
+        userLiked: userLikes[post.id] || false
+      })) : [];
       
-      console.log("Formatted posts:", formattedPosts);
+      // Combine and sort by creation date
+      setPolls(formattedPolls);
       setPosts(formattedPosts);
-    } catch (error) {
-      console.error('Error in fetchPosts:', error);
+    } catch (error: any) {
+      console.error('Error fetching content:', error);
+      toast.error('Failed to load content');
     } finally {
       setLoading(false);
     }
   };
   
-  const fetchPolls = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('polls')
-        .select(`
-          *,
-          profiles:user_id (id, username, avatar_url)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-        
-      if (error) {
-        console.error('Error fetching polls:', error);
-        return;
-      }
-      
-      console.log("Polls data:", data);
-      
-      setPolls(
-        data.map((poll) => ({
-          id: poll.id,
-          question: poll.question,
-          options: poll.options,
-          totalVotes: poll.total_votes,
-          commentCount: poll.comment_count,
-          createdAt: poll.created_at,
-          author: {
-            id: poll.profiles?.id || poll.user_id,
-            name: poll.profiles?.username || 'Anonymous',
-            avatar: poll.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles?.id || poll.user_id}`
-          },
-          image: poll.image
-        }))
-      );
-    } catch (error) {
-      console.error('Error fetching polls:', error);
-    }
-  };
-  
-  useEffect(() => {
-    fetchPosts();
-    fetchPolls();
-  }, [user]);
-  
-  const filteredItems = React.useMemo(() => {
-    let items = [];
-    
-    if (filter === 'posts' || filter === 'all') {
-      items.push(...posts);
-    }
-    
-    if (filter === 'polls' || filter === 'all') {
-      items.push(...polls);
-    }
-    
-    // Sort by createdAt in descending order
-    items.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    return items;
-  }, [posts, polls, filter]);
-  
-  const renderItem = (item: any) => {
-    if (item.question) {
-      return <PollCard key={`poll-${item.id}`} poll={item} />;
-    } else if (item.content) {
-      return <PostCard key={`post-${item.id}`} post={item} />;
-    }
-    return null;
-  };
-  
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-  
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${searchQuery}`);
-    }
-  };
-
-  const fetchMorePosts = async () => {
-    try {
-      if (posts.length === 0) return;
-      
-      const lastPost = posts[posts.length - 1];
-      
-      // Fetch more posts
-      const { data: morePosts, error: postsError } = await supabase
-        .from('posts')
-        .select(`
-          id,
-          content,
-          created_at,
-          image,
-          comment_count,
-          user_id,
-          profiles(id, username, avatar_url)
-        `)
-        .lt('created_at', lastPost.createdAt)
-        .order('created_at', { ascending: false })
-        .limit(5);
-        
-      if (postsError) throw postsError;
-      
-      if (!morePosts || morePosts.length === 0) {
-        setHasMore(false);
-        return;
-      }
-      
-      let userLikedMap: Record<string, boolean> = {};
-      
-      if (user) {
-        // Check which posts the user has liked
-        const { data: likedData } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', user.id);
-        
-        if (likedData) {
-          userLikedMap = likedData.reduce((acc: Record<string, boolean>, item: any) => {
-            acc[item.post_id] = true;
-            return acc;
-          }, {});
-        }
-      }
-      
-      // Format more posts with type safety
-      const formattedMorePosts = morePosts.map((post: any) => ({
-        id: post.id,
-        content: post.content,
-        author: {
-          id: post.profiles?.id || post.user_id,
-          name: post.profiles?.username || 'Anonymous',
-          avatar: post.profiles?.avatar_url || `https://i.pravatar.cc/150?u=${post.profiles?.id || post.user_id}`
-        },
-        createdAt: post.created_at,
-        image: post.image,
-        commentCount: post.comment_count || 0,
-        likeCount: 0,
-        userLiked: !!userLikedMap[post.id]
-      }));
-      
-      setPosts(prev => [...prev, ...formattedMorePosts]);
-    } catch (error) {
-      console.error('Error fetching more posts:', error);
-    }
-  };
-  
-  const fetchMorePolls = async () => {
-    try {
-      if (polls.length === 0) return;
-      
-      const lastPoll = polls[polls.length - 1];
-      
-      const { data: morePolls, error } = await supabase
-        .from('polls')
-        .select(`
-          *,
-          profiles:user_id (id, username, avatar_url)
-        `)
-        .lt('created_at', lastPoll.createdAt)
-        .order('created_at', { ascending: false })
-        .limit(5);
-        
-      if (error) throw error;
-      
-      if (!morePolls || morePolls.length === 0) {
-        setHasMorePolls(false);
-        return;
-      }
-      
-      setPolls(prev => [
-        ...prev,
-        ...morePolls.map((poll) => ({
-          id: poll.id,
-          question: poll.question,
-          options: poll.options,
-          totalVotes: poll.total_votes,
-          commentCount: poll.comment_count,
-          createdAt: poll.created_at,
-          author: {
-            id: poll.profiles.id,
-            name: poll.profiles.username || 'Anonymous',
-            avatar: poll.profiles.avatar_url || `https://i.pravatar.cc/150?u=${poll.profiles.id}`
-          },
-          image: poll.image
-        }))
-      ]);
-    } catch (error) {
-      console.error('Error fetching more polls:', error);
-    }
-  };
-  
-  useEffect(() => {
-    if (inView) {
-      fetchMorePosts();
-    }
-  }, [inView]);
-  
-  useEffect(() => {
-    if (pollInView) {
-      fetchMorePolls();
-    }
-  }, [pollInView]);
-  
-  const handlePostCreated = useCallback(() => {
-    setPosts([]);
-    fetchPosts();
-  }, []);
-  
-  const handlePollCreated = useCallback(() => {
-    setPolls([]);
-    fetchPolls();
-  }, []);
-  
-  const breakpointColumnsObj = {
-    default: 3,
-    1100: 3,
-    700: 2,
-    500: 1
-  };
+  // Combine and sort all content items by creation date
+  const allContent = [...polls, ...posts].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
   
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <Header />
       
-      <main className="container py-12">
-        <div className="flex justify-between items-center mb-6">
-          <form onSubmit={handleSearchSubmit} className="flex items-center w-full max-w-md">
-            <Input
-              type="search"
-              placeholder="Search"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="mr-2"
-            />
-            <Button type="submit" variant="outline">
-              <Search className="h-4 w-4 mr-2" />
-              Search
-            </Button>
-          </form>
-          
-          <div className="space-x-2">
-            <Button onClick={() => setIsCreatePostModalOpen(true)}>Create Post</Button>
-            <Button onClick={() => setIsCreatePollModalOpen(true)}>Create Poll</Button>
-          </div>
+      <main className="pt-20 px-4 max-w-3xl mx-auto">
+        <div className="mb-6 animate-fade-in">
+          <h2 className="text-2xl font-bold">Discover</h2>
+          <p className="text-muted-foreground">See what people are sharing</p>
         </div>
+        
+        {!user && (
+          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 text-center animate-fade-in">
+            <h3 className="text-lg font-medium mb-2">Join TUWAYE Today</h3>
+            <p className="text-muted-foreground mb-4">Sign up to create your own posts and polls</p>
+            <Link 
+              to="/auth" 
+              className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Sign Up / Login
+            </Link>
+          </div>
+        )}
         
         <CreatePostInterface />
         
-        <div className="mb-6">
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="posts">Posts</SelectItem>
-              <SelectItem value="polls">Polls</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
         {loading ? (
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-gray-500">No items found.</p>
+        ) : allContent.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-8 text-center">
+            <h3 className="text-lg font-medium mb-2">No content yet</h3>
+            <p className="text-muted-foreground mb-4">Be the first to share something!</p>
+            {user && (
+              <Link 
+                to="/create" 
+                className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Create Poll
+              </Link>
+            )}
           </div>
         ) : (
-          <>
-            <Masonry
-              breakpointCols={breakpointColumnsObj}
-              className="my-masonry-grid"
-              columnClassName="my-masonry-grid_column"
-            >
-              {filteredItems.map(item => renderItem(item))}
-            </Masonry>
-            
-            {hasMore && filter !== 'polls' && (
-              <div ref={ref} className="py-6 text-center">
-                {loading ? (
-                  <Loader2 className="h-6 w-6 mx-auto animate-spin text-primary" />
-                ) : inView ? (
-                  <p className="text-sm text-gray-500">Loading more posts...</p>
+          <div className="space-y-4">
+            {allContent.map((item, index) => (
+              <div 
+                key={'id' in item ? item.id : index} 
+                className={`transition-opacity duration-500 ${
+                  animateItems 
+                    ? 'opacity-100' 
+                    : 'opacity-0'
+                }`}
+                style={{ transitionDelay: `${index * 100}ms` }}
+              >
+                {'question' in item ? (
+                  <PollCard poll={item as Poll} />
                 ) : (
-                  <p className="text-sm text-gray-500">Loading...</p>
+                  <PostCard post={item as Post} />
                 )}
               </div>
-            )}
-            
-            {hasMorePolls && filter !== 'posts' && (
-              <div ref={pollRef} className="py-6 text-center">
-                {loading ? (
-                  <Loader2 className="h-6 w-6 mx-auto animate-spin text-primary" />
-                ) : pollInView ? (
-                  <p className="text-sm text-gray-500">Loading more polls...</p>
-                ) : (
-                  <p className="text-sm text-gray-500">Loading...</p>
-                )}
-              </div>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </main>
-      
-      <CreatePostModal
-        open={isCreatePostModalOpen}
-        onOpenChange={setIsCreatePostModalOpen}
-        onPostCreated={handlePostCreated}
-      />
-      
-      <CreatePollModal
-        open={isCreatePollModalOpen}
-        onOpenChange={setIsCreatePollModalOpen}
-        onPollCreated={handlePollCreated}
-      />
     </div>
   );
 };

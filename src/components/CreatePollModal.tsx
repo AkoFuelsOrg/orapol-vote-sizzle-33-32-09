@@ -1,34 +1,18 @@
 
 import React, { useState } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter,
-  DialogClose
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { X, Plus, Loader2 } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
+import { usePollContext } from '../context/PollContext';
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
-import { useSupabase } from '@/context/SupabaseContext';
 
 interface CreatePollModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onPollCreated: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const CreatePollModal: React.FC<CreatePollModalProps> = ({ 
-  open, 
-  onOpenChange,
-  onPollCreated
-}) => {
-  const { user } = useSupabase();
+const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose }) => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { addPoll } = usePollContext();
 
   const handleAddOption = () => {
     if (options.length >= 6) {
@@ -52,11 +36,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
     setOptions(newOptions);
   };
 
-  const handleSubmit = async () => {
-    if (!user) {
-      toast.error("Please sign in to create a poll");
-      return;
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
     if (!question.trim()) {
       toast.error("Please enter a question");
@@ -69,43 +50,31 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
       return;
     }
     
-    setIsSubmitting(true);
-    
-    try {
-      const { error } = await supabase
-        .from('polls')
-        .insert({
-          question,
-          options: validOptions,
-          user_id: user.id,
-          total_votes: 0
-        });
-        
-      if (error) throw error;
-      
-      // Reset form
-      setQuestion('');
-      setOptions(['', '']);
-      onOpenChange(false);
-      onPollCreated();
-      
-      toast.success("Poll created successfully");
-    } catch (error: any) {
-      console.error('Error creating poll:', error);
-      toast.error(error.message || "Failed to create poll");
-    } finally {
-      setIsSubmitting(false);
-    }
+    addPoll(question, validOptions);
+    setQuestion('');
+    setOptions(['', '']);
+    onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create New Poll</DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+      <div 
+        className="w-full max-w-md bg-white rounded-xl shadow-xl animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">Create New Poll</h2>
+          <button 
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-secondary transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
         
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label htmlFor="question" className="block text-sm font-medium mb-1">
               Question
@@ -160,22 +129,25 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
               )}
             </div>
           </div>
-        </div>
-        
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isSubmitting || !question.trim() || options.filter(o => o.trim()).length < 2}
-          >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSubmitting ? "Creating..." : "Create Poll"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          
+          <div className="pt-2 flex gap-3 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors btn-animate"
+            >
+              Create Poll
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 
