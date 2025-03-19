@@ -24,6 +24,17 @@ export interface Poll {
   image?: string; // Optional image URL for the poll
 }
 
+export interface Post {
+  id: string;
+  content: string;
+  author: User;
+  createdAt: string;
+  image?: string; // Optional image URL for the post
+  commentCount: number;
+  likeCount: number;
+  userLiked?: boolean; // Whether the current user liked this post
+}
+
 export interface Comment {
   id: string;
   pollId: string;

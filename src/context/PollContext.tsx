@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState } from 'react';
-import { Poll, Comment, User, PollOption } from '../lib/types';
+import { Poll, Comment, User, PollOption, Post } from '../lib/types';
 import { initialPolls, initialComments, currentUser } from '../lib/data';
 import { toast } from "sonner";
 import { supabase } from '../integrations/supabase/client';
@@ -8,13 +7,17 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface PollContextType {
   polls: Poll[];
+  posts: Post[];
   comments: Comment[];
   currentUser: User;
   addPoll: (question: string, options: string[], image?: string, optionImages?: (string | null)[]) => void;
+  addPost: (content: string, image?: string) => void;
   votePoll: (pollId: string, optionId: string) => void;
+  likePost: (postId: string) => void;
   addComment: (pollId: string, content: string) => void;
   likeComment: (commentId: string) => void;
   getPollById: (id: string) => Poll | undefined;
+  getPostById: (id: string) => Post | undefined;
   getCommentsForPoll: (pollId: string) => Comment[];
 }
 
@@ -30,6 +33,7 @@ export const usePollContext = () => {
 
 export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [polls, setPolls] = useState<Poll[]>(initialPolls);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>(initialComments);
 
   // Generate a simple ID for new items
@@ -57,11 +61,33 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString(),
       totalVotes: 0,
       commentCount: 0,
-      image: image || undefined, // Add the image URL if provided
+      image: image || undefined,
     };
 
     setPolls([newPoll, ...polls]);
     toast.success("Poll created successfully");
+  };
+
+  // Add a new post
+  const addPost = (content: string, image?: string) => {
+    if (!content.trim()) {
+      toast.error("Post content cannot be empty");
+      return;
+    }
+
+    const newPost: Post = {
+      id: generateId(),
+      content,
+      author: currentUser,
+      createdAt: new Date().toISOString(),
+      image: image || undefined,
+      commentCount: 0,
+      likeCount: 0,
+      userLiked: false
+    };
+
+    setPosts([newPost, ...posts]);
+    toast.success("Post created successfully");
   };
 
   // Vote on a poll
@@ -69,13 +95,11 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPolls(
       polls.map((poll) => {
         if (poll.id === pollId) {
-          // Check if user has already voted
           if (poll.userVoted) {
             toast.error("You've already voted on this poll");
             return poll;
           }
 
-          // Update the option votes
           const updatedOptions = poll.options.map((option) => {
             if (option.id === optionId) {
               return { ...option, votes: option.votes + 1 };
@@ -93,6 +117,23 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
         return poll;
+      })
+    );
+  };
+
+  // Like a post
+  const likePost = (postId: string) => {
+    setPosts(
+      posts.map((post) => {
+        if (post.id === postId) {
+          const newLikedState = !post.userLiked;
+          return {
+            ...post,
+            likeCount: newLikedState ? post.likeCount + 1 : post.likeCount - 1,
+            userLiked: newLikedState
+          };
+        }
+        return post;
       })
     );
   };
@@ -115,7 +156,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setComments([...comments, newComment]);
 
-    // Update comment count on the poll
     setPolls(
       polls.map((poll) => {
         if (poll.id === pollId) {
@@ -151,6 +191,11 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return polls.find((poll) => poll.id === id);
   };
 
+  // Get a post by ID
+  const getPostById = (id: string) => {
+    return posts.find((post) => post.id === id);
+  };
+
   // Get comments for a specific poll
   const getCommentsForPoll = (pollId: string) => {
     return comments.filter((comment) => comment.pollId === pollId);
@@ -160,13 +205,17 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <PollContext.Provider
       value={{
         polls,
+        posts,
         comments,
         currentUser,
         addPoll,
+        addPost,
         votePoll,
+        likePost,
         addComment,
         likeComment,
         getPollById,
+        getPostById,
         getCommentsForPoll,
       }}
     >
