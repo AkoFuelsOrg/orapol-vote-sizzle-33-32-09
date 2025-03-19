@@ -6,7 +6,7 @@ import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 import { SupabaseProvider } from './context/SupabaseContext';
 import { Toaster } from './components/ui/sonner';
-import { AppLoader } from './components/AppLoader';
+import AppLoader from './components/AppLoader'; // Fixed import statement
 import { ThemeProvider } from 'next-themes';
 import VotedPolls from './pages/VotedPolls';
 import Groups from './pages/Groups';
