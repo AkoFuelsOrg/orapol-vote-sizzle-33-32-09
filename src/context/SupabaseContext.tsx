@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -6,7 +7,8 @@ import { toast } from "sonner";
 
 interface ProfileUpdateData {
   username?: string;
-  file?: File;
+  profileFile?: File;
+  coverFile?: File;
 }
 
 interface SupabaseContextType {
@@ -92,14 +94,16 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLoading(true);
     try {
       let avatarUrl = profile?.avatar_url;
+      let coverUrl = profile?.cover_url;
       
-      if (data.file) {
-        const fileExt = data.file.name.split('.').pop();
-        const filePath = `${user.id}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+      // Upload profile image if provided
+      if (data.profileFile) {
+        const fileExt = data.profileFile.name.split('.').pop();
+        const filePath = `${user.id}/profile-${Math.random().toString(36).substring(2)}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(filePath, data.file, { upsert: true });
+          .upload(filePath, data.profileFile, { upsert: true });
           
         if (uploadError) throw uploadError;
         
@@ -110,11 +114,30 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         avatarUrl = urlData.publicUrl;
       }
       
+      // Upload cover image if provided
+      if (data.coverFile) {
+        const fileExt = data.coverFile.name.split('.').pop();
+        const filePath = `${user.id}/cover-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, data.coverFile, { upsert: true });
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        coverUrl = urlData.publicUrl;
+      }
+      
       const updates = {
         id: user.id,
         updated_at: new Date().toISOString(),
         ...(data.username && { username: data.username }),
         ...(avatarUrl && { avatar_url: avatarUrl }),
+        ...(coverUrl && { cover_url: coverUrl }),
       };
       
       const { error: updateError } = await supabase

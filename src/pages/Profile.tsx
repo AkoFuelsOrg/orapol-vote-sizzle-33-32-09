@@ -1,11 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
 import PostCard from '../components/PostCard';
 import Header from '../components/Header';
 import { useSupabase } from '../context/SupabaseContext';
-import { Pencil, Upload, Loader2, UserCircle, Users, Lock } from 'lucide-react';
+import { Pencil, Upload, Loader2, UserCircle, Users, Lock, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import UserList from '../components/UserList';
@@ -13,6 +12,7 @@ import { supabase } from '../integrations/supabase/client';
 import { Poll, PollOption, Post } from '../lib/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
@@ -25,13 +25,16 @@ const Profile: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [userPolls, setUserPolls] = useState<Poll[]>([]);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [isLoadingPolls, setIsLoadingPolls] = useState(true);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (user) {
@@ -111,7 +114,6 @@ const Profile: React.FC = () => {
     
     setIsLoadingPosts(true);
     try {
-      // Fetch posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -127,7 +129,6 @@ const Profile: React.FC = () => {
         
       if (postsError) throw postsError;
       
-      // Get like counts for posts
       const { data: likeCounts, error: likeCountsError } = await supabase
         .from('post_likes')
         .select('post_id');
@@ -136,7 +137,6 @@ const Profile: React.FC = () => {
         console.error('Error fetching like counts:', likeCountsError);
       }
       
-      // Calculate like count per post
       const likeCountMap: Record<string, number> = {};
       if (likeCounts) {
         likeCounts.forEach(like => {
@@ -144,7 +144,6 @@ const Profile: React.FC = () => {
         });
       }
       
-      // Check if user has liked the posts
       let userLikes: Record<string, boolean> = {};
       
       if (user) {
@@ -161,7 +160,6 @@ const Profile: React.FC = () => {
         }
       }
       
-      // Format posts
       const formattedPosts: Post[] = postsData ? postsData.map(post => {
         return {
           id: post.id,
@@ -216,38 +214,6 @@ const Profile: React.FC = () => {
     });
   };
   
-  // Combine and sort all content items by creation date
-  const allContent = [...userPolls, ...userPosts].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-  
-  const convertJsonToPollOptions = (jsonOptions: any): PollOption[] => {
-    if (typeof jsonOptions === 'string') {
-      try {
-        return JSON.parse(jsonOptions);
-      } catch (error) {
-        console.error('Error parsing JSON options:', error);
-        return [];
-      }
-    }
-    
-    if (Array.isArray(jsonOptions)) {
-      return jsonOptions.map(opt => {
-        if (typeof opt === 'object' && opt !== null) {
-          return {
-            id: String(opt.id || ''),
-            text: String(opt.text || ''),
-            votes: Number(opt.votes || 0),
-            imageUrl: opt.imageUrl
-          };
-        }
-        return { id: '', text: '', votes: 0 };
-      });
-    }
-    
-    return [];
-  };
-  
   const handleSaveProfile = async () => {
     if (!username.trim()) {
       toast.error('Username cannot be empty');
@@ -264,40 +230,15 @@ const Profile: React.FC = () => {
     }
   };
   
-  const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword || !currentPassword) {
-      toast.error('All password fields are required');
-      return;
-    }
-    
-    if (newPassword.length < 6) {
-      toast.error('New password should be at least 6 characters');
-      return;
-    }
-    
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-    
-    try {
-      await updatePassword(currentPassword, newPassword);
-      setIsChangingPassword(false);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      toast.success('Password updated successfully');
-    } catch (error: any) {
-      toast.error('Failed to update password');
-      console.error('Error updating password:', error);
-    }
+  const handleProfileImageClick = () => {
+    profileFileInputRef.current?.click();
   };
   
-  const handleImageClick = () => {
-    fileInputRef.current?.click();
+  const handleCoverImageClick = () => {
+    coverFileInputRef.current?.click();
   };
   
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     try {
@@ -314,182 +255,249 @@ const Profile: React.FC = () => {
         return;
       }
       
-      await updateProfile({ file });
+      await updateProfile({ profileFile: file });
       toast.success('Profile image updated successfully');
     } catch (error: any) {
       toast.error('Failed to upload image');
       console.error('Error uploading image:', error);
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (profileFileInputRef.current) profileFileInputRef.current.value = '';
+    }
+  };
+  
+  const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    try {
+      setUploadingCover(true);
+      const file = e.target.files[0];
+      
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      
+      await updateProfile({ coverFile: file });
+      toast.success('Cover image updated successfully');
+    } catch (error: any) {
+      toast.error('Failed to upload cover image');
+      console.error('Error uploading cover image:', error);
+    } finally {
+      setUploadingCover(false);
+      if (coverFileInputRef.current) coverFileInputRef.current.value = '';
     }
   };
   
   const avatarUrl = profile?.avatar_url || (user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : '');
+  const coverUrl = profile?.cover_url || '';
   
   return (
     <div className="min-h-screen bg-gray-50 w-full">
       <Header />
       
-      <main className="pt-20 px-4 max-w-4xl mx-auto pb-20 w-full">
-        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in w-full">
-          <div className="flex flex-col items-center">
-            <div className="relative group">
-              <div 
-                onClick={handleImageClick}
-                className="w-24 h-24 rounded-full border-2 border-red-500 overflow-hidden cursor-pointer group-hover:opacity-80 transition-opacity relative"
-              >
-                {uploading ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : (
-                  <>
-                    <img 
-                      src={avatarUrl} 
-                      alt={profile?.username || 'User'} 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                      <Upload className="h-8 w-8 text-white" />
-                    </div>
-                  </>
-                )}
-              </div>
-              <input 
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
+      <main className="pt-16 px-4 max-w-4xl mx-auto pb-20 w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 mb-6 animate-fade-in w-full overflow-hidden">
+          <div className="relative w-full h-40 bg-gray-200 group">
+            {coverUrl ? (
+              <img 
+                src={coverUrl} 
+                alt="Cover" 
+                className="w-full h-full object-cover"
               />
-            </div>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-blue-100 to-red-100"></div>
+            )}
             
-            <div className="mt-4 text-center w-full">
-              {isEditing ? (
-                <div className="space-y-2">
-                  <input 
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="px-3 py-2 border border-input rounded text-center w-full focus:outline-none focus:ring-1 focus:ring-primary"
-                    placeholder="Enter username"
-                  />
-                  <div className="flex space-x-2 justify-center">
-                    <button 
-                      onClick={handleSaveProfile}
-                      disabled={profileLoading}
-                      className="px-4 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
-                    >
-                      {profileLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'Save'
-                      )}
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setIsEditing(false);
-                        setUsername(profile?.username || '');
-                      }}
-                      className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded text-sm hover:bg-secondary/90 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
+            <button 
+              onClick={handleCoverImageClick}
+              className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              {uploadingCover ? (
+                <Loader2 className="h-10 w-10 animate-spin text-white" />
               ) : (
-                <div className="flex items-center justify-center">
-                  <h2 className="text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
-                  <button 
-                    onClick={() => setIsEditing(true)}
-                    className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                </div>
+                <Camera className="h-10 w-10 text-white" />
               )}
-              <p className="text-muted-foreground mt-1">{user?.email}</p>
-              
-              {!isChangingPassword ? (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsChangingPassword(true)} 
-                  className="mt-2"
+            </button>
+            
+            <input 
+              type="file"
+              ref={coverFileInputRef}
+              onChange={handleCoverImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
+          </div>
+          
+          <div className="p-5">
+            <div className="flex flex-col items-center -mt-14">
+              <div className="relative group z-10">
+                <div 
+                  onClick={handleProfileImageClick}
+                  className="w-24 h-24 rounded-full border-4 border-white overflow-hidden cursor-pointer group-hover:opacity-90 transition-opacity relative bg-white"
                 >
-                  <Lock className="w-4 h-4 mr-2" />
-                  Change Password
-                </Button>
-              ) : (
-                <div className="mt-4 space-y-3 max-w-sm mx-auto">
-                  <h3 className="font-medium text-left">Change Password</h3>
+                  {uploading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <>
+                      <Avatar className="w-full h-full">
+                        <AvatarImage 
+                          src={avatarUrl} 
+                          alt={profile?.username || 'User'} 
+                          className="w-full h-full object-cover"
+                        />
+                        <AvatarFallback>
+                          <UserCircle className="w-full h-full text-gray-400" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                        <Upload className="h-8 w-8 text-white" />
+                      </div>
+                    </>
+                  )}
+                </div>
+                <input 
+                  type="file"
+                  ref={profileFileInputRef}
+                  onChange={handleProfileImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+              
+              <div className="mt-4 text-center w-full">
+                {isEditing ? (
                   <div className="space-y-2">
-                    <Input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Current Password"
+                    <input 
+                      type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="px-3 py-2 border border-input rounded text-center w-full focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="Enter username"
                     />
-                    <Input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="New Password"
-                    />
-                    <Input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm New Password"
-                    />
-                    <div className="flex justify-end space-x-2 pt-2">
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={() => {
-                          setIsChangingPassword(false);
-                          setCurrentPassword('');
-                          setNewPassword('');
-                          setConfirmPassword('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        onClick={handleChangePassword}
+                    <div className="flex space-x-2 justify-center">
+                      <button 
+                        onClick={handleSaveProfile}
                         disabled={profileLoading}
+                        className="px-4 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
                       >
                         {profileLoading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Update Password'
+                          'Save'
                         )}
-                      </Button>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsEditing(false);
+                          setUsername(profile?.username || '');
+                        }}
+                        className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded text-sm hover:bg-secondary/90 transition-colors"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <h2 className="text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  </div>
+                )}
+                <p className="text-muted-foreground mt-1">{user?.email}</p>
+                
+                {!isChangingPassword ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsChangingPassword(true)} 
+                    className="mt-2"
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    Change Password
+                  </Button>
+                ) : (
+                  <div className="mt-4 space-y-3 max-w-sm mx-auto">
+                    <h3 className="font-medium text-left">Change Password</h3>
+                    <div className="space-y-2">
+                      <Input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Current Password"
+                      />
+                      <Input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="New Password"
+                      />
+                      <Input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm New Password"
+                      />
+                      <div className="flex justify-end space-x-2 pt-2">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          onClick={() => {
+                            setIsChangingPassword(false);
+                            setCurrentPassword('');
+                            setNewPassword('');
+                            setConfirmPassword('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={handleChangePassword}
+                          disabled={profileLoading}
+                        >
+                          {profileLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Update Password'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          
-          <div className="mt-6 flex space-x-6 justify-center">
-            <div className="text-center">
-              <p className="text-2xl font-bold">{userPolls.length}</p>
-              <p className="text-sm text-muted-foreground">Polls</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{userPosts.length}</p>
-              <p className="text-sm text-muted-foreground">Posts</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{followCounts.followers}</p>
-              <p className="text-sm text-muted-foreground">Followers</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold">{followCounts.following}</p>
-              <p className="text-sm text-muted-foreground">Following</p>
+            
+            <div className="mt-6 flex space-x-6 justify-center">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{userPolls.length}</p>
+                <p className="text-sm text-muted-foreground">Polls</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{userPosts.length}</p>
+                <p className="text-sm text-muted-foreground">Posts</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.followers}</p>
+                <p className="text-sm text-muted-foreground">Followers</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.following}</p>
+                <p className="text-sm text-muted-foreground">Following</p>
+              </div>
             </div>
           </div>
         </div>
