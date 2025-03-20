@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Smile } from 'lucide-react';
 import { toast } from 'sonner';
 import PostComment from './PostComment';
+import EmojiPicker from './EmojiPicker';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface Author {
   id: string;
@@ -41,6 +42,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [totalComments, setTotalComments] = useState(0);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   useEffect(() => {
     if (postId) {
@@ -54,7 +56,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     try {
       setLoading(true);
       
-      // First get the count of top-level comments
       const { count, error: countError } = await supabase
         .from('post_comments')
         .select('id', { count: 'exact', head: false })
@@ -66,7 +67,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       setTotalComments(count || 0);
       updateCommentCount(count || 0);
       
-      // Now get the actual comment data
       const { data: commentsData, error: commentsError } = await supabase
         .from('post_comments')
         .select(`
@@ -91,7 +91,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         return;
       }
       
-      // Get user profiles separately
       const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -105,7 +104,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         profileMap.set(profile.id, profile);
       });
       
-      // Get reply counts for each comment
       const commentsWithCounts = await Promise.all(commentsData.map(async (comment) => {
         const { count, error: countError } = await supabase
           .from('post_comments')
@@ -122,7 +120,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       
       let formattedComments: CommentType[] = [];
       
-      // Get like status if user is logged in
       if (user) {
         const { data: likes, error: likesError } = await supabase
           .from('post_comment_likes')
@@ -177,6 +174,13 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     }
   };
 
+  const handleInsertEmoji = (emoji: string) => {
+    setCommentContent(prev => prev + emoji);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   const handleSubmitComment = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
@@ -192,7 +196,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     try {
       setSubmitting(true);
       
-      // Insert new comment directly
       const { data: commentData, error: commentError } = await supabase
         .from('post_comments')
         .insert({
@@ -208,7 +211,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       setTotalComments(newCommentCount);
       updateCommentCount(newCommentCount);
       
-      // Update post comment count
       await supabase
         .from('posts')
         .update({ comment_count: newCommentCount })
@@ -344,19 +346,37 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
                     <AvatarImage src={profile?.avatar_url || ''} />
                     <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
                   </Avatar>
-                  <input
-                    ref={inputRef}
-                    className="flex-1 border-none bg-transparent text-sm placeholder-gray-500 focus:outline-none"
-                    placeholder="Add a comment..."
-                    value={commentContent}
-                    onChange={(e) => setCommentContent(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmitComment();
-                      }
-                    }}
-                  />
+                  <div className="flex flex-1 items-center relative">
+                    <input
+                      ref={inputRef}
+                      className="flex-1 border-none bg-transparent text-sm placeholder-gray-500 focus:outline-none"
+                      placeholder="Add a comment..."
+                      value={commentContent}
+                      onChange={(e) => setCommentContent(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmitComment();
+                        }
+                      }}
+                    />
+                    <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <button 
+                          type="button" 
+                          className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                        >
+                          <Smile className="h-5 w-5" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0 border-none shadow-lg" align="end">
+                        <EmojiPicker 
+                          onSelectEmoji={handleInsertEmoji} 
+                          onClose={() => setIsEmojiPickerOpen(false)} 
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   <button
                     type="submit"
                     disabled={submitting || !commentContent.trim()}

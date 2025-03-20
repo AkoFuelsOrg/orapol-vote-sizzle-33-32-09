@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, ChevronDown, ChevronUp, Smile } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { useSupabase } from '../context/SupabaseContext';
@@ -10,6 +9,8 @@ import { Button } from './ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import EmojiPicker from './EmojiPicker';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface Comment {
   id: string;
@@ -48,6 +49,7 @@ const PostComment: React.FC<PostCommentProps> = ({
   const [open, setOpen] = useState(false);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [loadingReplies, setLoadingReplies] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   const formatTimeAgo = (dateString: string) => {
     try {
@@ -240,6 +242,10 @@ const PostComment: React.FC<PostCommentProps> = ({
     }
   };
 
+  const handleInsertEmoji = (emoji: string) => {
+    setReplyContent(prev => prev + emoji);
+  };
+
   return (
     <div className="flex py-2">
       <Link to={`/user/${comment.author.id}`} className="flex-shrink-0 mr-2">
@@ -346,12 +352,30 @@ const PostComment: React.FC<PostCommentProps> = ({
                   <AvatarImage src={profile?.avatar_url || ''} />
                   <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
                 </Avatar>
-                <Input
-                  className="flex-1 h-8 text-xs"
-                  placeholder="Add a reply..."
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                />
+                <div className="flex-1 flex items-center">
+                  <Input
+                    className="flex-1 h-8 text-xs"
+                    placeholder="Add a reply..."
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                  />
+                  <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button 
+                        type="button" 
+                        className="ml-1 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      >
+                        <Smile className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 border-none shadow-lg" align="end">
+                      <EmojiPicker 
+                        onSelectEmoji={handleInsertEmoji} 
+                        onClose={() => setIsEmojiPickerOpen(false)} 
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <Button
                   type="submit"
                   disabled={submitting || !replyContent.trim()}
