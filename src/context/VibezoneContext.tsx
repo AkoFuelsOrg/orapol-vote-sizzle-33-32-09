@@ -51,12 +51,15 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         // Check if author exists and has the expected properties
         if (video.author && typeof video.author === 'object') {
+          // Use non-null assertion after the check to tell TypeScript that 
+          // we've already verified author is not null
+          const authorData = video.author as Record<string, any>;
           author = {
-            id: video.author?.id || '',
-            name: video.author?.username || 'Unknown User',
-            avatar: video.author?.avatar_url || '',
-            username: video.author?.username || 'Unknown User',
-            avatar_url: video.author?.avatar_url || ''
+            id: authorData.id || '',
+            name: authorData.username || 'Unknown User',
+            avatar: authorData.avatar_url || '',
+            username: authorData.username || 'Unknown User',
+            avatar_url: authorData.avatar_url || ''
           };
         }
         
@@ -98,12 +101,14 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // Check if author exists and has the expected properties
       if (data.author && typeof data.author === 'object') {
+        // Use type assertion after our check to avoid null issues
+        const authorData = data.author as Record<string, any>;
         author = {
-          id: data.author?.id || '',
-          name: data.author?.username || 'Unknown User',
-          avatar: data.author?.avatar_url || '',
-          username: data.author?.username || 'Unknown User',
-          avatar_url: data.author?.avatar_url || ''
+          id: authorData.id || '',
+          name: authorData.username || 'Unknown User',
+          avatar: authorData.avatar_url || '',
+          username: authorData.username || 'Unknown User',
+          avatar_url: authorData.avatar_url || ''
         };
       }
       
@@ -146,12 +151,14 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         // Check if author exists and has the expected properties
         if (comment.author && typeof comment.author === 'object') {
+          // Use type assertion after our check to avoid null issues
+          const authorData = comment.author as Record<string, any>;
           author = {
-            id: comment.author?.id || '',
-            name: comment.author?.username || 'Unknown User',
-            avatar: comment.author?.avatar_url || '',
-            username: comment.author?.username || 'Unknown User',
-            avatar_url: comment.author?.avatar_url || ''
+            id: authorData.id || '',
+            name: authorData.username || 'Unknown User',
+            avatar: authorData.avatar_url || '',
+            username: authorData.username || 'Unknown User',
+            avatar_url: authorData.avatar_url || ''
           };
         }
         
@@ -202,12 +209,14 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // Check if author exists and has the expected properties
       if (data.author && typeof data.author === 'object') {
+        // Use type assertion after our check to avoid null issues
+        const authorData = data.author as Record<string, any>;
         author = {
-          id: data.author?.id || '',
-          name: data.author?.username || 'Unknown User',
-          avatar: data.author?.avatar_url || '',
-          username: data.author?.username || 'Unknown User',
-          avatar_url: data.author?.avatar_url || ''
+          id: authorData.id || '',
+          name: authorData.username || 'Unknown User',
+          avatar: authorData.avatar_url || '',
+          username: authorData.username || 'Unknown User',
+          avatar_url: authorData.avatar_url || ''
         };
       }
       
