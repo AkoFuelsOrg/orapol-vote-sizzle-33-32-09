@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Card } from './ui/card';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PostCardProps {
   post: Post;
@@ -16,6 +18,7 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   const { user } = useSupabase();
+  const isMobile = useIsMobile();
   const [isImageExpanded, setIsImageExpanded] = React.useState(false);
   const [hasLiked, setHasLiked] = React.useState(post.userLiked || false);
   const [likeCount, setLikeCount] = React.useState(post.likeCount);
@@ -74,12 +77,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   };
 
   return (
-    <div className="bg-white rounded-md border border-gray-200 mb-4 overflow-hidden">
+    <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg max-w-3xl mx-auto shadow-sm">
       {/* Main content - restructured to have image on left and content on right */}
       <div className="flex flex-col md:flex-row">
         {/* Image on the left with profile avatar overlaid */}
         {post.image && (
-          <div className="md:w-1/2 relative">
+          <div className="md:w-3/5 relative">
             <div 
               className="aspect-square w-full overflow-hidden bg-gray-100 relative"
               onClick={(e) => {
@@ -131,10 +134,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
         )}
         
         {/* Content on the right */}
-        <div className={`${post.image ? 'md:w-1/2' : 'w-full'} flex flex-col`}>
+        <div className={`${post.image ? 'md:w-2/5' : 'w-full'} flex flex-col`}>
           {/* Header - only show when no image */}
           {!post.image && (
-            <div className="px-4 py-3 flex items-center justify-between">
+            <div className="px-5 py-4 flex items-center justify-between border-b">
               <Link 
                 to={`/user/${post.author.id}`}
                 className="flex items-center space-x-2"
@@ -158,8 +161,20 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             </div>
           )}
           
+          {/* User info */}
+          {post.image && (
+            <div className="px-5 py-4 border-b">
+              <Link 
+                to={`/user/${post.author.id}`}
+                className="flex items-center space-x-2"
+              >
+                <p className="text-sm font-semibold">{post.author.name}</p>
+              </Link>
+            </div>
+          )}
+          
           {/* Caption */}
-          <div className="px-4 py-3">
+          <div className="px-5 py-3">
             <div className="flex space-x-1">
               <p className="text-sm">
                 {post.image ? '' : <span className="font-semibold">{post.author.name}</span>}{" "}
@@ -171,7 +186,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
           </div>
           
           {/* Action buttons */}
-          <div className="px-4 pt-2 pb-1 flex justify-between mt-auto">
+          <div className="px-5 pt-3 pb-2 flex justify-between mt-auto">
             <div className="flex space-x-4">
               <button 
                 className="focus:outline-none"
@@ -204,24 +219,24 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
           </div>
           
           {/* Likes count */}
-          <div className="px-4 pt-1 pb-1">
+          <div className="px-5 pt-1 pb-1">
             <p className="font-semibold text-sm">{likeCount} likes</p>
           </div>
           
           {/* Comments link */}
           {post.commentCount > 0 && (
-            <Link to={`/post/${post.id}`} className="block px-4 pb-1">
+            <Link to={`/post/${post.id}`} className="block px-5 pb-1">
               <p className="text-sm text-gray-500">View all {post.commentCount} comments</p>
             </Link>
           )}
           
           {/* Date */}
-          <div className="px-4 py-2 mt-auto">
+          <div className="px-5 py-3 mt-auto border-t">
             <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
