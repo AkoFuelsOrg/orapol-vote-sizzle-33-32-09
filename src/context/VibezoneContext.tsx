@@ -37,11 +37,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('videos')
         .select(`
           *,
-          author:profiles(
-            id,
-            username,
-            avatar_url
-          )
+          author:profiles(*)
         `)
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -50,14 +46,19 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // Transform the data to match our Video type
       const transformedVideos = data.map(video => {
-        // Safely access author properties with optional chaining
-        const author = video.author ? {
-          id: video.author.id,
-          name: video.author.username,
-          avatar: video.author.avatar_url,
-          username: video.author.username,
-          avatar_url: video.author.avatar_url
-        } : undefined;
+        // Create a default author object if no author data is available
+        let author = undefined;
+        
+        // Check if author exists and has the expected properties
+        if (video.author && typeof video.author === 'object') {
+          author = {
+            id: video.author.id || '',
+            name: video.author.username || 'Unknown User',
+            avatar: video.author.avatar_url || '',
+            username: video.author.username || 'Unknown User',
+            avatar_url: video.author.avatar_url || ''
+          };
+        }
         
         return {
           ...video,
@@ -85,25 +86,26 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('videos')
         .select(`
           *,
-          author:profiles(
-            id,
-            username,
-            avatar_url
-          )
+          author:profiles(*)
         `)
         .eq('id', id)
         .single();
       
       if (error) throw error;
       
-      // Transform to match our Video type (safely handling author data)
-      const author = data.author ? {
-        id: data.author.id,
-        name: data.author.username,
-        avatar: data.author.avatar_url,
-        username: data.author.username,
-        avatar_url: data.author.avatar_url
-      } : undefined;
+      // Create a default author object if no author data is available
+      let author = undefined;
+      
+      // Check if author exists and has the expected properties
+      if (data.author && typeof data.author === 'object') {
+        author = {
+          id: data.author.id || '',
+          name: data.author.username || 'Unknown User',
+          avatar: data.author.avatar_url || '',
+          username: data.author.username || 'Unknown User',
+          avatar_url: data.author.avatar_url || ''
+        };
+      }
       
       const transformedVideo = {
         ...data,
@@ -130,11 +132,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('video_comments')
         .select(`
           *,
-          author:profiles(
-            id,
-            username,
-            avatar_url
-          )
+          author:profiles(*)
         `)
         .eq('video_id', videoId)
         .order('created_at', { ascending: true });
@@ -143,14 +141,19 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // Transform the data to match our VideoComment type
       const transformedComments = data.map(comment => {
-        // Safely access author properties with optional chaining
-        const author = comment.author ? {
-          id: comment.author.id,
-          name: comment.author.username,
-          avatar: comment.author.avatar_url,
-          username: comment.author.username,
-          avatar_url: comment.author.avatar_url
-        } : undefined;
+        // Create a default author object if no author data is available
+        let author = undefined;
+        
+        // Check if author exists and has the expected properties
+        if (comment.author && typeof comment.author === 'object') {
+          author = {
+            id: comment.author.id || '',
+            name: comment.author.username || 'Unknown User',
+            avatar: comment.author.avatar_url || '',
+            username: comment.author.username || 'Unknown User',
+            avatar_url: comment.author.avatar_url || ''
+          };
+        }
         
         return {
           ...comment,
@@ -188,24 +191,25 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })
         .select(`
           *,
-          author:profiles(
-            id,
-            username,
-            avatar_url
-          )
+          author:profiles(*)
         `)
         .single();
       
       if (error) throw error;
       
-      // Safely transform to match our VideoComment type
-      const author = data.author ? {
-        id: data.author.id,
-        name: data.author.username,
-        avatar: data.author.avatar_url,
-        username: data.author.username,
-        avatar_url: data.author.avatar_url
-      } : undefined;
+      // Create a default author object if no author data is available
+      let author = undefined;
+      
+      // Check if author exists and has the expected properties
+      if (data.author && typeof data.author === 'object') {
+        author = {
+          id: data.author.id || '',
+          name: data.author.username || 'Unknown User',
+          avatar: data.author.avatar_url || '',
+          username: data.author.username || 'Unknown User',
+          avatar_url: data.author.avatar_url || ''
+        };
+      }
       
       const transformedComment = {
         ...data,

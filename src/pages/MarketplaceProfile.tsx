@@ -130,6 +130,7 @@ const MarketplaceProfile = () => {
             createdAt: post.created_at,
             commentCount: post.comment_count || 0,
             likeCount: 0,
+            userLiked: false,
             author: {
               id: post.user_id,
               name: profileData?.username || 'Unknown User',
