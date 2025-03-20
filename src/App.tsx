@@ -8,6 +8,7 @@ import { PollProvider } from "./context/PollContext";
 import { SupabaseProvider } from "./context/SupabaseContext";
 import { GroupProvider } from "./context/GroupContext";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
+import { VibezoneProvider } from "./context/VibezoneContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UserProfile from "./pages/UserProfile";
 import AppLoader from "./components/AppLoader";
@@ -34,6 +35,9 @@ import GroupProfile from "./pages/GroupProfile";
 import Marketplaces from "./pages/Marketplaces";
 import MarketplaceProfile from "./pages/MarketplaceProfile";
 import Favourites from "./pages/Favourites";
+import Vibezone from "./pages/Vibezone";
+import WatchVideo from "./pages/WatchVideo";
+import UploadVideo from "./pages/UploadVideo";
 
 const queryClient = new QueryClient();
 
@@ -54,7 +58,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
     location.pathname.startsWith('/user/') ||
     location.pathname.startsWith('/group/') ||
     location.pathname.startsWith('/marketplace/') ||
-    location.pathname.startsWith('/poll/');
+    location.pathname.startsWith('/poll/') ||
+    location.pathname.startsWith('/vibezone/watch/');
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -81,108 +86,126 @@ const App = () => (
           <PollProvider>
             <GroupProvider>
               <MarketplaceProvider>
-                <Toaster />
-                <Sonner position="top-center" closeButton={true} />
-                <AppLoader>
-                  <ResponsiveLayout>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/search" element={<SearchResults />} />
-                      <Route
-                        path="/create"
-                        element={
-                          <ProtectedRoute>
-                            <CreatePoll />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route path="/poll/:id" element={<PollDetail />} />
-                      <Route
-                        path="/profile"
-                        element={
-                          <ProtectedRoute>
-                            <Profile />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route path="/user/:id" element={<UserProfile />} />
-                      <Route
-                        path="/messages"
-                        element={
-                          <ProtectedRoute>
-                            <Messages />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/messages/:id"
-                        element={
-                          <ProtectedRoute>
-                            <Messages />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/voted-polls"
-                        element={
-                          <ProtectedRoute>
-                            <VotedPolls />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/followers"
-                        element={
-                          <ProtectedRoute>
-                            <Followers />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/following"
-                        element={
-                          <ProtectedRoute>
-                            <Following />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/notifications"
-                        element={
-                          <ProtectedRoute>
-                            <Notifications />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/favourites"
-                        element={
-                          <ProtectedRoute>
-                            <Favourites />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/groups"
-                        element={<Groups />}
-                      />
-                      <Route
-                        path="/group/:id"
-                        element={<GroupProfile />}
-                      />
-                      <Route
-                        path="/marketplaces"
-                        element={<Marketplaces />}
-                      />
-                      <Route
-                        path="/marketplace/:id"
-                        element={<MarketplaceProfile />}
-                      />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </ResponsiveLayout>
-                </AppLoader>
+                <VibezoneProvider>
+                  <Toaster />
+                  <Sonner position="top-center" closeButton={true} />
+                  <AppLoader>
+                    <ResponsiveLayout>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/search" element={<SearchResults />} />
+                        <Route
+                          path="/create"
+                          element={
+                            <ProtectedRoute>
+                              <CreatePoll />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route path="/poll/:id" element={<PollDetail />} />
+                        <Route
+                          path="/profile"
+                          element={
+                            <ProtectedRoute>
+                              <Profile />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route path="/user/:id" element={<UserProfile />} />
+                        <Route
+                          path="/messages"
+                          element={
+                            <ProtectedRoute>
+                              <Messages />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/messages/:id"
+                          element={
+                            <ProtectedRoute>
+                              <Messages />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/voted-polls"
+                          element={
+                            <ProtectedRoute>
+                              <VotedPolls />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/followers"
+                          element={
+                            <ProtectedRoute>
+                              <Followers />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/following"
+                          element={
+                            <ProtectedRoute>
+                              <Following />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/notifications"
+                          element={
+                            <ProtectedRoute>
+                              <Notifications />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/favourites"
+                          element={
+                            <ProtectedRoute>
+                              <Favourites />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/groups"
+                          element={<Groups />}
+                        />
+                        <Route
+                          path="/group/:id"
+                          element={<GroupProfile />}
+                        />
+                        <Route
+                          path="/marketplaces"
+                          element={<Marketplaces />}
+                        />
+                        <Route
+                          path="/marketplace/:id"
+                          element={<MarketplaceProfile />}
+                        />
+                        <Route
+                          path="/vibezone"
+                          element={<Vibezone />}
+                        />
+                        <Route
+                          path="/vibezone/watch/:id"
+                          element={<WatchVideo />}
+                        />
+                        <Route
+                          path="/vibezone/upload"
+                          element={
+                            <ProtectedRoute>
+                              <UploadVideo />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </ResponsiveLayout>
+                  </AppLoader>
+                </VibezoneProvider>
               </MarketplaceProvider>
             </GroupProvider>
           </PollProvider>

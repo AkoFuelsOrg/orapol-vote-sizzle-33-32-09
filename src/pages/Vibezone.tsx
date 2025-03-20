@@ -1,0 +1,134 @@
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useVibezone } from '@/context/VibezoneContext';
+import { Video } from '@/lib/types';
+import { formatDistanceToNow } from 'date-fns';
+import { Loader2, FilmIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useSupabase } from '@/context/SupabaseContext';
+
+const Vibezone: React.FC = () => {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const { fetchVideos, loading } = useVibezone();
+  const navigate = useNavigate();
+  const { user } = useSupabase();
+
+  useEffect(() => {
+    const loadVideos = async () => {
+      const fetchedVideos = await fetchVideos();
+      setVideos(fetchedVideos);
+    };
+    
+    loadVideos();
+  }, [fetchVideos]);
+
+  const formatViews = (views: number): string => {
+    if (views >= 1000000) {
+      return `${(views / 1000000).toFixed(1)}M views`;
+    } else if (views >= 1000) {
+      return `${(views / 1000).toFixed(1)}K views`;
+    } else {
+      return `${views} views`;
+    }
+  };
+
+  const formatDuration = (seconds?: number): string => {
+    if (!seconds) return '0:00';
+    
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Vibezone</h1>
+        <Button 
+          onClick={() => navigate('/vibezone/upload')}
+          className="bg-red-500 hover:bg-red-600"
+        >
+          Upload Video
+        </Button>
+      </div>
+
+      {loading && (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        </div>
+      )}
+
+      {!loading && videos.length === 0 && (
+        <div className="text-center py-10">
+          <FilmIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">No videos yet</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Be the first to upload a video to Vibezone!
+          </p>
+          <div className="mt-6">
+            <Button 
+              onClick={() => navigate('/vibezone/upload')}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Upload Video
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {videos.map((video) => (
+          <Card 
+            key={video.id} 
+            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200"
+            onClick={() => navigate(`/vibezone/watch/${video.id}`)}
+          >
+            <div className="relative aspect-video bg-gray-100">
+              {video.thumbnail_url ? (
+                <img 
+                  src={video.thumbnail_url} 
+                  alt={video.title} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <FilmIcon className="h-12 w-12 text-gray-400" />
+                </div>
+              )}
+              <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5 rounded">
+                {formatDuration(video.duration)}
+              </div>
+            </div>
+            <CardContent className="p-3">
+              <h3 className="font-semibold text-sm line-clamp-2">{video.title}</h3>
+              <div className="mt-2 flex items-center">
+                <div className="flex-shrink-0">
+                  {video.author?.avatar_url ? (
+                    <img 
+                      src={video.author.avatar_url} 
+                      alt={video.author.username || ''} 
+                      className="w-6 h-6 rounded-full"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                  )}
+                </div>
+                <div className="ml-2">
+                  <p className="text-xs text-gray-600">{video.author?.username || 'Unknown'}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default Vibezone;

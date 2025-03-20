@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -129,4 +128,43 @@ export interface MarketplaceMember {
     username: string;
     avatar_url: string;
   };
+}
+
+export interface Video {
+  id: string;
+  title: string;
+  description?: string;
+  video_url: string;
+  thumbnail_url?: string;
+  views: number;
+  likes: number;
+  duration?: number;
+  created_at: string;
+  user_id: string;
+  author?: User;
+}
+
+export interface VideoComment {
+  id: string;
+  video_id: string;
+  user_id: string;
+  content: string;
+  likes: number;
+  created_at: string;
+  author?: User;
+}
+
+export interface VideoLike {
+  id: string;
+  video_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface VideoView {
+  id: string;
+  video_id: string;
+  user_id?: string;
+  ip_address?: string;
+  created_at: string;
 }
