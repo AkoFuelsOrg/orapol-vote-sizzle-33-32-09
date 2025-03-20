@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 
 interface Notification {
   id: string;
@@ -30,6 +31,7 @@ const Notifications: React.FC = () => {
   const { user } = useSupabase();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [debugInfo, setDebugInfo] = useState<string>('No debug info yet');
   const { toast } = useToast();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
@@ -50,6 +52,7 @@ const Notifications: React.FC = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
+            console.log('Received new notification via realtime:', payload);
             fetchNotifications();
             // Show a toast for new notifications
             toast({
@@ -59,6 +62,11 @@ const Notifications: React.FC = () => {
           }
         )
         .subscribe();
+
+      // Log subscription status
+      channel.subscription.on('status', (status) => {
+        console.log('Realtime subscription status:', status);
+      });
       
       return () => {
         supabase.removeChannel(channel);
@@ -67,10 +75,17 @@ const Notifications: React.FC = () => {
   }, [user]);
 
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user) {
+      setDebugInfo('No user is logged in');
+      return;
+    }
     
     try {
       setLoading(true);
+      
+      // Log user ID for debugging
+      console.log('Fetching notifications for user ID:', user.id);
+      setDebugInfo(`Attempting to fetch notifications for user ID: ${user.id}`);
       
       // Fetch notifications
       const { data, error } = await supabase
@@ -79,7 +94,14 @@ const Notifications: React.FC = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        setDebugInfo(`Error fetching notifications: ${error.message}`);
+        throw error;
+      }
+
+      console.log('Raw notification data:', data);
+      setDebugInfo(`Found ${data?.length || 0} notifications`);
       
       // For each notification with a related_user_id, fetch the user data
       const notificationsWithUserData = await Promise.all(
@@ -96,6 +118,8 @@ const Notifications: React.FC = () => {
               
             if (!profileError && profileData) {
               userData = profileData;
+            } else if (profileError) {
+              console.log('Error fetching profile data:', profileError);
             }
           }
           
@@ -110,6 +134,7 @@ const Notifications: React.FC = () => {
       setNotifications(notificationsWithUserData);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
+      setDebugInfo(`Error in fetchNotifications: ${error.message}`);
       toast({
         title: 'Error',
         description: 'Failed to load notifications',
@@ -162,6 +187,39 @@ const Notifications: React.FC = () => {
       toast({
         title: 'Error',
         description: 'Failed to mark notifications as read',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Manually create and test a notification
+  const createTestNotification = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'system',
+          content: 'This is a test notification',
+          is_read: false
+        })
+        .select();
+        
+      if (error) throw error;
+      
+      toast({
+        title: 'Success',
+        description: 'Test notification created',
+      });
+      
+      fetchNotifications();
+    } catch (error: any) {
+      console.error('Error creating test notification:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to create test notification: ${error.message}`,
         variant: 'destructive'
       });
     }
@@ -286,14 +344,34 @@ const Notifications: React.FC = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Notifications</CardTitle>
-          {notifications.length > 0 && (
-            <button 
-              onClick={markAllAsRead}
-              className="text-sm text-primary hover:underline"
+          <div className="flex gap-2">
+            {notifications.length > 0 && (
+              <button 
+                onClick={markAllAsRead}
+                className="text-sm text-primary hover:underline"
+              >
+                Mark all as read
+              </button>
+            )}
+            {/* Debug button to refresh notifications */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchNotifications}
+              className="ml-2"
             >
-              Mark all as read
-            </button>
-          )}
+              Refresh
+            </Button>
+            {/* Debug button to create a test notification */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={createTestNotification}
+              className="ml-2"
+            >
+              Create Test
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {!user ? (
@@ -304,65 +382,77 @@ const Notifications: React.FC = () => {
             <div className="flex justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : notifications.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground">You don't have any notifications yet.</p>
-            </div>
           ) : (
-            <div className="space-y-6">
-              {Object.entries(groupNotificationsByDate()).map(([date, dateNotifications]) => (
-                <div key={date} className="space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-semibold text-muted-foreground">{date}</span>
-                    <Separator className="flex-1" />
-                  </div>
-                  
-                  {dateNotifications.map((notification) => (
-                    <Link
-                      key={notification.id}
-                      to={getNotificationLink(notification)}
-                      onClick={() => !notification.is_read && markAsRead(notification.id)}
-                      className={`block p-3 rounded-lg transition-colors ${
-                        notification.is_read 
-                          ? 'bg-secondary/30 hover:bg-secondary/50' 
-                          : 'bg-secondary hover:bg-secondary/80 border-l-4 border-primary'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-1">
-                          {notification.user ? (
-                            <Avatar>
-                              <AvatarImage 
-                                src={notification.user.avatar_url || `https://i.pravatar.cc/150?u=${notification.related_user_id}`} 
-                                alt={notification.user.username || 'User'} 
-                              />
-                              <AvatarFallback>
-                                {getNotificationIcon(notification.type)}
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center">
-                              {getNotificationIcon(notification.type)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
-                            <span className="font-medium">
-                              {notification.user?.username || 'Someone'}
-                            </span>{' '}
-                            {notification.content}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDate(notification.created_at)}
-                          </p>
-                        </div>
+            <>
+              {/* Debug info section */}
+              <div className="bg-muted p-4 rounded-md mb-4 text-sm">
+                <h3 className="font-semibold mb-2">Debug Information</h3>
+                <p>{debugInfo}</p>
+                <p className="mt-2">User ID: {user?.id || 'No user ID'}</p>
+                <p>Notification Count: {notifications.length}</p>
+              </div>
+              
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground">You don't have any notifications yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {Object.entries(groupNotificationsByDate()).map(([date, dateNotifications]) => (
+                    <div key={date} className="space-y-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold text-muted-foreground">{date}</span>
+                        <Separator className="flex-1" />
                       </div>
-                    </Link>
+                      
+                      {dateNotifications.map((notification) => (
+                        <Link
+                          key={notification.id}
+                          to={getNotificationLink(notification)}
+                          onClick={() => !notification.is_read && markAsRead(notification.id)}
+                          className={`block p-3 rounded-lg transition-colors ${
+                            notification.is_read 
+                              ? 'bg-secondary/30 hover:bg-secondary/50' 
+                              : 'bg-secondary hover:bg-secondary/80 border-l-4 border-primary'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-1">
+                              {notification.user ? (
+                                <Avatar>
+                                  <AvatarImage 
+                                    src={notification.user.avatar_url || `https://i.pravatar.cc/150?u=${notification.related_user_id}`} 
+                                    alt={notification.user.username || 'User'} 
+                                  />
+                                  <AvatarFallback>
+                                    {getNotificationIcon(notification.type)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center">
+                                  {getNotificationIcon(notification.type)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
+                                <span className="font-medium">
+                                  {notification.user?.username || 'Someone'}
+                                </span>{' '}
+                                {notification.content}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {formatDate(notification.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
