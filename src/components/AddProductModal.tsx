@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -27,9 +26,7 @@ const formSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   description: z.string().optional(),
   price: z.preprocess(
-    // First preprocess to handle empty strings
     (val) => (val === '' ? null : val),
-    // Then validate and transform
     z.union([
       z.null(),
       z.number(),
@@ -87,7 +84,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `marketplace_products/${fileName}`;
         
-        console.log("Uploading image to bucket 'public':", fileName);
+        console.log("Uploading image to bucket 'public':", filePath);
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('public')
           .upload(filePath, imageFile);
@@ -107,7 +104,6 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
         console.log("Image public URL:", imageUrl);
       }
       
-      // Ensure price is properly handled as a number or null
       const productData = {
         marketplace_id: marketplaceId,
         name: values.name,

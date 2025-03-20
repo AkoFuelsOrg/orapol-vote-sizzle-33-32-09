@@ -103,7 +103,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `marketplace_products/${fileName}`;
         
-        console.log("Uploading image to bucket 'public':", fileName);
+        console.log("Uploading image to bucket 'public':", filePath);
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('public')
           .upload(filePath, imageFile);
