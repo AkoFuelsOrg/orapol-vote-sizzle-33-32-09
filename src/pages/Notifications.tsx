@@ -5,12 +5,12 @@ import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, ThumbsUp, UserPlus, Share2, Users, ShoppingBag, MoreHorizontal } from 'lucide-react';
+import { MessageSquare, ThumbsUp, UserPlus, Share2, Users, ShoppingBag, MoreHorizontal, Loader2, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface Notification {
   id: string;
@@ -32,7 +32,7 @@ const Notifications: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
 
@@ -55,7 +55,7 @@ const Notifications: React.FC = () => {
             console.log('Received new notification via realtime:', payload);
             fetchNotifications();
             // Show a toast for new notifications
-            toast({
+            uiToast({
               title: 'New Notification',
               description: payload.new.content,
             });
@@ -143,7 +143,7 @@ const Notifications: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
       setError(`Error in fetchNotifications: ${error.message}`);
-      toast({
+      uiToast({
         title: 'Error',
         description: 'Failed to load notifications',
         variant: 'destructive'
@@ -168,7 +168,7 @@ const Notifications: React.FC = () => {
       ));
     } catch (error: any) {
       console.error('Error marking notification as read:', error);
-      toast({
+      uiToast({
         title: 'Error',
         description: `Failed to mark notification as read: ${error.message}`,
         variant: 'destructive'
@@ -191,13 +191,13 @@ const Notifications: React.FC = () => {
       // Update local state
       setNotifications(notifications.map(notification => ({ ...notification, is_read: true })));
       
-      toast({
+      uiToast({
         title: 'Success',
         description: 'All notifications marked as read',
       });
     } catch (error: any) {
       console.error('Error marking all notifications as read:', error);
-      toast({
+      uiToast({
         title: 'Error',
         description: `Failed to mark notifications as read: ${error.message}`,
         variant: 'destructive'
@@ -205,39 +205,57 @@ const Notifications: React.FC = () => {
     }
   };
 
-  // Create a test notification
+  // This function creates test notifications for various interaction types
   const createTestNotification = async () => {
     if (!user) return;
     
     try {
+      // Create different types of test notifications
+      const testNotifications = [
+        {
+          user_id: user.id,
+          type: 'like',
+          content: 'liked your post',
+          is_read: false,
+          related_item_type: 'post',
+          related_item_id: 'test-post-id',
+          related_user_id: user.id // Using same user for test purposes
+        },
+        {
+          user_id: user.id,
+          type: 'comment',
+          content: 'commented on your post',
+          is_read: false,
+          related_item_type: 'post',
+          related_item_id: 'test-post-id',
+          related_user_id: user.id // Using same user for test purposes
+        },
+        {
+          user_id: user.id,
+          type: 'share',
+          content: 'shared your post',
+          is_read: false,
+          related_item_type: 'post',
+          related_item_id: 'test-post-id',
+          related_user_id: user.id // Using same user for test purposes
+        }
+      ];
+      
       const { data, error } = await supabase
         .from('notifications')
-        .insert({
-          user_id: user.id,
-          type: 'system',
-          content: 'This is a test notification',
-          is_read: false
-        })
+        .insert(testNotifications)
         .select();
         
       if (error) {
-        console.error('Error creating test notification:', error);
+        console.error('Error creating test notifications:', error);
         throw error;
       }
       
-      toast({
-        title: 'Success',
-        description: 'Test notification created',
-      });
-      
+      toast.success('Test notifications created');
       fetchNotifications();
     } catch (error: any) {
-      console.error('Error creating test notification:', error);
-      toast({
-        title: 'Error',
-        description: `Failed to create test notification: ${error.message}`,
-        variant: 'destructive'
-      });
+      console.error('Error creating test notifications:', error);
+      toast.error(`Failed to create test notifications: ${error.message}`);
     }
   };
 
@@ -354,6 +372,28 @@ const Notifications: React.FC = () => {
     return groups;
   };
 
+  // Helper function to get notification content based on type
+  const getNotificationContent = (notification: Notification) => {
+    if (notification.type === 'system') {
+      return notification.content;
+    }
+
+    const username = notification.user?.username || 'Someone';
+    
+    switch (notification.type) {
+      case 'like':
+        return `${username} liked your post`;
+      case 'comment':
+        return `${username} commented on your post`;
+      case 'share':
+        return `${username} shared your post`;
+      case 'follow':
+        return `${username} started following you`;
+      default:
+        return notification.content;
+    }
+  };
+
   return (
     <div className={`w-full ${isDesktop ? 'max-w-full' : ''} mx-auto py-8`}>
       <h1 className="text-2xl font-bold mb-6">Your Notifications</h1>
@@ -409,8 +449,15 @@ const Notifications: React.FC = () => {
                 <div className="py-8 text-center">
                   <p className="text-muted-foreground">You don't have any notifications yet.</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Try creating a test notification with the button above.
+                    New notifications will appear here when someone likes, comments on, or shares your posts.
                   </p>
+                  <Button
+                    onClick={createTestNotification}
+                    className="mt-4"
+                    variant="outline"
+                  >
+                    Create Test Notifications
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -441,7 +488,7 @@ const Notifications: React.FC = () => {
                                     alt={notification.user.username || 'User'} 
                                   />
                                   <AvatarFallback>
-                                    {getNotificationIcon(notification.type)}
+                                    {notification.user.username?.substring(0, 2).toUpperCase() || 'U'}
                                   </AvatarFallback>
                                 </Avatar>
                               ) : (
@@ -452,12 +499,11 @@ const Notifications: React.FC = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
-                                {notification.user ? (
-                                  <span className="font-medium">
-                                    {notification.user.username || 'Someone'}
-                                  </span>
-                                ) : 'System'}{' '}
-                                {notification.content}
+                                {notification.type === 'system' ? (
+                                  <>System: {notification.content}</>
+                                ) : (
+                                  getNotificationContent(notification)
+                                )}
                               </p>
                               <p className="text-xs text-muted-foreground mt-1">
                                 {formatDate(notification.created_at)}
