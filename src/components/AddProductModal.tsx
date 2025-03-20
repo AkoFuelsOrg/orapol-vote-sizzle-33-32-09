@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { Switch } from '@/components/ui/switch';
 import { ImagePlus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface AddProductModalProps {
   marketplaceId: string;
@@ -47,6 +48,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -63,6 +65,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
     if (!file) return;
     
     setImageFile(file);
+    setUploadError(null);
     
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -74,6 +77,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
   const onSubmit = async (values: ProductFormValues) => {
     try {
       setIsSubmitting(true);
+      setUploadError(null);
       console.log("Form values before submission:", values);
       
       let imageUrl = null;
@@ -83,13 +87,14 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `marketplace_products/${fileName}`;
         
-        console.log("Uploading image:", fileName);
+        console.log("Uploading image to bucket 'public':", fileName);
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('public')
           .upload(filePath, imageFile);
           
         if (uploadError) {
           console.error("Image upload error:", uploadError);
+          setUploadError(`Image upload failed: ${uploadError.message}`);
           throw new Error(`Image upload failed: ${uploadError.message}`);
         }
         
@@ -134,6 +139,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
       form.reset();
       setImageFile(null);
       setImagePreview(null);
+      setUploadError(null);
       onProductAdded();
       onClose();
     } catch (error) {
@@ -241,6 +247,13 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
               )}
             />
             
+            {uploadError && (
+              <Alert variant="destructive">
+                <AlertTitle>Upload Error</AlertTitle>
+                <AlertDescription>{uploadError}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="image">Product Image</Label>
               <div className="border rounded-md p-4">
@@ -256,6 +269,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
                       onClick={() => {
                         setImageFile(null);
                         setImagePreview(null);
+                        setUploadError(null);
                       }}
                       className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 text-xs"
                     >

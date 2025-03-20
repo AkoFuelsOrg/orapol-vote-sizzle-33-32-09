@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { ImagePlus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Product } from './MarketplaceProducts';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface EditProductModalProps {
   product: Product;
@@ -49,6 +50,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(product.image_url);
   const [keepExistingImage, setKeepExistingImage] = useState(true);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
@@ -79,6 +81,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
     
     setImageFile(file);
     setKeepExistingImage(false);
+    setUploadError(null);
     
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -90,6 +93,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
   const onSubmit = async (values: ProductFormValues) => {
     try {
       setIsSubmitting(true);
+      setUploadError(null);
       console.log("Form values before submission:", values);
       
       let imageUrl = keepExistingImage ? product.image_url : null;
@@ -99,13 +103,14 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `marketplace_products/${fileName}`;
         
-        console.log("Uploading image:", fileName);
+        console.log("Uploading image to bucket 'public':", fileName);
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('public')
           .upload(filePath, imageFile);
           
         if (uploadError) {
           console.error("Image upload error:", uploadError);
+          setUploadError(`Image upload failed: ${uploadError.message}`);
           throw new Error(`Image upload failed: ${uploadError.message}`);
         }
         
@@ -255,6 +260,13 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
               )}
             />
             
+            {uploadError && (
+              <Alert variant="destructive">
+                <AlertTitle>Upload Error</AlertTitle>
+                <AlertDescription>{uploadError}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="image">Product Image</Label>
               <div className="border rounded-md p-4">
@@ -271,6 +283,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
                         setImageFile(null);
                         setImagePreview(null);
                         setKeepExistingImage(false);
+                        setUploadError(null);
                       }}
                       className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 text-xs"
                     >
