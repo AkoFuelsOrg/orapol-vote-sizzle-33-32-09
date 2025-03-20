@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -91,7 +90,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg w-full mx-auto shadow-sm min-h-[70vh]">
       <div className="flex flex-col md:flex-row h-full">
         {post.image && (
-          <div className="md:w-3/5 h-full">
+          <div className="md:w-3/5 min-h-[70vh]">
             <div 
               className="relative w-full h-full"
               onClick={(e) => {
@@ -141,7 +140,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
           </div>
         )}
         
-        <div className={`${post.image ? 'md:w-2/5' : 'w-full'} flex flex-col h-full`}>
+        <div className={`${post.image ? 'md:w-2/5' : 'w-full'} flex flex-col min-h-[70vh]`}>
           {!post.image && (
             <div className="px-5 py-4 flex items-center justify-between border-b">
               <Link 
