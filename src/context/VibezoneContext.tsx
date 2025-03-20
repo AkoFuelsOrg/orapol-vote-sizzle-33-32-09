@@ -52,11 +52,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Check if author exists and has the expected properties
         if (video.author && typeof video.author === 'object') {
           author = {
-            id: video.author.id || '',
-            name: video.author.username || 'Unknown User',
-            avatar: video.author.avatar_url || '',
-            username: video.author.username || 'Unknown User',
-            avatar_url: video.author.avatar_url || ''
+            id: video.author?.id || '',
+            name: video.author?.username || 'Unknown User',
+            avatar: video.author?.avatar_url || '',
+            username: video.author?.username || 'Unknown User',
+            avatar_url: video.author?.avatar_url || ''
           };
         }
         
@@ -99,11 +99,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Check if author exists and has the expected properties
       if (data.author && typeof data.author === 'object') {
         author = {
-          id: data.author.id || '',
-          name: data.author.username || 'Unknown User',
-          avatar: data.author.avatar_url || '',
-          username: data.author.username || 'Unknown User',
-          avatar_url: data.author.avatar_url || ''
+          id: data.author?.id || '',
+          name: data.author?.username || 'Unknown User',
+          avatar: data.author?.avatar_url || '',
+          username: data.author?.username || 'Unknown User',
+          avatar_url: data.author?.avatar_url || ''
         };
       }
       
@@ -147,11 +147,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Check if author exists and has the expected properties
         if (comment.author && typeof comment.author === 'object') {
           author = {
-            id: comment.author.id || '',
-            name: comment.author.username || 'Unknown User',
-            avatar: comment.author.avatar_url || '',
-            username: comment.author.username || 'Unknown User',
-            avatar_url: comment.author.avatar_url || ''
+            id: comment.author?.id || '',
+            name: comment.author?.username || 'Unknown User',
+            avatar: comment.author?.avatar_url || '',
+            username: comment.author?.username || 'Unknown User',
+            avatar_url: comment.author?.avatar_url || ''
           };
         }
         
@@ -203,11 +203,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Check if author exists and has the expected properties
       if (data.author && typeof data.author === 'object') {
         author = {
-          id: data.author.id || '',
-          name: data.author.username || 'Unknown User',
-          avatar: data.author.avatar_url || '',
-          username: data.author.username || 'Unknown User',
-          avatar_url: data.author.avatar_url || ''
+          id: data.author?.id || '',
+          name: data.author?.username || 'Unknown User',
+          avatar: data.author?.avatar_url || '',
+          username: data.author?.username || 'Unknown User',
+          avatar_url: data.author?.avatar_url || ''
         };
       }
       
