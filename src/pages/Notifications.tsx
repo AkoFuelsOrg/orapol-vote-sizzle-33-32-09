@@ -5,14 +5,15 @@ import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, MessageSquare, ThumbsUp, UserPlus } from 'lucide-react';
+import { MessageSquare, ThumbsUp, UserPlus, Share2, Users, ShoppingBag, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Separator } from '@/components/ui/separator';
 
 interface Notification {
   id: string;
-  type: 'follow' | 'comment' | 'vote' | 'system';
+  type: 'follow' | 'comment' | 'vote' | 'like' | 'share' | 'message' | 'post' | 'group' | 'marketplace' | 'system';
   content: string;
   is_read: boolean;
   created_at: string;
@@ -50,6 +51,11 @@ const Notifications: React.FC = () => {
           },
           (payload) => {
             fetchNotifications();
+            // Show a toast for new notifications
+            toast({
+              title: 'New Notification',
+              description: payload.new.content,
+            });
           }
         )
         .subscribe();
@@ -95,7 +101,7 @@ const Notifications: React.FC = () => {
           
           return {
             ...notification,
-            type: notification.type as 'follow' | 'comment' | 'vote' | 'system',
+            type: notification.type as Notification['type'],
             user: userData
           } as Notification;
         })
@@ -168,9 +174,21 @@ const Notifications: React.FC = () => {
       case 'comment':
         return <MessageSquare className="h-5 w-5 text-green-500" />;
       case 'vote':
-        return <ThumbsUp className="h-5 w-5 text-orange-500" />;
+        return <ThumbsUp className="h-5 w-5 text-purple-500" />;
+      case 'like':
+        return <Heart className="h-5 w-5 text-red-500" />;
+      case 'share':
+        return <Share2 className="h-5 w-5 text-yellow-500" />;
+      case 'message':
+        return <MessageSquare className="h-5 w-5 text-indigo-500" />;
+      case 'post':
+        return <MoreHorizontal className="h-5 w-5 text-gray-500" />;
+      case 'group':
+        return <Users className="h-5 w-5 text-teal-500" />;
+      case 'marketplace':
+        return <ShoppingBag className="h-5 w-5 text-amber-500" />;
       default:
-        return <User className="h-5 w-5 text-gray-500" />;
+        return <MoreHorizontal className="h-5 w-5 text-gray-500" />;
     }
   };
 
@@ -209,31 +227,57 @@ const Notifications: React.FC = () => {
     }).format(date);
   };
 
-  const getNotificationContent = (notification: Notification) => {
-    const username = notification.user?.username || 'Someone';
+  const getNotificationLink = (notification: Notification) => {
+    if (!notification.related_item_id) return '#';
     
-    switch (notification.type) {
+    switch (notification.related_item_type) {
+      case 'post':
+        return `/post/${notification.related_item_id}`;
       case 'follow':
-        return `${username} started following you`;
-      case 'comment':
-        return `${username} commented on your poll`;
-      case 'vote':
-        return `${username} voted on your poll`;
+        return notification.related_user_id ? `/user/${notification.related_user_id}` : '#';
+      case 'message':
+        return notification.related_user_id ? `/messages/${notification.related_user_id}` : '/messages';
+      case 'group':
+        return `/group/${notification.related_item_id}`;
+      case 'marketplace':
+        return `/marketplace/${notification.related_item_id}`;
       default:
-        return notification.content;
+        // For other types like comments, likes, shares that are related to posts
+        return notification.related_item_id ? `/post/${notification.related_item_id}` : '#';
     }
   };
 
-  const getNotificationLink = (notification: Notification) => {
-    switch (notification.type) {
-      case 'follow':
-        return notification.related_user_id ? `/user/${notification.related_user_id}` : '#';
-      case 'comment':
-      case 'vote':
-        return notification.related_item_id ? `/poll/${notification.related_item_id}` : '#';
-      default:
-        return '#';
-    }
+  const groupNotificationsByDate = () => {
+    const groups: { [key: string]: Notification[] } = {};
+    
+    notifications.forEach(notification => {
+      const date = new Date(notification.created_at);
+      let groupKey: string;
+      
+      const now = new Date();
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const isToday = date.setHours(0, 0, 0, 0) === now.setHours(0, 0, 0, 0);
+      const isYesterday = date.setHours(0, 0, 0, 0) === yesterday.setHours(0, 0, 0, 0);
+      
+      if (isToday) {
+        groupKey = 'Today';
+      } else if (isYesterday) {
+        groupKey = 'Yesterday';
+      } else {
+        // Format date as "Month Day" (e.g., "Mar 15")
+        groupKey = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
+      }
+      
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      
+      groups[groupKey].push(notification);
+    });
+    
+    return groups;
   };
 
   return (
@@ -265,46 +309,58 @@ const Notifications: React.FC = () => {
               <p className="text-muted-foreground">You don't have any notifications yet.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {notifications.map((notification) => (
-                <Link
-                  key={notification.id}
-                  to={getNotificationLink(notification)}
-                  onClick={() => !notification.is_read && markAsRead(notification.id)}
-                  className={`block p-3 rounded-lg transition-colors ${
-                    notification.is_read 
-                      ? 'bg-secondary/30 hover:bg-secondary/50' 
-                      : 'bg-secondary hover:bg-secondary/80 border-l-4 border-primary'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      {notification.user ? (
-                        <Avatar>
-                          <AvatarImage 
-                            src={notification.user.avatar_url || `https://i.pravatar.cc/150?u=${notification.related_user_id}`} 
-                            alt={notification.user.username || 'User'} 
-                          />
-                          <AvatarFallback>
-                            {getNotificationIcon(notification.type)}
-                          </AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
-                        {getNotificationContent(notification)}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatDate(notification.created_at)}
-                      </p>
-                    </div>
+            <div className="space-y-6">
+              {Object.entries(groupNotificationsByDate()).map(([date, dateNotifications]) => (
+                <div key={date} className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-muted-foreground">{date}</span>
+                    <Separator className="flex-1" />
                   </div>
-                </Link>
+                  
+                  {dateNotifications.map((notification) => (
+                    <Link
+                      key={notification.id}
+                      to={getNotificationLink(notification)}
+                      onClick={() => !notification.is_read && markAsRead(notification.id)}
+                      className={`block p-3 rounded-lg transition-colors ${
+                        notification.is_read 
+                          ? 'bg-secondary/30 hover:bg-secondary/50' 
+                          : 'bg-secondary hover:bg-secondary/80 border-l-4 border-primary'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-1">
+                          {notification.user ? (
+                            <Avatar>
+                              <AvatarImage 
+                                src={notification.user.avatar_url || `https://i.pravatar.cc/150?u=${notification.related_user_id}`} 
+                                alt={notification.user.username || 'User'} 
+                              />
+                              <AvatarFallback>
+                                {getNotificationIcon(notification.type)}
+                              </AvatarFallback>
+                            </Avatar>
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center">
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
+                            <span className="font-medium">
+                              {notification.user?.username || 'Someone'}
+                            </span>{' '}
+                            {notification.content}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDate(notification.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               ))}
             </div>
           )}
