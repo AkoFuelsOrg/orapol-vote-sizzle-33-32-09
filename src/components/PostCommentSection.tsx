@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import PostComment from './PostComment';
 
@@ -56,7 +56,8 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       const { count, error: countError } = await supabase
         .from('post_comments')
         .select('id', { count: 'exact', head: false })
-        .eq('post_id', postId);
+        .eq('post_id', postId)
+        .is('parent_id', null); // Only count top-level comments
       
       if (countError) throw countError;
       
@@ -71,14 +72,23 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
           content, 
           created_at, 
           likes, 
+          user_id,
           profiles:user_id (id, username, avatar_url)
         `)
         .eq('post_id', postId)
+        .is('parent_id', null) // Only get top-level comments
         .order('created_at', { ascending: false })
         .limit(8);
       
       if (error) throw error;
       
+      if (!data) {
+        setComments([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Get reply counts for each comment
       const commentsWithCounts = await Promise.all(data.map(async (comment) => {
         const { count, error: countError } = await supabase
           .from('post_comments')
@@ -96,6 +106,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       let formattedComments: CommentType[] = [];
       
       if (user) {
+        // Check which comments the user has liked
         const { data: likes, error: likesError } = await supabase
           .from('post_comment_likes')
           .select('comment_id')
@@ -215,6 +226,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     
     try {
       if (currentlyLiked) {
+        // Remove like
         const { error } = await supabase
           .from('post_comment_likes')
           .delete()
@@ -223,6 +235,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         
         if (error) throw error;
         
+        // Update comment like count
         const { error: updateError } = await supabase
           .from('post_comments')
           .update({ likes: Math.max(0, (comments.find(c => c.id === commentId)?.likes || 1) - 1) })
@@ -230,6 +243,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
           
         if (updateError) throw updateError;
       } else {
+        // Add like
         const { error } = await supabase
           .from('post_comment_likes')
           .insert({
@@ -239,6 +253,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         
         if (error) throw error;
         
+        // Update comment like count
         const { error: updateError } = await supabase
           .from('post_comments')
           .update({ likes: (comments.find(c => c.id === commentId)?.likes || 0) + 1 })
@@ -247,6 +262,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         if (updateError) throw updateError;
       }
       
+      // Update local state
       setComments(prevComments => 
         prevComments.map(comment => 
           comment.id === commentId

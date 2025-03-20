@@ -4,9 +4,6 @@ import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { useSupabase } from '../context/SupabaseContext';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface Comment {
   id: string;
