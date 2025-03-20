@@ -89,11 +89,13 @@ const Favourites = () => {
   };
 
   const fetchPostDetails = async (postIds: string[], type: 'liked' | 'commented' | 'shared') => {
+    // Modified query to properly join with profiles table
     const { data, error } = await supabase
       .from('posts')
       .select(`
         *,
-        profiles!posts_user_id_fkey(id, username, avatar_url),
+        user_id,
+        profiles(id, username, avatar_url),
         likeCount: post_likes(count),
         commentCount: post_comments(count)
       `)
@@ -111,8 +113,10 @@ const Favourites = () => {
             .select('id')
             .eq('post_id', post.id)
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
 
+          const userProfile = post.profiles;
+          
           // Format the post object
           return {
             id: post.id,
@@ -120,9 +124,9 @@ const Favourites = () => {
             image: post.image,
             createdAt: post.created_at,
             author: {
-              id: post.profiles.id,
-              name: post.profiles.username,
-              avatar: post.profiles.avatar_url,
+              id: userProfile?.id || post.user_id,
+              name: userProfile?.username || 'Unknown User',
+              avatar: userProfile?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
             },
             likeCount: post.likeCount[0]?.count || 0,
             commentCount: post.commentCount[0]?.count || 0,
