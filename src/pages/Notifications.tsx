@@ -63,10 +63,14 @@ const Notifications: React.FC = () => {
         )
         .subscribe();
 
-      // Log subscription status - Fix for the error
-      channel.on('status', (status) => {
-        console.log('Realtime subscription status:', status);
-      });
+      // Fix for the error - channel.on requires 3 arguments: event name, event filter object, and callback
+      channel.on(
+        'system', 
+        { event: 'status' }, 
+        (status) => {
+          console.log('Realtime subscription status:', status);
+        }
+      );
       
       return () => {
         supabase.removeChannel(channel);
