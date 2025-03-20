@@ -101,104 +101,110 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
         </button>
       </div>
       
-      {/* Image */}
-      {post.image && (
-        <>
-          <div 
-            className="relative"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsImageExpanded(true);
-            }}
-          >
-            <img 
-              src={post.image} 
-              alt="Post" 
-              className="w-full h-auto object-cover"
-            />
+      {/* Main content - restructured to have image on left and content on right */}
+      <div className="flex flex-col md:flex-row">
+        {/* Image on the left */}
+        {post.image && (
+          <div className="md:w-1/2 relative">
+            <div 
+              className="aspect-square w-full overflow-hidden bg-gray-100"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsImageExpanded(true);
+              }}
+            >
+              <img 
+                src={post.image} 
+                alt="Post" 
+                className="w-full h-full object-cover cursor-pointer"
+              />
+            </div>
+            
+            {isImageExpanded && (
+              <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
+                <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+                  <DialogTitle className="sr-only">Post Image</DialogTitle>
+                  <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+                    <X size={24} />
+                  </DialogClose>
+                  <div className="relative w-full overflow-hidden rounded-lg p-1">
+                    <img 
+                      src={post.image} 
+                      alt="Post" 
+                      className="w-full h-auto max-h-[80vh] object-contain"
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        )}
+        
+        {/* Content on the right */}
+        <div className={`${post.image ? 'md:w-1/2' : 'w-full'} flex flex-col`}>
+          {/* Caption */}
+          <div className="px-4 py-3">
+            <div className="flex space-x-1">
+              <p className="text-sm">
+                <span className="font-semibold">{post.author.name}</span>{" "}
+                <span className="whitespace-pre-line break-words">
+                  {post.content}
+                </span>
+              </p>
+            </div>
           </div>
           
-          {isImageExpanded && (
-            <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
-              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
-                <DialogTitle className="sr-only">Post Image</DialogTitle>
-                <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
-                  <X size={24} />
-                </DialogClose>
-                <div className="relative w-full overflow-hidden rounded-lg p-1">
-                  <img 
-                    src={post.image} 
-                    alt="Post" 
-                    className="w-full h-auto max-h-[80vh] object-contain"
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
+          {/* Action buttons */}
+          <div className="px-4 pt-2 pb-1 flex justify-between mt-auto">
+            <div className="flex space-x-4">
+              <button 
+                className="focus:outline-none"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleLike();
+                }}
+              >
+                <Heart size={24} className={`${hasLiked ? 'fill-red-500 text-red-500' : 'text-black'}`} />
+              </button>
+              <Link to={`/post/${post.id}`} className="focus:outline-none">
+                <MessageCircle size={24} className="text-black" />
+              </Link>
+              <button 
+                className="focus:outline-none"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(window.location.origin + `/post/${post.id}`);
+                  toast.success("Link copied to clipboard");
+                }}
+              >
+                <Share2 size={24} className="text-black" />
+              </button>
+            </div>
+            <button className="focus:outline-none">
+              <Bookmark size={24} className="text-black" />
+            </button>
+          </div>
+          
+          {/* Likes count */}
+          <div className="px-4 pt-1 pb-1">
+            <p className="font-semibold text-sm">{likeCount} likes</p>
+          </div>
+          
+          {/* Comments link */}
+          {post.commentCount > 0 && (
+            <Link to={`/post/${post.id}`} className="block px-4 pb-1">
+              <p className="text-sm text-gray-500">View all {post.commentCount} comments</p>
+            </Link>
           )}
-        </>
-      )}
-      
-      {/* Action buttons */}
-      <div className="px-4 pt-3 pb-1 flex justify-between">
-        <div className="flex space-x-4">
-          <button 
-            className="focus:outline-none"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleLike();
-            }}
-          >
-            <Heart size={24} className={`${hasLiked ? 'fill-red-500 text-red-500' : 'text-black'}`} />
-          </button>
-          <Link to={`/post/${post.id}`} className="focus:outline-none">
-            <MessageCircle size={24} className="text-black" />
-          </Link>
-          <button 
-            className="focus:outline-none"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              navigator.clipboard.writeText(window.location.origin + `/post/${post.id}`);
-              toast.success("Link copied to clipboard");
-            }}
-          >
-            <Share2 size={24} className="text-black" />
-          </button>
+          
+          {/* Date */}
+          <div className="px-4 py-2 mt-auto">
+            <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
+          </div>
         </div>
-        <button className="focus:outline-none">
-          <Bookmark size={24} className="text-black" />
-        </button>
-      </div>
-      
-      {/* Likes count */}
-      <div className="px-4 pt-1 pb-1">
-        <p className="font-semibold text-sm">{likeCount} likes</p>
-      </div>
-      
-      {/* Caption */}
-      <Link to={`/post/${post.id}`} className="block px-4 pb-1">
-        <div className="flex space-x-1">
-          <p className="text-sm">
-            <span className="font-semibold">{post.author.name}</span>{" "}
-            <span className="whitespace-pre-line break-words">
-              {post.content}
-            </span>
-          </p>
-        </div>
-      </Link>
-      
-      {/* Comments link */}
-      {post.commentCount > 0 && (
-        <Link to={`/post/${post.id}`} className="block px-4 pb-1">
-          <p className="text-sm text-gray-500">View all {post.commentCount} comments</p>
-        </Link>
-      )}
-      
-      {/* Date */}
-      <div className="px-4 py-2">
-        <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
       </div>
     </div>
   );
