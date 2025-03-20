@@ -453,5 +453,15 @@ const MarketplaceProfile = () => {
         </TabsContent>
       </Tabs>
       
+      {isEditModalOpen && marketplace && (
+        <EditMarketplaceModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          marketplace={marketplace}
+        />
+      )}
+    </div>
+  );
+};
 
-
+export default MarketplaceProfile;
