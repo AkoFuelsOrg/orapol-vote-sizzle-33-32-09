@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -54,19 +53,17 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     try {
       setLoading(true);
       
-      // Get total comment count first
       const { count, error: countError } = await supabase
         .from('post_comments')
         .select('id', { count: 'exact', head: false })
         .eq('post_id', postId)
-        .is('parent_id', null); // Only count top-level comments
+        .is('parent_id', null);
       
       if (countError) throw countError;
       
       setTotalComments(count || 0);
       updateCommentCount(count || 0);
       
-      // Get top level comments
       const { data: commentsData, error: commentsError } = await supabase
         .from('post_comments')
         .select(`
@@ -79,7 +76,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
           post_id
         `)
         .eq('post_id', postId)
-        .is('parent_id', null) // Only get top-level comments
+        .is('parent_id', null)
         .order('created_at', { ascending: false })
         .limit(8);
       
@@ -91,7 +88,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         return;
       }
       
-      // Fetch profiles for the comment authors
       const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -100,13 +96,11 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       
       if (profilesError) throw profilesError;
       
-      // Create a map of profiles by user ID for easy lookup
       const profileMap = new Map();
       profilesData?.forEach(profile => {
         profileMap.set(profile.id, profile);
       });
       
-      // Get reply counts for each comment
       const commentsWithCounts = await Promise.all(commentsData.map(async (comment) => {
         const { count, error: countError } = await supabase
           .from('post_comments')
@@ -124,7 +118,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       let formattedComments: CommentType[] = [];
       
       if (user) {
-        // Check which comments the user has liked
         const { data: likes, error: likesError } = await supabase
           .from('post_comment_likes')
           .select('comment_id')
@@ -204,7 +197,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       
       if (commentError) throw commentError;
       
-      // Update post comment count
       const newCommentCount = totalComments + 1;
       setTotalComments(newCommentCount);
       updateCommentCount(newCommentCount);
@@ -250,7 +242,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     
     try {
       if (currentlyLiked) {
-        // Remove like
         const { error } = await supabase
           .from('post_comment_likes')
           .delete()
@@ -259,7 +250,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         
         if (error) throw error;
         
-        // Update comment like count
         const { error: updateError } = await supabase
           .from('post_comments')
           .update({ likes: Math.max(0, (comments.find(c => c.id === commentId)?.likes || 1) - 1) })
@@ -267,7 +257,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
           
         if (updateError) throw updateError;
       } else {
-        // Add like
         const { error } = await supabase
           .from('post_comment_likes')
           .insert({
@@ -277,7 +266,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         
         if (error) throw error;
         
-        // Update comment like count
         const { error: updateError } = await supabase
           .from('post_comments')
           .update({ likes: (comments.find(c => c.id === commentId)?.likes || 0) + 1 })
@@ -286,7 +274,6 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         if (updateError) throw updateError;
       }
       
-      // Update local state
       setComments(prevComments => 
         prevComments.map(comment => 
           comment.id === commentId
@@ -328,6 +315,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
                     onLike={handleLikeComment}
                     showReplies={true}
                     replyCount={comment.reply_count}
+                    postId={postId}
                   />
                 ))}
                 

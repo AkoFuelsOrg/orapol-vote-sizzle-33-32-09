@@ -1,9 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
+import { useSupabase } from '../context/SupabaseContext';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Comment {
   id: string;
@@ -23,14 +28,21 @@ interface PostCommentProps {
   onLike: (commentId: string, isLiked: boolean) => void;
   showReplies?: boolean;
   replyCount?: number;
+  postId?: string;
 }
 
 const PostComment: React.FC<PostCommentProps> = ({ 
   comment, 
   onLike, 
   showReplies = false,
-  replyCount = 0
+  replyCount = 0,
+  postId
 }) => {
+  const { user, profile } = useSupabase();
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   const formatTimeAgo = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -54,6 +66,48 @@ const PostComment: React.FC<PostCommentProps> = ({
       return `${Math.floor(diffDays / 30)} m`;
     } catch (error) {
       return '';
+    }
+  };
+
+  const handleSubmitReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error('Please sign in to reply');
+      return;
+    }
+    
+    if (!replyContent.trim() || !postId) {
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      
+      const { data: replyData, error: replyError } = await supabase
+        .from('post_comments')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          content: replyContent.trim(),
+          parent_id: comment.id
+        })
+        .select();
+      
+      if (replyError) throw replyError;
+      
+      toast.success('Reply added');
+      setReplyContent('');
+      setShowReplyForm(false);
+      
+      // Refresh the page to show the new reply
+      window.location.reload();
+      
+    } catch (error: any) {
+      console.error('Error submitting reply:', error);
+      toast.error(error.message || 'Failed to add reply');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -81,7 +135,12 @@ const PostComment: React.FC<PostCommentProps> = ({
             <div className="flex items-center mt-1 space-x-3 text-xs text-gray-500">
               <span>{formatTimeAgo(comment.created_at)}</span>
               <span>{comment.likes > 0 ? `${comment.likes} likes` : ''}</span>
-              <button className="font-semibold">Reply</button>
+              <button 
+                className="font-semibold"
+                onClick={() => setShowReplyForm(!showReplyForm)}
+              >
+                Reply
+              </button>
               {replyCount > 0 && showReplies && (
                 <button className="text-gray-400 flex items-center">
                   <span className="inline-block w-5 h-px bg-gray-300 mr-2"></span>
@@ -89,6 +148,29 @@ const PostComment: React.FC<PostCommentProps> = ({
                 </button>
               )}
             </div>
+            
+            {showReplyForm && user && (
+              <form onSubmit={handleSubmitReply} className="mt-2 flex items-center">
+                <Avatar className="h-6 w-6 mr-2">
+                  <AvatarImage src={profile?.avatar_url || ''} />
+                  <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
+                </Avatar>
+                <Input
+                  className="flex-1 h-8 text-xs"
+                  placeholder="Add a reply..."
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                />
+                <Button
+                  type="submit"
+                  disabled={submitting || !replyContent.trim()}
+                  variant="ghost"
+                  className="text-blue-500 ml-1 text-xs h-8 px-2"
+                >
+                  Post
+                </Button>
+              </form>
+            )}
           </div>
           
           <button 
