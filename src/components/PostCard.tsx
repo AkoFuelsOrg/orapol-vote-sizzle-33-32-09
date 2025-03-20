@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -151,15 +152,21 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     
     if (sharedSuccessfully && user) {
       try {
-        const { data: existingShare } = await supabase
+        // First check if this post was already shared by the user to avoid duplicates
+        const { data: existingShare, error: checkError } = await supabase
           .from('post_shares')
           .select('id')
           .eq('post_id', post.id)
           .eq('user_id', user.id)
           .maybeSingle();
           
+        if (checkError) {
+          console.error('Error checking existing share:', checkError);
+        }
+          
         if (!existingShare) {
-          await supabase
+          // Only insert if the user hasn't shared this post before
+          const { error: insertError } = await supabase
             .from('post_shares')
             .insert({
               post_id: post.id,
@@ -167,8 +174,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
               platform: platform || 'other'
             });
             
-          if (onPostUpdate) {
-            onPostUpdate();
+          if (insertError) {
+            console.error('Error recording share:', insertError);
+          } else {
+            // Call onPostUpdate to refresh the list only if there's a new share
+            if (onPostUpdate) {
+              onPostUpdate();
+            }
           }
         }
       } catch (error) {
