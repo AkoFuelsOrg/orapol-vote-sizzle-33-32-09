@@ -63,8 +63,8 @@ const Notifications: React.FC = () => {
         )
         .subscribe();
 
-      // Log subscription status
-      channel.subscription.on('status', (status) => {
+      // Log subscription status - Fix for the error
+      channel.on('status', (status) => {
         console.log('Realtime subscription status:', status);
       });
       
