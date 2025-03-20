@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { VideoComment } from '@/lib/types';
@@ -22,16 +22,19 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const isInitialMount = useRef(true);
+  const commentsLoaded = useRef(false);
 
-  // Load comments separately from the video
+  // Load comments only once on initial mount
   useEffect(() => {
     const loadComments = async () => {
-      if (!videoId) return;
+      if (!videoId || commentsLoaded.current) return;
       
       try {
         setLoading(true);
         const commentsData = await fetchVideoComments(videoId);
         setComments(commentsData);
+        commentsLoaded.current = true;
       } catch (error) {
         console.error('Error loading comments:', error);
         toast.error('Failed to load comments');
@@ -40,7 +43,10 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       }
     };
     
-    loadComments();
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      loadComments();
+    }
   }, [videoId, fetchVideoComments]);
 
   const handleAddComment = async (e: React.FormEvent) => {
@@ -81,6 +87,58 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     </div>
   );
 
+  // Render the content based on loading state
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((_, index) => (
+            <div key={index}>{renderCommentSkeleton()}</div>
+          ))}
+        </div>
+      );
+    }
+
+    if (comments.length === 0) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          No comments yet. Be the first to comment!
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {comments.map((comment) => (
+          <div key={comment.id} className="flex gap-3 mb-4">
+            <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+              <img 
+                src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
+                alt={comment.author?.name || comment.author?.username || 'User'} 
+                className="rounded-full"
+              />
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
+                <span className="text-xs text-gray-500">
+                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                </span>
+              </div>
+              <p className="text-sm mt-1 break-words">{comment.content}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <button className="text-xs text-gray-500 flex items-center">
+                  <ThumbsUp className="h-3 w-3 mr-1" />
+                  {comment.likes > 0 && comment.likes}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div>
       <h3 className="font-semibold text-lg mb-4 flex items-center">
@@ -94,8 +152,8 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         <form onSubmit={handleAddComment} className="mb-6 flex items-start gap-3">
           <Avatar className="h-8 w-8 mt-1">
             <img 
-              src={user.user_metadata?.avatar_url || "https://via.placeholder.com/32"} 
-              alt={user.user_metadata?.username || 'You'} 
+              src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://via.placeholder.com/32"} 
+              alt={profile?.username || user.user_metadata?.username || 'You'} 
               className="rounded-full"
             />
           </Avatar>
@@ -105,12 +163,13 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Add a comment..."
               className="w-full"
+              disabled={loading} 
             />
             <div className="flex justify-end mt-2">
               <Button 
                 type="submit" 
                 size="sm"
-                disabled={!commentText.trim() || submitting}
+                disabled={!commentText.trim() || submitting || loading}
                 className="bg-red-500 hover:bg-red-600 text-white"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
@@ -125,52 +184,9 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         </div>
       )}
       
-      {/* Comments List */}
+      {/* Comments List - Using a stable rendering approach */}
       <div className="space-y-4">
-        {loading ? (
-          <>
-            {[1, 2, 3, 4].map((_, index) => (
-              <div key={index}>{renderCommentSkeleton()}</div>
-            ))}
-          </>
-        ) : (
-          <>
-            {comments.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">
-                No comments yet. Be the first to comment!
-              </div>
-            ) : (
-              <>
-                {comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3 mb-4">
-                    <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
-                      <img 
-                        src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
-                        alt={comment.author?.name || comment.author?.username || 'User'} 
-                        className="rounded-full"
-                      />
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-sm mt-1 break-words">{comment.content}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <button className="text-xs text-gray-500 flex items-center">
-                          <ThumbsUp className="h-3 w-3 mr-1" />
-                          {comment.likes > 0 && comment.likes}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-          </>
-        )}
+        {renderContent()}
       </div>
     </div>
   );
