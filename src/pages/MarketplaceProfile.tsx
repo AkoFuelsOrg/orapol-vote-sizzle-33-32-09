@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -136,7 +135,7 @@ const MarketplaceProfile = () => {
               name: profileData?.username || 'Unknown User',
               avatar: profileData?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.username || 'U')}`
             },
-            marketplaceId: id
+            marketplace_id: marketplace.id
           });
         }
         
@@ -210,7 +209,7 @@ const MarketplaceProfile = () => {
               name: profileData?.username || 'Unknown User',
               avatar: profileData?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.username || 'U')}`
             },
-            marketplaceId: id
+            marketplace_id: marketplace.id
           });
         }
         
@@ -399,7 +398,7 @@ const MarketplaceProfile = () => {
         </TabsList>
         
         <TabsContent value="feed" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
-          {isMember && <MarketplacePostInterface marketplaceId={id as string} />}
+          {isMember && <MarketplacePostInterface marketplaceId={marketplace.id} />}
           
           {polls.length === 0 && posts.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-xl mt-4 border border-gray-100">
@@ -422,7 +421,7 @@ const MarketplaceProfile = () => {
         </TabsContent>
         
         <TabsContent value="products" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
-          {id && <MarketplaceProducts marketplaceId={id} isAdmin={isAdmin} />}
+          {id && <MarketplaceProducts marketplaceId={marketplace.id} isAdmin={isAdmin} />}
         </TabsContent>
         
         <TabsContent value="members" className="pt-4 focus-visible:outline-none focus-visible:ring-0">

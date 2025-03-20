@@ -49,16 +49,21 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (error) throw error;
       
       // Transform the data to match our Video type
-      const transformedVideos = data.map(video => ({
-        ...video,
-        author: video.author ? {
-          id: video.author.id || '',
-          name: video.author.username || '',
-          avatar: video.author.avatar_url || '',
-          username: video.author.username || '',
-          avatar_url: video.author.avatar_url || ''
-        } : undefined
-      }));
+      const transformedVideos = data.map(video => {
+        // Safely access author properties with optional chaining
+        const author = video.author ? {
+          id: video.author.id,
+          name: video.author.username,
+          avatar: video.author.avatar_url,
+          username: video.author.username,
+          avatar_url: video.author.avatar_url
+        } : undefined;
+        
+        return {
+          ...video,
+          author
+        };
+      });
       
       return transformedVideos as Video[];
     } catch (error: any) {
@@ -91,16 +96,18 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
-      // Transform to match our Video type
+      // Transform to match our Video type (safely handling author data)
+      const author = data.author ? {
+        id: data.author.id,
+        name: data.author.username,
+        avatar: data.author.avatar_url,
+        username: data.author.username,
+        avatar_url: data.author.avatar_url
+      } : undefined;
+      
       const transformedVideo = {
         ...data,
-        author: data.author ? {
-          id: data.author.id || '',
-          name: data.author.username || '',
-          avatar: data.author.avatar_url || '',
-          username: data.author.username || '',
-          avatar_url: data.author.avatar_url || ''
-        } : undefined
+        author
       };
       
       return transformedVideo as Video;
@@ -135,16 +142,21 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (error) throw error;
       
       // Transform the data to match our VideoComment type
-      const transformedComments = data.map(comment => ({
-        ...comment,
-        author: comment.author ? {
-          id: comment.author.id || '',
-          name: comment.author.username || '',
-          avatar: comment.author.avatar_url || '',
-          username: comment.author.username || '',
-          avatar_url: comment.author.avatar_url || ''
-        } : undefined
-      }));
+      const transformedComments = data.map(comment => {
+        // Safely access author properties with optional chaining
+        const author = comment.author ? {
+          id: comment.author.id,
+          name: comment.author.username,
+          avatar: comment.author.avatar_url,
+          username: comment.author.username,
+          avatar_url: comment.author.avatar_url
+        } : undefined;
+        
+        return {
+          ...comment,
+          author
+        };
+      });
       
       return transformedComments as VideoComment[];
     } catch (error: any) {
@@ -186,16 +198,18 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
-      // Transform to match our VideoComment type
+      // Safely transform to match our VideoComment type
+      const author = data.author ? {
+        id: data.author.id,
+        name: data.author.username,
+        avatar: data.author.avatar_url,
+        username: data.author.username,
+        avatar_url: data.author.avatar_url
+      } : undefined;
+      
       const transformedComment = {
         ...data,
-        author: data.author ? {
-          id: data.author.id || '',
-          name: data.author.username || '',
-          avatar: data.author.avatar_url || '',
-          username: data.author.username || '',
-          avatar_url: data.author.avatar_url || ''
-        } : undefined
+        author
       };
       
       toast.success('Comment added successfully');
