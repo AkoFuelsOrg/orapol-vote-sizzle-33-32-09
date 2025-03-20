@@ -62,59 +62,6 @@ const Favourites = () => {
       }
     };
 
-    const fetchPostDetails = async (postIds: string[], type: 'liked' | 'commented' | 'shared') => {
-      const { data, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          author: profiles(id, username, avatar_url),
-          likeCount: post_likes(count),
-          commentCount: post_comments(count)
-        `)
-        .in('id', postIds)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        const postsWithLikedStatus = await Promise.all(
-          data.map(async (post) => {
-            // Check if the current user has liked this post
-            const { data: likeData } = await supabase
-              .from('post_likes')
-              .select('id')
-              .eq('post_id', post.id)
-              .eq('user_id', user.id)
-              .single();
-
-            // Format the post object
-            return {
-              id: post.id,
-              content: post.content,
-              image: post.image_url,
-              createdAt: post.created_at,
-              author: {
-                id: post.author.id,
-                name: post.author.username,
-                avatar: post.author.avatar_url,
-              },
-              likeCount: post.likeCount[0]?.count || 0,
-              commentCount: post.commentCount[0]?.count || 0,
-              userLiked: !!likeData,
-            };
-          })
-        );
-
-        if (type === 'liked') {
-          setLikedPosts(postsWithLikedStatus);
-        } else if (type === 'commented') {
-          setCommentedPosts(postsWithLikedStatus);
-        } else if (type === 'shared') {
-          setSharedPosts(postsWithLikedStatus);
-        }
-      }
-    };
-
     fetchFavouritePosts();
   }, [user]);
 
@@ -146,7 +93,7 @@ const Favourites = () => {
       .from('posts')
       .select(`
         *,
-        author: profiles(id, username, avatar_url),
+        profiles!posts_user_id_fkey(id, username, avatar_url),
         likeCount: post_likes(count),
         commentCount: post_comments(count)
       `)
@@ -170,12 +117,12 @@ const Favourites = () => {
           return {
             id: post.id,
             content: post.content,
-            image: post.image_url,
+            image: post.image,
             createdAt: post.created_at,
             author: {
-              id: post.author.id,
-              name: post.author.username,
-              avatar: post.author.avatar_url,
+              id: post.profiles.id,
+              name: post.profiles.username,
+              avatar: post.profiles.avatar_url,
             },
             likeCount: post.likeCount[0]?.count || 0,
             commentCount: post.commentCount[0]?.count || 0,

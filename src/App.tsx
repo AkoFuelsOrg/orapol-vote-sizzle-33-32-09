@@ -33,6 +33,7 @@ import Groups from "./pages/Groups";
 import GroupProfile from "./pages/GroupProfile";
 import Marketplaces from "./pages/Marketplaces";
 import MarketplaceProfile from "./pages/MarketplaceProfile";
+import Favourites from "./pages/Favourites";
 
 const queryClient = new QueryClient();
 
@@ -151,6 +152,14 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <Notifications />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/favourites"
+                        element={
+                          <ProtectedRoute>
+                            <Favourites />
                           </ProtectedRoute>
                         }
                       />
