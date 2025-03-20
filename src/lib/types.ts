@@ -51,6 +51,18 @@ export interface Comment {
   replyCount?: number; // Number of replies to this comment
 }
 
+export interface PostComment {
+  id: string;
+  postId: string;
+  author: User;
+  content: string;
+  createdAt: string;
+  likes: number;
+  parentId?: string; // For nested comments/replies
+  replyCount?: number; // Number of replies to this comment
+  userLiked?: boolean; // Whether the current user liked this comment
+}
+
 export interface Follow {
   id: string;
   follower_id: string;

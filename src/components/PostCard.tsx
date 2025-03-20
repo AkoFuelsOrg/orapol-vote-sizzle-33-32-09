@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -9,6 +10,7 @@ import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Card } from './ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
+import PostCommentSection from './PostCommentSection';
 
 interface PostCardProps {
   post: Post;
@@ -21,6 +23,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   const [isImageExpanded, setIsImageExpanded] = React.useState(false);
   const [hasLiked, setHasLiked] = React.useState(post.userLiked || false);
   const [likeCount, setLikeCount] = React.useState(post.likeCount);
+  const [commentCount, setCommentCount] = React.useState(post.commentCount);
+  const [showComments, setShowComments] = React.useState(false);
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -73,6 +77,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
       console.error('Error liking post:', error);
       toast.error(error.message || "Failed to like post");
     }
+  };
+
+  const updateCommentCount = (count: number) => {
+    setCommentCount(count);
+  };
+
+  const toggleComments = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowComments(!showComments);
   };
 
   return (
@@ -189,9 +203,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
               >
                 <Heart size={24} className={`${hasLiked ? 'fill-red-500 text-red-500' : 'text-black'}`} />
               </button>
-              <Link to={`/post/${post.id}`} className="focus:outline-none">
+              <button 
+                className="focus:outline-none"
+                onClick={toggleComments}
+              >
                 <MessageCircle size={24} className="text-black" />
-              </Link>
+              </button>
               <button 
                 className="focus:outline-none"
                 onClick={(e) => {
@@ -213,15 +230,27 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             <p className="font-semibold text-sm">{likeCount} likes</p>
           </div>
           
-          {post.commentCount > 0 && (
-            <Link to={`/post/${post.id}`} className="block px-5 pb-1">
-              <p className="text-sm text-gray-500">View all {post.commentCount} comments</p>
-            </Link>
+          {commentCount > 0 && !showComments && (
+            <button 
+              onClick={toggleComments}
+              className="block px-5 pb-1 text-left"
+            >
+              <p className="text-sm text-gray-500">View all {commentCount} comments</p>
+            </button>
           )}
           
-          <div className="px-5 py-3 mt-auto border-t">
-            <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
-          </div>
+          {!showComments && (
+            <div className="px-5 py-3 mt-auto border-t">
+              <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
+            </div>
+          )}
+          
+          {showComments && (
+            <PostCommentSection 
+              postId={post.id} 
+              updateCommentCount={updateCommentCount}
+            />
+          )}
         </div>
       </div>
     </Card>
