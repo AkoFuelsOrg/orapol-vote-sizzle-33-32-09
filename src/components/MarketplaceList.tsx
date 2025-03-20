@@ -11,6 +11,10 @@ import { Skeleton } from './ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import CreateMarketplaceModal from './CreateMarketplaceModal';
 
+interface MarketplaceListProps {
+  showCreateButton?: boolean;
+}
+
 const MarketplaceCard: React.FC<{ marketplace: Marketplace; isUserMember: boolean; onJoin: () => void }> = ({ 
   marketplace, 
   isUserMember, 
@@ -62,7 +66,7 @@ const MarketplaceCard: React.FC<{ marketplace: Marketplace; isUserMember: boolea
   );
 };
 
-const MarketplaceList: React.FC = () => {
+const MarketplaceList: React.FC<MarketplaceListProps> = ({ showCreateButton = true }) => {
   const { marketplaces, userMarketplaces, isLoading, fetchMarketplaces, fetchUserMarketplaces, joinMarketplace } = useMarketplace();
   const { user } = useSupabase();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -112,7 +116,7 @@ const MarketplaceList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Marketplaces</h2>
-        {user && (
+        {showCreateButton && user && (
           <Button onClick={() => setIsCreateModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Marketplace

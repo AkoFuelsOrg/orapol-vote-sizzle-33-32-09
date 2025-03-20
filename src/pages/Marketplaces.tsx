@@ -26,7 +26,7 @@ const Marketplaces: React.FC = () => {
         )}
       </div>
       
-      <MarketplaceList />
+      <MarketplaceList showCreateButton={false} />
       
       <CreateMarketplaceModal
         isOpen={isCreateModalOpen}
