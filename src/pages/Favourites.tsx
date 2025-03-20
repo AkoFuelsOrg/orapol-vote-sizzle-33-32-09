@@ -89,59 +89,67 @@ const Favourites = () => {
   };
 
   const fetchPostDetails = async (postIds: string[], type: 'liked' | 'commented' | 'shared') => {
-    // Modified query to properly join with profiles table
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        user_id,
-        profiles(id, username, avatar_url),
-        likeCount: post_likes(count),
-        commentCount: post_comments(count)
-      `)
-      .in('id', postIds)
-      .order('created_at', { ascending: false });
+    try {
+      // Modified query to use direct fetch pattern instead of relying on foreign key relationships
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          likeCount: post_likes(count),
+          commentCount: post_comments(count)
+        `)
+        .in('id', postIds)
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    if (data) {
-      const postsWithLikedStatus = await Promise.all(
-        data.map(async (post) => {
-          // Check if the current user has liked this post
-          const { data: likeData } = await supabase
-            .from('post_likes')
-            .select('id')
-            .eq('post_id', post.id)
-            .eq('user_id', user.id)
-            .maybeSingle();
+      if (data) {
+        // Fetch profile information separately to avoid relationship errors
+        const postsWithLikedStatus = await Promise.all(
+          data.map(async (post) => {
+            // Check if the current user has liked this post
+            const { data: likeData } = await supabase
+              .from('post_likes')
+              .select('id')
+              .eq('post_id', post.id)
+              .eq('user_id', user.id)
+              .maybeSingle();
+            
+            // Fetch the author's profile separately
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('id, username, avatar_url')
+              .eq('id', post.user_id)
+              .maybeSingle();
+            
+            // Format the post object
+            return {
+              id: post.id,
+              content: post.content,
+              image: post.image,
+              createdAt: post.created_at,
+              author: {
+                id: profileData?.id || post.user_id,
+                name: profileData?.username || 'Unknown User',
+                avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
+              },
+              likeCount: post.likeCount[0]?.count || 0,
+              commentCount: post.commentCount[0]?.count || 0,
+              userLiked: !!likeData,
+            };
+          })
+        );
 
-          const userProfile = post.profiles;
-          
-          // Format the post object
-          return {
-            id: post.id,
-            content: post.content,
-            image: post.image,
-            createdAt: post.created_at,
-            author: {
-              id: userProfile?.id || post.user_id,
-              name: userProfile?.username || 'Unknown User',
-              avatar: userProfile?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
-            },
-            likeCount: post.likeCount[0]?.count || 0,
-            commentCount: post.commentCount[0]?.count || 0,
-            userLiked: !!likeData,
-          };
-        })
-      );
-
-      if (type === 'liked') {
-        setLikedPosts(postsWithLikedStatus);
-      } else if (type === 'commented') {
-        setCommentedPosts(postsWithLikedStatus);
-      } else if (type === 'shared') {
-        setSharedPosts(postsWithLikedStatus);
+        if (type === 'liked') {
+          setLikedPosts(postsWithLikedStatus);
+        } else if (type === 'commented') {
+          setCommentedPosts(postsWithLikedStatus);
+        } else if (type === 'shared') {
+          setSharedPosts(postsWithLikedStatus);
+        }
       }
+    } catch (error) {
+      console.error('Error fetching post details:', error);
     }
   };
 
