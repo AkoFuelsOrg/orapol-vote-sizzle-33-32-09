@@ -21,7 +21,7 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin, marketplaceOwnerId }: Mar
     if (marketplaceId) {
       fetchMarketplaceProducts(marketplaceId);
     }
-  }, [marketplaceId]);
+  }, [marketplaceId, fetchMarketplaceProducts]);
 
   if (isLoading) {
     return (
