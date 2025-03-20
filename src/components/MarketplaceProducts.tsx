@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useProducts, Product } from "../context/ProductContext";
+import { useProducts } from "../context/ProductContext";
 import { Button } from "@/components/ui/button";
 import { Package, Plus } from "lucide-react";
 import ProductCard from "./ProductCard";

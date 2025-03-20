@@ -39,6 +39,17 @@ const ProductCard = ({ product, isAdmin, marketplaceOwnerId }: ProductCardProps)
     setIsDeleting(true);
     try {
       await deleteProduct(product.id);
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
+        variant: "destructive",
+      });
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
