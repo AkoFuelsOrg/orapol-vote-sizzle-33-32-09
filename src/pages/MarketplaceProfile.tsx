@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -360,11 +361,11 @@ const MarketplaceProfile = () => {
       <div className="flex items-center gap-2 px-6 mt-[-10px]">
         <Badge variant="secondary" className="px-3 py-1 text-sm flex items-center gap-1.5">
           <Users className="h-3.5 w-3.5" />
-          <span>1 member</span>
+          <span>{membersList.length || 0} {membersList.length === 1 ? 'member' : 'members'}</span>
         </Badge>
         <Badge variant="outline" className="px-3 py-1 text-sm flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5" />
-          <span>Created 4 minutes ago</span>
+          <span>Created {marketplace.created_at ? formatDistanceToNow(new Date(marketplace.created_at), { addSuffix: false }) + ' ago' : ''}</span>
         </Badge>
       </div>
       
