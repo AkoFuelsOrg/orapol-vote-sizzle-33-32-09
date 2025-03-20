@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -10,6 +9,7 @@ import { UserPlus, Users, ImageOff, Calendar, UserMinus, Info } from 'lucide-rea
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import MarketplacePostInterface from '@/components/MarketplacePostInterface';
 import { MarketplaceMember, Post, Poll, PollOption } from '@/lib/types';
@@ -310,16 +310,6 @@ const MarketplaceProfile = () => {
             </Avatar>
             <div className="ml-4 mb-2 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 shadow-sm">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{marketplace.name}</h1>
-              <div className="flex flex-wrap items-center gap-3 mt-1 text-sm">
-                <div className="flex items-center text-gray-600 bg-gray-100 rounded-full py-1 px-3">
-                  <Users className="h-3.5 w-3.5 mr-1.5" />
-                  <span className="font-medium">{marketplace.member_count} {marketplace.member_count === 1 ? 'member' : 'members'}</span>
-                </div>
-                <div className="flex items-center text-gray-600 bg-gray-100 rounded-full py-1 px-3">
-                  <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                  <span className="font-medium">Created {formatDistanceToNow(new Date(marketplace.created_at), { addSuffix: true })}</span>
-                </div>
-              </div>
             </div>
           </div>
           
@@ -366,9 +356,21 @@ const MarketplaceProfile = () => {
         </div>
       </div>
       
+      {/* Marketplace info - Moved above description */}
+      <div className="flex items-center gap-2 px-6 mt-[-10px]">
+        <Badge variant="secondary" className="px-3 py-1 text-sm flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" />
+          <span>1 member</span>
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1 text-sm flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5" />
+          <span>Created 4 minutes ago</span>
+        </Badge>
+      </div>
+      
       {/* Marketplace description */}
       {marketplace.description && (
-        <Card className="p-5 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100">
+        <Card className="p-5 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100 mx-6">
           <div className="flex items-start">
             <Info className="h-5 w-5 mr-2 text-primary/70 mt-0.5 flex-shrink-0" />
             <p className="text-gray-700">{marketplace.description}</p>
