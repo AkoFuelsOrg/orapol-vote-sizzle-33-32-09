@@ -51,9 +51,20 @@ const Favourites = () => {
           setCommentedPosts([]);
         }
 
-        // Placeholder for shared posts - you'll need to implement this if you have a share tracking table
-        // For now, we'll leave it empty
-        setSharedPosts([]);
+        // Fetch posts the user has shared
+        const { data: sharedData, error: sharedError } = await supabase
+          .from('post_shares')
+          .select('post_id')
+          .eq('user_id', user.id);
+
+        if (sharedError) throw sharedError;
+
+        if (sharedData && sharedData.length > 0) {
+          const sharedPostIds = sharedData.map(item => item.post_id);
+          await fetchPostDetails(sharedPostIds, 'shared');
+        } else {
+          setSharedPosts([]);
+        }
 
       } catch (error) {
         console.error('Error fetching favourite posts:', error);
@@ -66,7 +77,7 @@ const Favourites = () => {
   }, [user]);
 
   const handlePostUpdate = () => {
-    // Refetch the posts when a post is updated (liked, commented, etc.)
+    // Refetch the posts when a post is updated (liked, commented, shared, etc.)
     if (user) {
       if (activeTab === 'liked') {
         // Refetch liked posts
@@ -84,6 +95,22 @@ const Favourites = () => {
           }
         };
         fetchLikedPosts();
+      } else if (activeTab === 'shared') {
+        // Refetch shared posts
+        const fetchSharedPosts = async () => {
+          const { data: sharedData } = await supabase
+            .from('post_shares')
+            .select('post_id')
+            .eq('user_id', user.id);
+
+          if (sharedData && sharedData.length > 0) {
+            const sharedPostIds = sharedData.map(item => item.post_id);
+            await fetchPostDetails(sharedPostIds, 'shared');
+          } else {
+            setSharedPosts([]);
+          }
+        };
+        fetchSharedPosts();
       }
     }
   };

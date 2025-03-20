@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -99,41 +98,82 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     setShowCommentForm(!showCommentForm);
   };
 
-  const handleShare = (e: React.MouseEvent, platform?: string) => {
+  const handleShare = async (e: React.MouseEvent, platform?: string) => {
     e.preventDefault();
     e.stopPropagation();
     
+    if (!user) {
+      toast.error("Please sign in to share posts");
+      return;
+    }
+    
     const postUrl = `${window.location.origin}/post/${post.id}`;
+    let sharedSuccessfully = false;
     
     switch (platform) {
       case 'copy':
         navigator.clipboard.writeText(postUrl)
-          .then(() => toast.success("Link copied to clipboard"))
+          .then(() => {
+            toast.success("Link copied to clipboard");
+            sharedSuccessfully = true;
+          })
           .catch(() => toast.error("Failed to copy link"));
         if (isMobile) setIsShareOpen(false);
         break;
       case 'twitter':
         window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=Check out this post!`, '_blank', 'noopener,noreferrer');
+        sharedSuccessfully = true;
         if (isMobile) setIsShareOpen(false);
         break;
       case 'facebook':
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`, '_blank', 'noopener,noreferrer');
+        sharedSuccessfully = true;
         if (isMobile) setIsShareOpen(false);
         break;
       case 'whatsapp':
         window.open(`https://wa.me/?text=Check out this post! ${encodeURIComponent(postUrl)}`, '_blank', 'noopener,noreferrer');
+        sharedSuccessfully = true;
         if (isMobile) setIsShareOpen(false);
         break;
       case 'telegram':
         window.open(`https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=Check out this post!`, '_blank', 'noopener,noreferrer');
+        sharedSuccessfully = true;
         if (isMobile) setIsShareOpen(false);
         break;
       case 'email':
         window.location.href = `mailto:?subject=Check out this post!&body=${encodeURIComponent(postUrl)}`;
+        sharedSuccessfully = true;
         if (isMobile) setIsShareOpen(false);
         break;
       default:
         setIsShareOpen(true);
+    }
+    
+    if (sharedSuccessfully && user) {
+      try {
+        const { data: existingShare } = await supabase
+          .from('post_shares')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (!existingShare) {
+          await supabase
+            .from('post_shares')
+            .insert({
+              post_id: post.id,
+              user_id: user.id,
+              platform: platform || 'other'
+            });
+            
+          if (onPostUpdate) {
+            onPostUpdate();
+          }
+        }
+      } catch (error) {
+        console.error('Error recording share:', error);
+      }
     }
   };
 
