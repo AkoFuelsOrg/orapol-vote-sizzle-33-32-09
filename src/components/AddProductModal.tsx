@@ -33,12 +33,14 @@ const formSchema = z.object({
   is_available: z.boolean().default(true),
 });
 
+type ProductFormValues = z.infer<typeof formSchema>;
+
 const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: AddProductModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<ProductFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
@@ -61,7 +63,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
     reader.readAsDataURL(file);
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: ProductFormValues) => {
     try {
       setIsSubmitting(true);
       
