@@ -65,7 +65,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       updateCommentCount(count || 0);
       
       // Get top level comments
-      const { data, error } = await supabase
+      const { data: commentsData, error: commentsError } = await supabase
         .from('post_comments')
         .select(`
           id, 
@@ -73,23 +73,39 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
           created_at, 
           likes, 
           user_id,
-          profiles:user_id (id, username, avatar_url)
+          parent_id,
+          post_id
         `)
         .eq('post_id', postId)
         .is('parent_id', null) // Only get top-level comments
         .order('created_at', { ascending: false })
         .limit(8);
       
-      if (error) throw error;
+      if (commentsError) throw commentsError;
       
-      if (!data) {
+      if (!commentsData || commentsData.length === 0) {
         setComments([]);
         setLoading(false);
         return;
       }
       
+      // Fetch profiles for the comment authors
+      const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+      
+      // Create a map of profiles by user ID for easy lookup
+      const profileMap = new Map();
+      profilesData?.forEach(profile => {
+        profileMap.set(profile.id, profile);
+      });
+      
       // Get reply counts for each comment
-      const commentsWithCounts = await Promise.all(data.map(async (comment) => {
+      const commentsWithCounts = await Promise.all(commentsData.map(async (comment) => {
         const { count, error: countError } = await supabase
           .from('post_comments')
           .select('id', { count: 'exact', head: true })
@@ -116,33 +132,39 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         
         const likedCommentIds = new Set(likes?.map(like => like.comment_id) || []);
         
-        formattedComments = commentsWithCounts.map(comment => ({
-          id: comment.id,
-          content: comment.content,
-          created_at: comment.created_at,
-          likes: comment.likes || 0,
-          reply_count: comment.reply_count,
-          author: {
-            id: comment.profiles.id,
-            username: comment.profiles.username || 'Anonymous',
-            avatar_url: comment.profiles.avatar_url
-          },
-          user_has_liked: likedCommentIds.has(comment.id)
-        }));
+        formattedComments = commentsWithCounts.map(comment => {
+          const authorProfile = profileMap.get(comment.user_id);
+          return {
+            id: comment.id,
+            content: comment.content,
+            created_at: comment.created_at,
+            likes: comment.likes || 0,
+            reply_count: comment.reply_count,
+            author: {
+              id: authorProfile?.id || comment.user_id,
+              username: authorProfile?.username || 'Anonymous',
+              avatar_url: authorProfile?.avatar_url || null
+            },
+            user_has_liked: likedCommentIds.has(comment.id)
+          };
+        });
       } else {
-        formattedComments = commentsWithCounts.map(comment => ({
-          id: comment.id,
-          content: comment.content,
-          created_at: comment.created_at,
-          likes: comment.likes || 0,
-          reply_count: comment.reply_count,
-          author: {
-            id: comment.profiles.id,
-            username: comment.profiles.username || 'Anonymous',
-            avatar_url: comment.profiles.avatar_url
-          },
-          user_has_liked: false
-        }));
+        formattedComments = commentsWithCounts.map(comment => {
+          const authorProfile = profileMap.get(comment.user_id);
+          return {
+            id: comment.id,
+            content: comment.content,
+            created_at: comment.created_at,
+            likes: comment.likes || 0,
+            reply_count: comment.reply_count,
+            author: {
+              id: authorProfile?.id || comment.user_id,
+              username: authorProfile?.username || 'Anonymous',
+              avatar_url: authorProfile?.avatar_url || null
+            },
+            user_has_liked: false
+          };
+        });
       }
       
       setComments(formattedComments);
