@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -25,12 +26,19 @@ interface EditProductModalProps {
 const formSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   description: z.string().nullable(),
-  price: z.string().optional()
-    .transform(val => {
-      if (val === '') return null;
-      const num = parseFloat(val);
-      return isNaN(num) ? null : num;
-    }),
+  price: z.preprocess(
+    // First preprocess to handle empty strings
+    (val) => (val === '' ? null : val),
+    // Then validate and transform
+    z.union([
+      z.null(),
+      z.number(),
+      z.string().transform((val) => {
+        const num = parseFloat(val);
+        return isNaN(num) ? null : num;
+      })
+    ])
+  ),
   is_available: z.boolean().default(true),
 });
 
@@ -46,8 +54,8 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: product.name,
-      description: product.description || '',
-      price: product.price ? String(product.price) : '',
+      description: product.description,
+      price: product.price,
       is_available: product.is_available,
     },
   });
@@ -56,8 +64,8 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
     if (product) {
       form.reset({
         name: product.name,
-        description: product.description || '',
-        price: product.price ? String(product.price) : '',
+        description: product.description,
+        price: product.price,
         is_available: product.is_available,
       });
       setImagePreview(product.image_url);

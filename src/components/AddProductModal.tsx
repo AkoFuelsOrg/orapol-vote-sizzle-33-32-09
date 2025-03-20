@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -24,12 +25,19 @@ interface AddProductModalProps {
 const formSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   description: z.string().optional(),
-  price: z.string().optional()
-    .transform(val => {
-      if (val === '') return null;
-      const num = parseFloat(val);
-      return isNaN(num) ? null : num;
-    }),
+  price: z.preprocess(
+    // First preprocess to handle empty strings
+    (val) => (val === '' ? null : val),
+    // Then validate and transform
+    z.union([
+      z.null(),
+      z.number(),
+      z.string().transform((val) => {
+        const num = parseFloat(val);
+        return isNaN(num) ? null : num;
+      })
+    ])
+  ),
   is_available: z.boolean().default(true),
 });
 
@@ -45,7 +53,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
     defaultValues: {
       name: '',
       description: '',
-      price: '',
+      price: null,
       is_available: true,
     },
   });
