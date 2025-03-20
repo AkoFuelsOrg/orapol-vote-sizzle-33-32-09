@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -86,12 +87,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   };
 
   return (
-    <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg w-full mx-auto shadow-sm">
-      <div className="flex flex-col md:flex-row">
+    <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg w-full mx-auto shadow-sm min-h-[70vh]">
+      <div className="flex flex-col md:flex-row h-full">
         {post.image && (
           <div className="md:w-3/5 relative">
             <div 
-              className="aspect-square w-full overflow-hidden bg-gray-100 relative"
+              className="aspect-square w-full overflow-hidden bg-gray-100 relative h-full"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -139,7 +140,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
           </div>
         )}
         
-        <div className={`${post.image ? 'md:w-2/5' : 'w-full'} flex flex-col`}>
+        <div className={`${post.image ? 'md:w-2/5' : 'w-full'} flex flex-col h-full`}>
           {!post.image && (
             <div className="px-5 py-4 flex items-center justify-between border-b">
               <Link 
@@ -187,6 +188,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             </div>
           </div>
           
+          <div className="flex-grow">
+            <PostCommentSection 
+              postId={post.id} 
+              updateCommentCount={updateCommentCount}
+              showCommentForm={showCommentForm}
+            />
+          </div>
+          
           <div className="px-5 pt-3 pb-2 flex justify-between mt-auto">
             <div className="flex space-x-4">
               <button 
@@ -225,12 +234,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
           <div className="px-5 pt-1 pb-1">
             <p className="font-semibold text-sm">{likeCount} likes</p>
           </div>
-          
-          <PostCommentSection 
-            postId={post.id} 
-            updateCommentCount={updateCommentCount}
-            showCommentForm={showCommentForm}
-          />
           
           <div className="px-5 py-3 mt-auto border-t">
             <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
