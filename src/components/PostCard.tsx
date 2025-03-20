@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -106,28 +107,29 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     
     switch (platform) {
       case 'copy':
-        navigator.clipboard.writeText(postUrl);
-        toast.success("Link copied to clipboard");
+        navigator.clipboard.writeText(postUrl)
+          .then(() => toast.success("Link copied to clipboard"))
+          .catch(() => toast.error("Failed to copy link"));
         if (isMobile) setIsShareOpen(false);
         break;
       case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=Check out this post!`, '_blank');
+        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=Check out this post!`, '_blank', 'noopener,noreferrer');
         if (isMobile) setIsShareOpen(false);
         break;
       case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`, '_blank');
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`, '_blank', 'noopener,noreferrer');
         if (isMobile) setIsShareOpen(false);
         break;
       case 'whatsapp':
-        window.open(`https://api.whatsapp.com/send?text=Check out this post! ${encodeURIComponent(postUrl)}`, '_blank');
+        window.open(`https://wa.me/?text=Check out this post! ${encodeURIComponent(postUrl)}`, '_blank', 'noopener,noreferrer');
         if (isMobile) setIsShareOpen(false);
         break;
       case 'telegram':
-        window.open(`https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=Check out this post!`, '_blank');
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=Check out this post!`, '_blank', 'noopener,noreferrer');
         if (isMobile) setIsShareOpen(false);
         break;
       case 'email':
-        window.open(`mailto:?subject=Check out this post!&body=${encodeURIComponent(postUrl)}`, '_blank');
+        window.location.href = `mailto:?subject=Check out this post!&body=${encodeURIComponent(postUrl)}`;
         if (isMobile) setIsShareOpen(false);
         break;
       default:
@@ -146,8 +148,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
       </Button>
       
       <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2" onClick={(e) => handleShare(e, 'twitter')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M22 4.01C21 4.5 20.02 4.84 19 5.01C18.1 4.11 16.82 3.61 15.5 3.61C12.92 3.61 10.85 5.68 10.85 8.25C10.85 8.65 10.9 9.03 10.99 9.39C7.14 9.19 3.78 7.37 1.53 4.68C1.13 5.41 0.889 6.28 0.889 7.2C0.889 8.94 1.7 10.5 3 11.38C2.24 11.35 1.5 11.15 0.889 10.82V10.88C0.889 13.15 2.47 15.05 4.61 15.5C3.84 15.72 3.05 15.75 2.29 15.58C2.82 17.37 4.32 18.66 6.12 18.7C4.57 20.03 2.57 20.81 0.389 20.81C0.0289999 20.81 -0.33 20.8 -0.69 20.75C1.13 22.15 3.29 23 5.65 23C15.45 23 20.79 14.9 20.79 7.98C20.79 7.75 20.79 7.53 20.78 7.31C21.78 6.62 22.65 5.73 23.31 4.72C22.39 5.13 21.41 5.39 20.39 5.52C21.45 4.89 22.26 3.88 22.65 2.68C21.66 3.27 20.57 3.69 19.42 3.92C18.15 2.66 16.31 2.17 14.57 2.63C12.84 3.09 11.51 4.42 11.12 6.17C10.73 7.92 11.23 9.75 12.44 11C9.54 10.93 6.76 9.9 4.61 8.09C2.71 10.71 3.66 14.26 6.41 15.94C5.71 15.93 5.02 15.76 4.38 15.44C4.38 15.46 4.38 15.48 4.38 15.51C4.38 17.95 6.11 20.03 8.49 20.45C7.63 20.67 6.73 20.67 5.88 20.44C6.5 22.49 8.36 23.88 10.51 23.9C8.76 25.31 6.58 26.05 4.35 25.89C6.53 27.28 9.11 28.03 11.75 28C16.65 28.04 21.33 26.08 24.52 22.46C27.72 18.84 29.13 14.04 28.41 9.28C28.4 9.05 28.4 8.83 28.39 8.6C28.4 8.39 28.4 8.19 28.4 7.98C28.4 7.84 28.4 7.7 28.39 7.57C28.4 7.37 28.4 7.18 28.39 6.98" fill="currentColor"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
         </svg>
         <span className="text-xs">Twitter</span>
       </Button>
@@ -161,8 +163,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
       
       <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2" onClick={(e) => handleShare(e, 'whatsapp')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17.5 2h-11A4.5 4.5 0 0 0 2 6.5v11A4.5 4.5 0 0 0 6.5 22h11a4.5 4.5 0 0 0 4.5-4.5v-11A4.5 4.5 0 0 0 17.5 2Z"></path>
-          <path d="M16 11.4A4.6 4.6 0 0 1 11.4 16H8l-3 1 1-3v-3.4A4.6 4.6 0 0 1 11.4 6H16Z"></path>
+          <path d="M17.4 14.3a4 4 0 0 0-5.5-5.5l-6.8 6.8L2 22l6.8-2.9 6.8-6.8c.3.4.5.8.7 1.2A10 10 0 1 1 2 12a10 10 0 0 1 16.7-7.2c.3.4.6.8.7 1.3v8.2z"></path>
         </svg>
         <span className="text-xs">WhatsApp</span>
       </Button>
