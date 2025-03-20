@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -24,7 +23,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   const [hasLiked, setHasLiked] = React.useState(post.userLiked || false);
   const [likeCount, setLikeCount] = React.useState(post.likeCount);
   const [commentCount, setCommentCount] = React.useState(post.commentCount);
-  const [showComments, setShowComments] = React.useState(false);
+  const [showCommentForm, setShowCommentForm] = React.useState(false);
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -42,7 +41,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     
     try {
       if (!hasLiked) {
-        // Add like
         const { error } = await supabase
           .from('post_likes')
           .insert({
@@ -56,7 +54,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
         setLikeCount(prev => prev + 1);
         toast.success("Post liked");
       } else {
-        // Remove like
         const { error } = await supabase
           .from('post_likes')
           .delete()
@@ -69,7 +66,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
         setLikeCount(prev => prev - 1);
       }
       
-      // Call the update callback if provided
       if (onPostUpdate) {
         onPostUpdate();
       }
@@ -83,10 +79,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     setCommentCount(count);
   };
 
-  const toggleComments = (e: React.MouseEvent) => {
+  const toggleCommentForm = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowComments(!showComments);
+    setShowCommentForm(!showCommentForm);
   };
 
   return (
@@ -205,7 +201,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
               </button>
               <button 
                 className="focus:outline-none"
-                onClick={toggleComments}
+                onClick={toggleCommentForm}
               >
                 <MessageCircle size={24} className="text-black" />
               </button>
@@ -230,27 +226,15 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             <p className="font-semibold text-sm">{likeCount} likes</p>
           </div>
           
-          {commentCount > 0 && !showComments && (
-            <button 
-              onClick={toggleComments}
-              className="block px-5 pb-1 text-left"
-            >
-              <p className="text-sm text-gray-500">View all {commentCount} comments</p>
-            </button>
-          )}
+          <PostCommentSection 
+            postId={post.id} 
+            updateCommentCount={updateCommentCount}
+            showCommentForm={showCommentForm}
+          />
           
-          {!showComments && (
-            <div className="px-5 py-3 mt-auto border-t">
-              <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
-            </div>
-          )}
-          
-          {showComments && (
-            <PostCommentSection 
-              postId={post.id} 
-              updateCommentCount={updateCommentCount}
-            />
-          )}
+          <div className="px-5 py-3 mt-auto border-t">
+            <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
+          </div>
         </div>
       </div>
     </Card>

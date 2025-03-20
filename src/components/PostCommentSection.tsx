@@ -26,11 +26,13 @@ interface CommentType {
 interface PostCommentSectionProps {
   postId: string;
   updateCommentCount: (count: number) => void;
+  showCommentForm?: boolean;
 }
 
 const PostCommentSection: React.FC<PostCommentSectionProps> = ({ 
   postId, 
-  updateCommentCount 
+  updateCommentCount,
+  showCommentForm = false
 }) => {
   const { user, profile } = useSupabase();
   const [comments, setComments] = useState<CommentType[]>([]);
@@ -338,44 +340,46 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
             )}
           </div>
           
-          <div className="px-5 pt-2 pb-2 flex items-center border-t">
-            {user ? (
-              <form onSubmit={handleSubmitComment} className="flex w-full items-center">
-                <Avatar className="h-7 w-7 mr-2">
-                  <AvatarImage src={profile?.avatar_url || ''} />
-                  <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
-                </Avatar>
-                <input
-                  ref={inputRef}
-                  className="flex-1 border-none bg-transparent text-sm placeholder-gray-500 focus:outline-none"
-                  placeholder="Add a comment..."
-                  value={commentContent}
-                  onChange={(e) => setCommentContent(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmitComment();
-                    }
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || !commentContent.trim()}
-                  className={`ml-2 text-blue-500 text-sm font-semibold ${!commentContent.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {submitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Post'
-                  )}
-                </button>
-              </form>
-            ) : (
-              <div className="text-center w-full text-sm text-gray-500">
-                Please sign in to leave a comment
-              </div>
-            )}
-          </div>
+          {showCommentForm && (
+            <div className="px-5 pt-2 pb-2 flex items-center border-t">
+              {user ? (
+                <form onSubmit={handleSubmitComment} className="flex w-full items-center">
+                  <Avatar className="h-7 w-7 mr-2">
+                    <AvatarImage src={profile?.avatar_url || ''} />
+                    <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
+                  </Avatar>
+                  <input
+                    ref={inputRef}
+                    className="flex-1 border-none bg-transparent text-sm placeholder-gray-500 focus:outline-none"
+                    placeholder="Add a comment..."
+                    value={commentContent}
+                    onChange={(e) => setCommentContent(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmitComment();
+                      }
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || !commentContent.trim()}
+                    className={`ml-2 text-blue-500 text-sm font-semibold ${!commentContent.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {submitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Post'
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <div className="text-center w-full text-sm text-gray-500">
+                  Please sign in to leave a comment
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
