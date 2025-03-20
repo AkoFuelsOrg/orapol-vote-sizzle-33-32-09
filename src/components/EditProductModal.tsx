@@ -89,6 +89,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
   const onSubmit = async (values: ProductFormValues) => {
     try {
       setIsSubmitting(true);
+      console.log("Submitting values:", values);
       
       let imageUrl = keepExistingImage ? product.image_url : null;
       
@@ -101,7 +102,10 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
           .from('public')
           .upload(filePath, imageFile);
           
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Image upload error:", uploadError);
+          throw uploadError;
+        }
         
         const { data: { publicUrl } } = supabase.storage
           .from('public')
@@ -110,19 +114,27 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
         imageUrl = publicUrl;
       }
       
+      // Ensure price is properly handled as a number or null
+      const productData = {
+        name: values.name,
+        description: values.description,
+        price: values.price, // This will be a number or null after Zod transformation
+        is_available: values.is_available,
+        image_url: imageUrl,
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log("Sending to Supabase:", productData);
+      
       const { error } = await supabase
         .from('marketplace_products')
-        .update({
-          name: values.name,
-          description: values.description,
-          price: values.price,
-          is_available: values.is_available,
-          image_url: imageUrl,
-          updated_at: new Date().toISOString(),
-        })
+        .update(productData)
         .eq('id', product.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Database update error:", error);
+        throw error;
+      }
       
       toast({
         title: 'Success',
@@ -188,7 +200,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
             <FormField
               control={form.control}
               name="price"
-              render={({ field }) => (
+              render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
                   <FormLabel>Price</FormLabel>
                   <FormControl>
@@ -200,7 +212,12 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
                         min="0"
                         placeholder="Leave empty for 'Contact for price'" 
                         className="pl-7"
-                        {...field} 
+                        value={value === null ? '' : value}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          onChange(val === '' ? null : parseFloat(val));
+                        }}
+                        {...rest}
                       />
                     </div>
                   </FormControl>

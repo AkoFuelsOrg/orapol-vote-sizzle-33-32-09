@@ -74,6 +74,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
   const onSubmit = async (values: ProductFormValues) => {
     try {
       setIsSubmitting(true);
+      console.log("Submitting values:", values);
       
       let imageUrl = null;
       
@@ -86,7 +87,10 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
           .from('public')
           .upload(filePath, imageFile);
           
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Image upload error:", uploadError);
+          throw uploadError;
+        }
         
         const { data: { publicUrl } } = supabase.storage
           .from('public')
@@ -95,25 +99,37 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
         imageUrl = publicUrl;
       }
       
+      // Ensure price is properly handled as a number or null
+      const productData = {
+        marketplace_id: marketplaceId,
+        name: values.name,
+        description: values.description || null,
+        price: values.price, // This will be a number or null after Zod transformation
+        is_available: values.is_available,
+        image_url: imageUrl,
+      };
+      
+      console.log("Sending to Supabase:", productData);
+      
       const { error } = await supabase
         .from('marketplace_products')
-        .insert({
-          marketplace_id: marketplaceId,
-          name: values.name,
-          description: values.description || null,
-          price: values.price,
-          is_available: values.is_available,
-          image_url: imageUrl,
-        });
+        .insert(productData);
         
-      if (error) throw error;
+      if (error) {
+        console.error("Database insert error:", error);
+        throw error;
+      }
       
       toast({
         title: 'Success',
         description: 'Product added successfully',
       });
       
+      form.reset();
+      setImageFile(null);
+      setImagePreview(null);
       onProductAdded();
+      onClose();
     } catch (error) {
       console.error('Error adding product:', error);
       toast({
@@ -160,6 +176,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
                       placeholder="Describe your product or service" 
                       className="resize-none min-h-[100px]"
                       {...field} 
+                      value={field.value || ''}
                     />
                   </FormControl>
                   <FormMessage />
@@ -170,7 +187,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
             <FormField
               control={form.control}
               name="price"
-              render={({ field }) => (
+              render={({ field: { onChange, value, ...rest }}) => (
                 <FormItem>
                   <FormLabel>Price</FormLabel>
                   <FormControl>
@@ -182,7 +199,12 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
                         min="0"
                         placeholder="Leave empty for 'Contact for price'" 
                         className="pl-7"
-                        {...field} 
+                        value={value === null ? '' : value}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          onChange(val === '' ? null : parseFloat(val));
+                        }}
+                        {...rest}
                       />
                     </div>
                   </FormControl>
