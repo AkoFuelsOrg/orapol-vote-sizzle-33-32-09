@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,10 +64,19 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
         
-        return {
+        // Safely add author to the video object
+        const videoWithAuthor = {
           ...video,
-          author: authorInfo
+          author: authorInfo || { 
+            id: '', 
+            name: 'Unknown User', 
+            avatar: '', 
+            username: 'Unknown User', 
+            avatar_url: '' 
+          }
         } as Video;
+        
+        return videoWithAuthor;
       }));
       
       return transformedVideos;
@@ -114,9 +124,16 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
       
+      // Safely add author to the video object
       const transformedVideo = {
         ...data,
-        author: authorInfo
+        author: authorInfo || { 
+          id: '', 
+          name: 'Unknown User', 
+          avatar: '', 
+          username: 'Unknown User', 
+          avatar_url: '' 
+        }
       } as Video;
       
       return transformedVideo;
@@ -166,10 +183,19 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
         
-        return {
+        // Safely add author to the comment object
+        const commentWithAuthor = {
           ...comment,
-          author: authorInfo
+          author: authorInfo || { 
+            id: '', 
+            name: 'Unknown User', 
+            avatar: '', 
+            username: 'Unknown User', 
+            avatar_url: '' 
+          }
         } as VideoComment;
+        
+        return commentWithAuthor;
       }));
       
       return transformedComments;
@@ -226,9 +252,16 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
       
+      // Safely add author to the comment object
       const transformedComment = {
         ...data,
-        author: authorInfo
+        author: authorInfo || { 
+          id: '', 
+          name: 'Unknown User', 
+          avatar: '', 
+          username: 'Unknown User', 
+          avatar_url: '' 
+        }
       } as VideoComment;
       
       toast.success('Comment added successfully');

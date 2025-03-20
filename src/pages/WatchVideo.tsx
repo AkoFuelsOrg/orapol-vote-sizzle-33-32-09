@@ -8,9 +8,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { Loader2, ThumbsUp, MessageSquare, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 const WatchVideo: React.FC = () => {
@@ -21,6 +21,7 @@ const WatchVideo: React.FC = () => {
   const [comments, setComments] = useState<VideoComment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [commentsLoading, setCommentsLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -42,10 +43,6 @@ const WatchVideo: React.FC = () => {
             const userLiked = await hasLikedVideo(id);
             setLiked(userLiked);
           }
-          
-          // Load comments
-          const commentsData = await fetchVideoComments(id);
-          setComments(commentsData);
         }
       } catch (error) {
         console.error('Error loading video:', error);
@@ -56,7 +53,28 @@ const WatchVideo: React.FC = () => {
     };
     
     loadVideo();
-  }, [id, fetchVideo, fetchVideoComments, hasLikedVideo, user]);
+  }, [id, fetchVideo, hasLikedVideo, user]);
+  
+  // Load comments separately to prevent the whole page from waiting
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!id) return;
+      setCommentsLoading(true);
+      
+      try {
+        const commentsData = await fetchVideoComments(id);
+        setComments(commentsData);
+      } catch (error) {
+        console.error('Error loading comments:', error);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    
+    if (!loading && video) {
+      loadComments();
+    }
+  }, [id, fetchVideoComments, loading, video]);
   
   // Record a view when the video starts playing
   const handleVideoPlay = async () => {
@@ -138,15 +156,73 @@ const WatchVideo: React.FC = () => {
     }
   };
   
-  if (loading) {
+  // Render loading skeleton for the video player
+  const renderVideoSkeleton = () => (
+    <div className="bg-black rounded-lg overflow-hidden aspect-video">
+      <Skeleton className="w-full h-full" />
+    </div>
+  );
+  
+  // Render loading skeleton for video info
+  const renderVideoInfoSkeleton = () => (
+    <div className="mt-4 space-y-2">
+      <Skeleton className="h-8 w-4/5" />
+      <div className="flex items-center justify-between mt-2">
+        <Skeleton className="h-5 w-1/4" />
+        <div className="flex space-x-4">
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-8 w-16" />
+        </div>
+      </div>
+    </div>
+  );
+  
+  // Render loading skeleton for user
+  const renderUserSkeleton = () => (
+    <div className="flex items-center">
+      <Skeleton className="h-10 w-10 rounded-full" />
+      <Skeleton className="h-5 w-32 ml-3" />
+    </div>
+  );
+  
+  // Render loading skeleton for comments
+  const renderCommentsSkeleton = () => (
+    <div className="space-y-4 mt-4">
+      {[1, 2, 3].map((_, index) => (
+        <div key={index} className="flex gap-3">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <div className="w-full">
+            <Skeleton className="h-4 w-1/4 mb-2" />
+            <Skeleton className="h-3 w-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+  
+  if (loading && !video) {
     return (
-      <div className="container mx-auto py-8 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      <div className="container mx-auto py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            {renderVideoSkeleton()}
+            {renderVideoInfoSkeleton()}
+            <Separator className="my-4" />
+            {renderUserSkeleton()}
+          </div>
+          <div className="hidden lg:block">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <div className="space-y-4">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
   
-  if (!video) {
+  if (!video && !loading) {
     return (
       <div className="container mx-auto py-8">
         <div className="text-center">
@@ -159,163 +235,172 @@ const WatchVideo: React.FC = () => {
   
   return (
     <div className="container mx-auto py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          {/* Video Player */}
-          <div className="bg-black rounded-lg overflow-hidden">
-            <video
-              ref={videoRef}
-              src={video.video_url}
-              className="w-full h-auto"
-              controls
-              onPlay={handleVideoPlay}
-              poster={video.thumbnail_url}
-            />
-          </div>
-          
-          {/* Video Info */}
-          <div className="mt-4">
-            <h1 className="text-2xl font-bold">{video.title}</h1>
-            <div className="flex items-center justify-between mt-2">
-              <div className="text-sm text-gray-600">
-                {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
-              </div>
-              <div className="flex space-x-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="flex items-center" 
-                  onClick={handleLike}
-                >
-                  <ThumbsUp 
-                    className={`h-5 w-5 mr-1 ${liked ? 'fill-red-500 text-red-500' : ''}`} 
-                  />
-                  {likesCount > 0 && <span>{likesCount}</span>}
-                </Button>
-                <Button variant="ghost" size="sm" className="flex items-center">
-                  <Share2 className="h-5 w-5 mr-1" />
-                  Share
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <Separator className="my-4" />
-          
-          {/* Channel Info */}
-          <div className="flex items-center">
-            <Avatar className="h-10 w-10">
-              <img 
-                src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
-                alt={video.author?.name || video.author?.username || 'Author'} 
-                className="rounded-full"
+      {video && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            {/* Video Player */}
+            <div className="bg-black rounded-lg overflow-hidden">
+              <video
+                ref={videoRef}
+                src={video.video_url}
+                className="w-full h-auto"
+                controls
+                onPlay={handleVideoPlay}
+                poster={video.thumbnail_url}
               />
-            </Avatar>
-            <div className="ml-3">
-              <h3 className="font-semibold">{video.author?.name || video.author?.username || 'Unknown'}</h3>
             </div>
-          </div>
-          
-          {/* Video Description */}
-          {video.description && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
-            </div>
-          )}
-          
-          <Separator className="my-6" />
-          
-          {/* Comments Section */}
-          <div>
-            <h3 className="font-semibold text-lg mb-4">
-              <MessageSquare className="inline mr-2 h-5 w-5" />
-              {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
-            </h3>
             
-            {/* Comment Form */}
-            {user ? (
-              <form onSubmit={handleAddComment} className="mb-6 flex items-start gap-3">
-                <Avatar className="h-8 w-8 mt-1">
-                  <img 
-                    src={user.user_metadata?.avatar_url || "https://via.placeholder.com/32"} 
-                    alt={user.user_metadata?.username || 'You'} 
-                    className="rounded-full"
-                  />
-                </Avatar>
-                <div className="flex-1">
-                  <Input
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="w-full"
-                  />
-                  <div className="flex justify-end mt-2">
-                    <Button 
-                      type="submit" 
-                      size="sm"
-                      disabled={!commentText.trim()}
-                      className="bg-red-500 hover:bg-red-600 text-white"
-                    >
-                      Comment
-                    </Button>
-                  </div>
+            {/* Video Info */}
+            <div className="mt-4">
+              <h1 className="text-2xl font-bold">{video.title}</h1>
+              <div className="flex items-center justify-between mt-2">
+                <div className="text-sm text-gray-600">
+                  {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                 </div>
-              </form>
-            ) : (
-              <div className="mb-6 text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Sign in to add a comment</p>
+                <div className="flex space-x-4">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center" 
+                    onClick={handleLike}
+                  >
+                    <ThumbsUp 
+                      className={`h-5 w-5 mr-1 ${liked ? 'fill-red-500 text-red-500' : ''}`} 
+                    />
+                    {likesCount > 0 && <span>{likesCount}</span>}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex items-center">
+                    <Share2 className="h-5 w-5 mr-1" />
+                    Share
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <Separator className="my-4" />
+            
+            {/* Channel Info */}
+            <div className="flex items-center">
+              <Avatar className="h-10 w-10">
+                <img 
+                  src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
+                  alt={video.author?.name || video.author?.username || 'Author'} 
+                  className="rounded-full"
+                />
+              </Avatar>
+              <div className="ml-3">
+                <h3 className="font-semibold">{video.author?.name || video.author?.username || 'Unknown'}</h3>
+              </div>
+            </div>
+            
+            {/* Video Description */}
+            {video.description && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
               </div>
             )}
             
-            {/* Comments List */}
-            <div className="space-y-4">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
+            <Separator className="my-6" />
+            
+            {/* Comments Section */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4">
+                <MessageSquare className="inline mr-2 h-5 w-5" />
+                {commentsLoading ? 'Loading comments...' : 
+                  `${comments.length} ${comments.length === 1 ? 'Comment' : 'Comments'}`}
+              </h3>
+              
+              {/* Comment Form */}
+              {user ? (
+                <form onSubmit={handleAddComment} className="mb-6 flex items-start gap-3">
                   <Avatar className="h-8 w-8 mt-1">
                     <img 
-                      src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
-                      alt={comment.author?.name || comment.author?.username || 'User'} 
+                      src={user.user_metadata?.avatar_url || "https://via.placeholder.com/32"} 
+                      alt={user.user_metadata?.username || 'You'} 
                       className="rounded-full"
                     />
                   </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
-                      <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="text-sm mt-1">{comment.content}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <button className="text-xs text-gray-500 flex items-center">
-                        <ThumbsUp className="h-3 w-3 mr-1" />
-                        {comment.likes > 0 && comment.likes}
-                      </button>
+                  <div className="flex-1">
+                    <Input
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Add a comment..."
+                      className="w-full"
+                    />
+                    <div className="flex justify-end mt-2">
+                      <Button 
+                        type="submit" 
+                        size="sm"
+                        disabled={!commentText.trim()}
+                        className="bg-red-500 hover:bg-red-600 text-white"
+                      >
+                        Comment
+                      </Button>
                     </div>
                   </div>
-                </div>
-              ))}
-              
-              {comments.length === 0 && (
-                <div className="text-center py-4 text-gray-500">
-                  No comments yet. Be the first to comment!
+                </form>
+              ) : (
+                <div className="mb-6 text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Sign in to add a comment</p>
                 </div>
               )}
+              
+              {/* Comments List */}
+              <div className="space-y-4">
+                {commentsLoading ? (
+                  renderCommentsSkeleton()
+                ) : (
+                  <>
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="flex gap-3">
+                        <Avatar className="h-8 w-8 mt-1">
+                          <img 
+                            src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
+                            alt={comment.author?.name || comment.author?.username || 'User'} 
+                            className="rounded-full"
+                          />
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
+                            <span className="text-xs text-gray-500">
+                              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+                          <p className="text-sm mt-1">{comment.content}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <button className="text-xs text-gray-500 flex items-center">
+                              <ThumbsUp className="h-3 w-3 mr-1" />
+                              {comment.likes > 0 && comment.likes}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {comments.length === 0 && !commentsLoading && (
+                      <div className="text-center py-4 text-gray-500">
+                        No comments yet. Be the first to comment!
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Related Videos */}
+          <div className="hidden lg:block">
+            <h3 className="font-semibold mb-4">Related Videos</h3>
+            <div className="space-y-4">
+              {/* This would be populated with related videos in a real implementation */}
+              <div className="text-center py-10 text-gray-500">
+                <p>Related videos will appear here</p>
+              </div>
             </div>
           </div>
         </div>
-        
-        {/* Related Videos */}
-        <div className="hidden lg:block">
-          <h3 className="font-semibold mb-4">Related Videos</h3>
-          <div className="space-y-4">
-            {/* This would be populated with related videos in a real implementation */}
-            <div className="text-center py-10 text-gray-500">
-              <p>Related videos will appear here</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
