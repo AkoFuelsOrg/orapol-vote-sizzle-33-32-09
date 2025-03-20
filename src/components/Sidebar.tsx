@@ -4,13 +4,13 @@ import { LucideIcon } from "lucide-react";
 import {
   Home,
   User,
-  PieChart,
   MessageSquare,
   Bell,
   Users,
   LogOut,
   PlusCircle,
   Store,
+  Heart
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useSupabase } from "../context/SupabaseContext";
@@ -103,9 +103,9 @@ const Sidebar: React.FC = () => {
             <>
               <SidebarLink to="/profile" icon={User} label="Profile" />
               <SidebarLink
-                to="/voted-polls"
-                icon={PieChart}
-                label="Your Polls"
+                to="/favourites"
+                icon={Heart}
+                label="Favourites"
               />
               <SidebarLink
                 to="/messages"
