@@ -5,7 +5,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, Users, ImageOff, Calendar, UserMinus, Info, Pencil } from 'lucide-react';
+import { UserPlus, Users, ImageOff, Calendar, UserMinus, Info, Pencil, Package } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,6 +17,7 @@ import PostCard from '@/components/PostCard';
 import PollCard from '@/components/PollCard';
 import { supabase } from '@/integrations/supabase/client';
 import EditMarketplaceModal from '@/components/EditMarketplaceModal';
+import MarketplaceProducts from '@/components/MarketplaceProducts';
 
 const MarketplaceProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -387,8 +388,12 @@ const MarketplaceProfile = () => {
       )}
       
       <Tabs defaultValue="feed" value={activeTab} onValueChange={setActiveTab} className="mt-4">
-        <TabsList className="grid w-full grid-cols-2 mb-2">
+        <TabsList className="grid w-full grid-cols-3 mb-2">
           <TabsTrigger value="feed" className="text-sm md:text-base py-2">Feed</TabsTrigger>
+          <TabsTrigger value="products" className="text-sm md:text-base py-2">
+            <Package className="h-4 w-4 mr-1.5" />
+            Products
+          </TabsTrigger>
           <TabsTrigger value="members" className="text-sm md:text-base py-2">Members</TabsTrigger>
         </TabsList>
         
@@ -413,6 +418,14 @@ const MarketplaceProfile = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+        
+        <TabsContent value="products" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
+          <MarketplaceProducts 
+            marketplaceId={id as string} 
+            isAdmin={isAdmin} 
+            marketplaceOwnerId={marketplace.created_by}
+          />
         </TabsContent>
         
         <TabsContent value="members" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
