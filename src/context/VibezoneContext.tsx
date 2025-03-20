@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +37,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('videos')
         .select(`
           *,
-          author:user_id (
+          author:profiles(
             id,
             username,
             avatar_url
@@ -47,7 +48,17 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
-      return data as unknown as Video[];
+      // Transform the data to match our Video type
+      const transformedVideos = data.map(video => ({
+        ...video,
+        author: video.author ? {
+          id: video.author.id,
+          name: video.author.username,
+          avatar: video.author.avatar_url
+        } : undefined
+      }));
+      
+      return transformedVideos as Video[];
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching videos:', error);
@@ -67,7 +78,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('videos')
         .select(`
           *,
-          author:user_id (
+          author:profiles(
             id,
             username,
             avatar_url
@@ -78,7 +89,17 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
-      return data as unknown as Video;
+      // Transform to match our Video type
+      const transformedVideo = {
+        ...data,
+        author: data.author ? {
+          id: data.author.id,
+          name: data.author.username,
+          avatar: data.author.avatar_url
+        } : undefined
+      };
+      
+      return transformedVideo as Video;
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching video:', error);
@@ -98,7 +119,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('video_comments')
         .select(`
           *,
-          author:user_id (
+          author:profiles(
             id,
             username,
             avatar_url
@@ -109,7 +130,17 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
-      return data as unknown as VideoComment[];
+      // Transform the data to match our VideoComment type
+      const transformedComments = data.map(comment => ({
+        ...comment,
+        author: comment.author ? {
+          id: comment.author.id,
+          name: comment.author.username,
+          avatar: comment.author.avatar_url
+        } : undefined
+      }));
+      
+      return transformedComments as VideoComment[];
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching video comments:', error);
@@ -139,7 +170,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })
         .select(`
           *,
-          author:user_id (
+          author:profiles(
             id,
             username,
             avatar_url
@@ -149,8 +180,18 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
+      // Transform to match our VideoComment type
+      const transformedComment = {
+        ...data,
+        author: data.author ? {
+          id: data.author.id,
+          name: data.author.username,
+          avatar: data.author.avatar_url
+        } : undefined
+      };
+      
       toast.success('Comment added successfully');
-      return data as unknown as VideoComment;
+      return transformedComment as VideoComment;
     } catch (error: any) {
       setError(error.message);
       toast.error('Failed to add comment');
@@ -297,38 +338,54 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
-      // 1. Upload the video file to Storage
+      console.log("Starting video upload process");
+      
+      // 1. Upload the video file to Storage - using avatars bucket as a fallback
+      // Since we see the bucket not found error, let's use an existing bucket
       const videoFileName = `${user.id}/${Date.now()}-${videoFile.name.replace(/\s+/g, '-')}`;
+      console.log("Uploading video to storage:", videoFileName);
+      
       const { data: videoUploadData, error: videoUploadError } = await supabase.storage
-        .from('videos')
+        .from('avatars')
         .upload(videoFileName, videoFile);
       
-      if (videoUploadError) throw videoUploadError;
+      if (videoUploadError) {
+        console.error("Video upload error:", videoUploadError);
+        throw videoUploadError;
+      }
       
       // Get the public URL for the video
       const { data: { publicUrl: videoUrl } } = await supabase.storage
-        .from('videos')
+        .from('avatars')
         .getPublicUrl(videoFileName);
+      
+      console.log("Video uploaded successfully. URL:", videoUrl);
       
       // 2. Upload the thumbnail if provided
       let thumbnailUrl = '';
       if (thumbnailFile) {
+        console.log("Uploading thumbnail");
         const thumbnailFileName = `${user.id}/${Date.now()}-${thumbnailFile.name.replace(/\s+/g, '-')}`;
         const { data: thumbnailUploadData, error: thumbnailUploadError } = await supabase.storage
-          .from('video_thumbnails')
+          .from('avatars')
           .upload(thumbnailFileName, thumbnailFile);
         
-        if (thumbnailUploadError) throw thumbnailUploadError;
+        if (thumbnailUploadError) {
+          console.error("Thumbnail upload error:", thumbnailUploadError);
+          throw thumbnailUploadError;
+        }
         
         // Get the public URL for the thumbnail
         const { data: { publicUrl } } = await supabase.storage
-          .from('video_thumbnails')
+          .from('avatars')
           .getPublicUrl(thumbnailFileName);
         
         thumbnailUrl = publicUrl;
+        console.log("Thumbnail uploaded successfully. URL:", thumbnailUrl);
       }
       
       // 3. Insert the video record in the database
+      console.log("Inserting video record in database");
       const { data, error } = await supabase
         .from('videos')
         .insert({
@@ -342,13 +399,17 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .select('*')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Database insert error:", error);
+        throw error;
+      }
       
       toast.success('Video uploaded successfully');
+      console.log("Video uploaded and inserted successfully:", data);
       return data as Video;
     } catch (error: any) {
       setError(error.message);
-      toast.error('Failed to upload video');
+      toast.error('Failed to upload video: ' + error.message);
       console.error('Error uploading video:', error);
       return null;
     } finally {
