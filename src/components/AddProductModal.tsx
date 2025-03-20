@@ -74,7 +74,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
   const onSubmit = async (values: ProductFormValues) => {
     try {
       setIsSubmitting(true);
-      console.log("Submitting values:", values);
+      console.log("Form values before submission:", values);
       
       let imageUrl = null;
       
@@ -83,20 +83,23 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `marketplace_products/${fileName}`;
         
-        const { error: uploadError } = await supabase.storage
+        console.log("Uploading image:", fileName);
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from('public')
           .upload(filePath, imageFile);
           
         if (uploadError) {
           console.error("Image upload error:", uploadError);
-          throw uploadError;
+          throw new Error(`Image upload failed: ${uploadError.message}`);
         }
         
+        console.log("Image upload successful:", uploadData);
         const { data: { publicUrl } } = supabase.storage
           .from('public')
           .getPublicUrl(filePath);
           
         imageUrl = publicUrl;
+        console.log("Image public URL:", imageUrl);
       }
       
       // Ensure price is properly handled as a number or null
@@ -104,21 +107,24 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
         marketplace_id: marketplaceId,
         name: values.name,
         description: values.description || null,
-        price: values.price, // This will be a number or null after Zod transformation
+        price: typeof values.price === 'string' ? parseFloat(values.price) || null : values.price,
         is_available: values.is_available,
         image_url: imageUrl,
       };
       
       console.log("Sending to Supabase:", productData);
       
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('marketplace_products')
-        .insert(productData);
+        .insert(productData)
+        .select();
         
       if (error) {
         console.error("Database insert error:", error);
-        throw error;
+        throw new Error(`Database insert failed: ${error.message}`);
       }
+      
+      console.log("Product added successfully:", data);
       
       toast({
         title: 'Success',
@@ -131,10 +137,11 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
       onProductAdded();
       onClose();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Error adding product:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add product',
+        description: `Failed to add product: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
@@ -202,7 +209,7 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
                         value={value === null ? '' : value}
                         onChange={(e) => {
                           const val = e.target.value;
-                          onChange(val === '' ? null : parseFloat(val));
+                          onChange(val === '' ? null : val);
                         }}
                         {...rest}
                       />

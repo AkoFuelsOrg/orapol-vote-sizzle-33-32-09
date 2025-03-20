@@ -69,6 +69,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
         is_available: product.is_available,
       });
       setImagePreview(product.image_url);
+      setKeepExistingImage(true);
     }
   }, [product, form]);
 
@@ -89,7 +90,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
   const onSubmit = async (values: ProductFormValues) => {
     try {
       setIsSubmitting(true);
-      console.log("Submitting values:", values);
+      console.log("Form values before submission:", values);
       
       let imageUrl = keepExistingImage ? product.image_url : null;
       
@@ -98,27 +99,30 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
         const fileName = `${uuidv4()}.${fileExt}`;
         const filePath = `marketplace_products/${fileName}`;
         
-        const { error: uploadError } = await supabase.storage
+        console.log("Uploading image:", fileName);
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from('public')
           .upload(filePath, imageFile);
           
         if (uploadError) {
           console.error("Image upload error:", uploadError);
-          throw uploadError;
+          throw new Error(`Image upload failed: ${uploadError.message}`);
         }
         
+        console.log("Image upload successful:", uploadData);
         const { data: { publicUrl } } = supabase.storage
           .from('public')
           .getPublicUrl(filePath);
           
         imageUrl = publicUrl;
+        console.log("Image public URL:", imageUrl);
       }
       
       // Ensure price is properly handled as a number or null
       const productData = {
         name: values.name,
         description: values.description,
-        price: values.price, // This will be a number or null after Zod transformation
+        price: typeof values.price === 'string' ? parseFloat(values.price) || null : values.price,
         is_available: values.is_available,
         image_url: imageUrl,
         updated_at: new Date().toISOString(),
@@ -126,15 +130,18 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
       
       console.log("Sending to Supabase:", productData);
       
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('marketplace_products')
         .update(productData)
-        .eq('id', product.id);
+        .eq('id', product.id)
+        .select();
         
       if (error) {
         console.error("Database update error:", error);
-        throw error;
+        throw new Error(`Database update failed: ${error.message}`);
       }
+      
+      console.log("Product updated successfully:", data);
       
       toast({
         title: 'Success',
@@ -144,10 +151,11 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
       onProductUpdated();
       onClose();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Error updating product:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update product',
+        description: `Failed to update product: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
@@ -215,7 +223,7 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
                         value={value === null ? '' : value}
                         onChange={(e) => {
                           const val = e.target.value;
-                          onChange(val === '' ? null : parseFloat(val));
+                          onChange(val === '' ? null : val);
                         }}
                         {...rest}
                       />
