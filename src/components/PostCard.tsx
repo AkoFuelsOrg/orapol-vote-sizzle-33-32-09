@@ -77,7 +77,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   };
 
   return (
-    <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg max-w-3xl mx-auto shadow-sm">
+    <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg max-w-4xl mx-auto shadow-sm">
       {/* Main content - restructured to have image on left and content on right */}
       <div className="flex flex-col md:flex-row">
         {/* Image on the left with profile avatar overlaid */}

@@ -11,7 +11,7 @@ const Marketplaces: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 max-w-5xl">
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Marketplaces</h1>
