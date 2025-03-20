@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
@@ -77,10 +76,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   };
 
   return (
-    <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg max-w-4xl mx-auto shadow-sm">
-      {/* Main content - restructured to have image on left and content on right */}
+    <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg w-full mx-auto shadow-sm">
       <div className="flex flex-col md:flex-row">
-        {/* Image on the left with profile avatar overlaid */}
         {post.image && (
           <div className="md:w-3/5 relative">
             <div 
@@ -97,7 +94,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
                 className="w-full h-full object-cover cursor-pointer"
               />
               
-              {/* Profile avatar overlaid on the image */}
               <div className="absolute top-3 left-3 flex items-center space-x-2 bg-black/20 p-2 rounded-full">
                 <Link 
                   to={`/user/${post.author.id}`}
@@ -133,9 +129,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
           </div>
         )}
         
-        {/* Content on the right */}
         <div className={`${post.image ? 'md:w-2/5' : 'w-full'} flex flex-col`}>
-          {/* Header - only show when no image */}
           {!post.image && (
             <div className="px-5 py-4 flex items-center justify-between border-b">
               <Link 
@@ -161,7 +155,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             </div>
           )}
           
-          {/* User info */}
           {post.image && (
             <div className="px-5 py-4 border-b">
               <Link 
@@ -173,7 +166,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             </div>
           )}
           
-          {/* Caption */}
           <div className="px-5 py-3">
             <div className="flex space-x-1">
               <p className="text-sm">
@@ -185,7 +177,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             </div>
           </div>
           
-          {/* Action buttons */}
           <div className="px-5 pt-3 pb-2 flex justify-between mt-auto">
             <div className="flex space-x-4">
               <button 
@@ -218,19 +209,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             </button>
           </div>
           
-          {/* Likes count */}
           <div className="px-5 pt-1 pb-1">
             <p className="font-semibold text-sm">{likeCount} likes</p>
           </div>
           
-          {/* Comments link */}
           {post.commentCount > 0 && (
             <Link to={`/post/${post.id}`} className="block px-5 pb-1">
               <p className="text-sm text-gray-500">View all {post.commentCount} comments</p>
             </Link>
           )}
           
-          {/* Date */}
           <div className="px-5 py-3 mt-auto border-t">
             <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
           </div>
