@@ -5,14 +5,14 @@ import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, MessageSquare, ThumbsUp, UserPlus } from 'lucide-react';
+import { User, MessageSquare, ThumbsUp, UserPlus, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Notification {
   id: string;
-  type: 'follow' | 'comment' | 'vote' | 'system';
+  type: 'follow' | 'comment' | 'vote' | 'like' | 'share' | 'system';
   content: string;
   is_read: boolean;
   created_at: string;
@@ -81,21 +81,25 @@ const Notifications: React.FC = () => {
           let userData = null;
           
           if (notification.related_user_id) {
-            // Fetch user profile data separately
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('username, avatar_url')
-              .eq('id', notification.related_user_id)
-              .single();
-              
-            if (!profileError && profileData) {
-              userData = profileData;
+            try {
+              // Fetch user profile data separately
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('username, avatar_url')
+                .eq('id', notification.related_user_id)
+                .single();
+                
+              if (!profileError && profileData) {
+                userData = profileData;
+              }
+            } catch (err) {
+              console.error('Error fetching profile data:', err);
             }
           }
           
           return {
             ...notification,
-            type: notification.type as 'follow' | 'comment' | 'vote' | 'system',
+            type: notification.type as 'follow' | 'comment' | 'vote' | 'like' | 'share' | 'system',
             user: userData
           } as Notification;
         })
@@ -169,6 +173,10 @@ const Notifications: React.FC = () => {
         return <MessageSquare className="h-5 w-5 text-green-500" />;
       case 'vote':
         return <ThumbsUp className="h-5 w-5 text-orange-500" />;
+      case 'like':
+        return <ThumbsUp className="h-5 w-5 text-red-500" />;
+      case 'share':
+        return <Share2 className="h-5 w-5 text-purple-500" />;
       default:
         return <User className="h-5 w-5 text-gray-500" />;
     }
@@ -216,9 +224,13 @@ const Notifications: React.FC = () => {
       case 'follow':
         return `${username} started following you`;
       case 'comment':
-        return `${username} commented on your poll`;
+        return `${username} commented on your ${notification.related_item_type === 'poll' ? 'poll' : 'post'}`;
       case 'vote':
         return `${username} voted on your poll`;
+      case 'like':
+        return `${username} liked your ${notification.related_item_type === 'poll' ? 'poll' : 'post'}`;
+      case 'share':
+        return `${username} shared your ${notification.related_item_type === 'poll' ? 'poll' : 'post'}`;
       default:
         return notification.content;
     }
@@ -230,7 +242,12 @@ const Notifications: React.FC = () => {
         return notification.related_user_id ? `/user/${notification.related_user_id}` : '#';
       case 'comment':
       case 'vote':
-        return notification.related_item_id ? `/poll/${notification.related_item_id}` : '#';
+      case 'like':
+      case 'share':
+        if (!notification.related_item_id) return '#';
+        return notification.related_item_type === 'poll' 
+          ? `/poll/${notification.related_item_id}` 
+          : `/post/${notification.related_item_id}`;
       default:
         return '#';
     }
@@ -263,6 +280,7 @@ const Notifications: React.FC = () => {
           ) : notifications.length === 0 ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground">You don't have any notifications yet.</p>
+              <p className="text-sm text-muted-foreground mt-2">When someone follows you, likes or comments on your content, you'll see it here.</p>
             </div>
           ) : (
             <div className="space-y-2">
