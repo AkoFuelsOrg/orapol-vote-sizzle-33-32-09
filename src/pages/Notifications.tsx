@@ -31,7 +31,7 @@ const Notifications: React.FC = () => {
   const { user } = useSupabase();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [debugInfo, setDebugInfo] = useState<string>('No debug info yet');
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
@@ -80,16 +80,17 @@ const Notifications: React.FC = () => {
 
   const fetchNotifications = async () => {
     if (!user) {
-      setDebugInfo('No user is logged in');
+      setError('No user is logged in');
+      setLoading(false);
       return;
     }
     
     try {
       setLoading(true);
+      setError(null);
       
       // Log user ID for debugging
       console.log('Fetching notifications for user ID:', user.id);
-      setDebugInfo(`Attempting to fetch notifications for user ID: ${user.id}`);
       
       // Fetch notifications
       const { data, error } = await supabase
@@ -100,12 +101,11 @@ const Notifications: React.FC = () => {
         
       if (error) {
         console.error('Error fetching notifications:', error);
-        setDebugInfo(`Error fetching notifications: ${error.message}`);
+        setError(`Error fetching notifications: ${error.message}`);
         throw error;
       }
 
       console.log('Raw notification data:', data);
-      setDebugInfo(`Found ${data?.length || 0} notifications`);
       
       // For each notification with a related_user_id, fetch the user data
       const notificationsWithUserData = await Promise.all(
@@ -113,17 +113,21 @@ const Notifications: React.FC = () => {
           let userData = null;
           
           if (notification.related_user_id) {
-            // Fetch user profile data separately
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('username, avatar_url')
-              .eq('id', notification.related_user_id)
-              .single();
-              
-            if (!profileError && profileData) {
-              userData = profileData;
-            } else if (profileError) {
-              console.log('Error fetching profile data:', profileError);
+            try {
+              // Fetch user profile data separately
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('username, avatar_url')
+                .eq('id', notification.related_user_id)
+                .maybeSingle();
+                
+              if (!profileError && profileData) {
+                userData = profileData;
+              } else if (profileError) {
+                console.log('Error fetching profile data:', profileError);
+              }
+            } catch (err) {
+              console.error('Error in profile fetch:', err);
             }
           }
           
@@ -138,7 +142,7 @@ const Notifications: React.FC = () => {
       setNotifications(notificationsWithUserData);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
-      setDebugInfo(`Error in fetchNotifications: ${error.message}`);
+      setError(`Error in fetchNotifications: ${error.message}`);
       toast({
         title: 'Error',
         description: 'Failed to load notifications',
@@ -164,6 +168,11 @@ const Notifications: React.FC = () => {
       ));
     } catch (error: any) {
       console.error('Error marking notification as read:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to mark notification as read: ${error.message}`,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -190,13 +199,13 @@ const Notifications: React.FC = () => {
       console.error('Error marking all notifications as read:', error);
       toast({
         title: 'Error',
-        description: 'Failed to mark notifications as read',
+        description: `Failed to mark notifications as read: ${error.message}`,
         variant: 'destructive'
       });
     }
   };
 
-  // Manually create and test a notification
+  // Create a test notification
   const createTestNotification = async () => {
     if (!user) return;
     
@@ -211,7 +220,10 @@ const Notifications: React.FC = () => {
         })
         .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating test notification:', error);
+        throw error;
+      }
       
       toast({
         title: 'Success',
@@ -357,7 +369,6 @@ const Notifications: React.FC = () => {
                 Mark all as read
               </button>
             )}
-            {/* Debug button to refresh notifications */}
             <Button 
               variant="outline" 
               size="sm" 
@@ -366,7 +377,6 @@ const Notifications: React.FC = () => {
             >
               Refresh
             </Button>
-            {/* Debug button to create a test notification */}
             <Button 
               variant="outline" 
               size="sm" 
@@ -388,17 +398,19 @@ const Notifications: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Debug info section */}
-              <div className="bg-muted p-4 rounded-md mb-4 text-sm">
-                <h3 className="font-semibold mb-2">Debug Information</h3>
-                <p>{debugInfo}</p>
-                <p className="mt-2">User ID: {user?.id || 'No user ID'}</p>
-                <p>Notification Count: {notifications.length}</p>
-              </div>
+              {error && (
+                <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4">
+                  <h3 className="font-semibold mb-1">Error</h3>
+                  <p>{error}</p>
+                </div>
+              )}
               
               {notifications.length === 0 ? (
                 <div className="py-8 text-center">
                   <p className="text-muted-foreground">You don't have any notifications yet.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Try creating a test notification with the button above.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -440,9 +452,11 @@ const Notifications: React.FC = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm ${!notification.is_read ? 'font-medium' : ''}`}>
-                                <span className="font-medium">
-                                  {notification.user?.username || 'Someone'}
-                                </span>{' '}
+                                {notification.user ? (
+                                  <span className="font-medium">
+                                    {notification.user.username || 'Someone'}
+                                  </span>
+                                ) : 'System'}{' '}
                                 {notification.content}
                               </p>
                               <p className="text-xs text-muted-foreground mt-1">
