@@ -7,6 +7,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 
 interface PostCardProps {
   post: Post;
@@ -74,40 +75,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
 
   return (
     <div className="bg-white rounded-md border border-gray-200 mb-4 overflow-hidden">
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between">
-        <Link 
-          to={`/user/${post.author.id}`}
-          className="flex items-center space-x-2"
-          onClick={(e) => e.stopPropagation()} // Prevent event propagation
-        >
-          <div className="relative">
-            <img 
-              src={post.author.avatar} 
-              alt={post.author.name} 
-              className="w-8 h-8 rounded-full object-cover ring-2 ring-red-500"
-            />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">{post.author.name}</p>
-          </div>
-        </Link>
-        <button className="text-gray-700">
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
-            <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
-            <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
-          </svg>
-        </button>
-      </div>
-      
       {/* Main content - restructured to have image on left and content on right */}
       <div className="flex flex-col md:flex-row">
-        {/* Image on the left */}
+        {/* Image on the left with profile avatar overlaid */}
         {post.image && (
           <div className="md:w-1/2 relative">
             <div 
-              className="aspect-square w-full overflow-hidden bg-gray-100"
+              className="aspect-square w-full overflow-hidden bg-gray-100 relative"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -119,6 +93,21 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
                 alt="Post" 
                 className="w-full h-full object-cover cursor-pointer"
               />
+              
+              {/* Profile avatar overlaid on the image */}
+              <div className="absolute top-3 left-3 flex items-center space-x-2 bg-black/20 p-2 rounded-full">
+                <Link 
+                  to={`/user/${post.author.id}`}
+                  className="flex items-center space-x-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Avatar className="w-8 h-8 border-2 border-white">
+                    <AvatarImage src={post.author.avatar} alt={post.author.name} />
+                    <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-semibold text-white">{post.author.name}</span>
+                </Link>
+              </div>
             </div>
             
             {isImageExpanded && (
@@ -143,11 +132,37 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
         
         {/* Content on the right */}
         <div className={`${post.image ? 'md:w-1/2' : 'w-full'} flex flex-col`}>
+          {/* Header - only show when no image */}
+          {!post.image && (
+            <div className="px-4 py-3 flex items-center justify-between">
+              <Link 
+                to={`/user/${post.author.id}`}
+                className="flex items-center space-x-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Avatar className="w-8 h-8 ring-2 ring-red-500">
+                  <AvatarImage src={post.author.avatar} alt={post.author.name} />
+                  <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-semibold">{post.author.name}</p>
+                </div>
+              </Link>
+              <button className="text-gray-700">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+                  <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+                  <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+          )}
+          
           {/* Caption */}
           <div className="px-4 py-3">
             <div className="flex space-x-1">
               <p className="text-sm">
-                <span className="font-semibold">{post.author.name}</span>{" "}
+                {post.image ? '' : <span className="font-semibold">{post.author.name}</span>}{" "}
                 <span className="whitespace-pre-line break-words">
                   {post.content}
                 </span>
