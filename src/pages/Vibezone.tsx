@@ -106,10 +106,10 @@ const Vibezone: React.FC = () => {
               <h3 className="font-semibold text-sm line-clamp-2">{video.title}</h3>
               <div className="mt-2 flex items-center">
                 <div className="flex-shrink-0">
-                  {video.author?.avatar_url ? (
+                  {video.author?.avatar ? (
                     <img 
-                      src={video.author.avatar_url} 
-                      alt={video.author.username || ''} 
+                      src={video.author.avatar} 
+                      alt={video.author.name || ''} 
                       className="w-6 h-6 rounded-full"
                     />
                   ) : (
@@ -117,7 +117,7 @@ const Vibezone: React.FC = () => {
                   )}
                 </div>
                 <div className="ml-2">
-                  <p className="text-xs text-gray-600">{video.author?.username || 'Unknown'}</p>
+                  <p className="text-xs text-gray-600">{video.author?.name || 'Unknown'}</p>
                   <p className="text-xs text-gray-500">
                     {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                   </p>
