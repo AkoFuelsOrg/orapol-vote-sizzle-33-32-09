@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMarketplace } from '../context/MarketplaceContext';
@@ -6,7 +5,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, Users, ImageOff, Calendar, UserMinus, Info } from 'lucide-react';
+import { UserPlus, Users, ImageOff, Calendar, UserMinus, Info, Pencil } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,6 +16,7 @@ import { MarketplaceMember, Post, Poll, PollOption } from '@/lib/types';
 import PostCard from '@/components/PostCard';
 import PollCard from '@/components/PollCard';
 import { supabase } from '@/integrations/supabase/client';
+import EditMarketplaceModal from '@/components/EditMarketplaceModal';
 
 const MarketplaceProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +33,8 @@ const MarketplaceProfile = () => {
   const [activeTab, setActiveTab] = useState("feed");
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   useEffect(() => {
     if (id) {
@@ -58,17 +60,19 @@ const MarketplaceProfile = () => {
       
       setMarketplace(marketplaceData);
       
-      // Check if user is a member
       if (user) {
         const memberStatus = await isMarketplaceMember(id);
         setIsMember(memberStatus);
+        
+        if (memberStatus) {
+          const members = await fetchMarketplaceMembers(id);
+          setMembersList(members);
+          
+          const currentUserMember = members.find(member => member.user_id === user.id);
+          setIsAdmin(currentUserMember?.role === 'admin');
+        }
       }
       
-      // Load members
-      const members = await fetchMarketplaceMembers(id);
-      setMembersList(members);
-      
-      // Load posts and polls
       await loadPosts();
       await loadPolls();
       
@@ -88,7 +92,6 @@ const MarketplaceProfile = () => {
     if (!id) return;
     
     try {
-      // Get posts from supabase
       const { data: postsData, error } = await supabase
         .from('posts')
         .select(`
@@ -107,7 +110,6 @@ const MarketplaceProfile = () => {
       if (postsData) {
         const formattedPosts: Post[] = [];
         
-        // Get user profiles for each post
         for (const post of postsData) {
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
@@ -126,7 +128,7 @@ const MarketplaceProfile = () => {
             image: post.image,
             createdAt: post.created_at,
             commentCount: post.comment_count || 0,
-            likeCount: 0, // We'll need to get this separately if needed
+            likeCount: 0,
             author: {
               id: post.user_id,
               name: profileData?.username || 'Unknown User',
@@ -167,7 +169,6 @@ const MarketplaceProfile = () => {
       if (pollsData) {
         const formattedPolls: Poll[] = [];
         
-        // Get user profiles for each poll
         for (const poll of pollsData) {
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
@@ -180,7 +181,6 @@ const MarketplaceProfile = () => {
             continue;
           }
           
-          // Convert JSON options to PollOption type
           const options: PollOption[] = [];
           if (Array.isArray(poll.options)) {
             for (const option of poll.options) {
@@ -227,7 +227,7 @@ const MarketplaceProfile = () => {
       const success = await joinMarketplace(id);
       if (success) {
         setIsMember(true);
-        loadMarketplaceData(); // Refresh marketplace data
+        loadMarketplaceData();
       }
     } finally {
       setIsJoining(false);
@@ -242,7 +242,7 @@ const MarketplaceProfile = () => {
       const success = await leaveMarketplace(id);
       if (success) {
         setIsMember(false);
-        loadMarketplaceData(); // Refresh marketplace data
+        loadMarketplaceData();
       }
     } finally {
       setIsLeaving(false);
@@ -278,9 +278,7 @@ const MarketplaceProfile = () => {
   
   return (
     <div className="space-y-6">
-      {/* Cover and profile section */}
       <div className="relative">
-        {/* Cover Image - Enhanced with gradient overlay for better text visibility */}
         <div className="h-64 w-full rounded-xl overflow-hidden relative">
           {marketplace.cover_url ? (
             <>
@@ -298,7 +296,6 @@ const MarketplaceProfile = () => {
           )}
         </div>
         
-        {/* Profile Info - Reworked for better layout and readability */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mt-[-4rem] px-6 relative z-20">
           <div className="flex items-end">
             <Avatar className="h-28 w-28 border-4 border-white shadow-lg ring-2 ring-primary/10">
@@ -314,7 +311,18 @@ const MarketplaceProfile = () => {
             </div>
           </div>
           
-          <div className="mt-4 md:mt-0 ml-32 md:ml-0 mb-2">
+          <div className="mt-4 md:mt-0 ml-32 md:ml-0 mb-2 flex gap-2">
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditModalOpen(true)}
+                className="shadow-sm"
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            )}
+            
             {user ? (
               isMember ? (
                 <Button 
@@ -357,7 +365,6 @@ const MarketplaceProfile = () => {
         </div>
       </div>
       
-      {/* Marketplace info - Moved above description */}
       <div className="flex items-center gap-2 px-6 mt-[-10px]">
         <Badge variant="secondary" className="px-3 py-1 text-sm flex items-center gap-1.5">
           <Users className="h-3.5 w-3.5" />
@@ -369,7 +376,6 @@ const MarketplaceProfile = () => {
         </Badge>
       </div>
       
-      {/* Marketplace description */}
       {marketplace.description && (
         <Card className="p-5 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100 mx-6">
           <div className="flex items-start">
@@ -379,7 +385,6 @@ const MarketplaceProfile = () => {
         </Card>
       )}
       
-      {/* Tabs for content */}
       <Tabs defaultValue="feed" value={activeTab} onValueChange={setActiveTab} className="mt-4">
         <TabsList className="grid w-full grid-cols-2 mb-2">
           <TabsTrigger value="feed" className="text-sm md:text-base py-2">Feed</TabsTrigger>
@@ -398,12 +403,10 @@ const MarketplaceProfile = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Polls */}
               {polls.map(poll => (
                 <PollCard key={`poll-${poll.id}`} poll={poll} />
               ))}
               
-              {/* Posts */}
               {posts.map(post => (
                 <PostCard key={`post-${post.id}`} post={post} />
               ))}
@@ -449,8 +452,6 @@ const MarketplaceProfile = () => {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-};
+      
 
-export default MarketplaceProfile;
+

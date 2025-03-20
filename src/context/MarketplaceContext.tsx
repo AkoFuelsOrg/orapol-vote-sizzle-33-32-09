@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode } from "react";
 import { useSupabase } from "./SupabaseContext";
 import { supabase } from "../integrations/supabase/client";
@@ -10,6 +9,7 @@ interface MarketplaceContextType {
   userMarketplaces: Marketplace[];
   isLoading: boolean;
   createMarketplace: (data: { name: string; description?: string; avatar_url?: string, cover_url?: string }) => Promise<string | null>;
+  updateMarketplace: (marketplaceId: string, data: { name: string; description?: string; avatar_url?: string, cover_url?: string }) => Promise<boolean>;
   fetchMarketplaces: () => Promise<void>;
   fetchUserMarketplaces: () => Promise<void>;
   joinMarketplace: (marketplaceId: string) => Promise<boolean>;
@@ -170,6 +170,73 @@ export const MarketplaceProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       return null;
+    }
+  };
+
+  const updateMarketplace = async (marketplaceId: string, data: {
+    name: string;
+    description?: string;
+    avatar_url?: string;
+    cover_url?: string;
+  }) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update a marketplace",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      // Check if user is an admin of the marketplace
+      const { data: memberData, error: memberError } = await supabase
+        .from("marketplace_members")
+        .select("role")
+        .eq("marketplace_id", marketplaceId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (memberError || !memberData || memberData.role !== "admin") {
+        toast({
+          title: "Error",
+          description: "You don't have permission to update this marketplace",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Update the marketplace
+      const { error } = await supabase
+        .from("marketplaces")
+        .update({
+          name: data.name,
+          description: data.description || "",
+          avatar_url: data.avatar_url || null,
+          cover_url: data.cover_url || null,
+        })
+        .eq("id", marketplaceId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: "Marketplace updated successfully",
+      });
+
+      await fetchMarketplaces();
+      await fetchUserMarketplaces();
+      return true;
+    } catch (error) {
+      console.error("Error updating marketplace:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update marketplace",
+        variant: "destructive",
+      });
+      return false;
     }
   };
 
@@ -361,6 +428,7 @@ export const MarketplaceProvider = ({ children }: { children: ReactNode }) => {
     userMarketplaces,
     isLoading,
     createMarketplace,
+    updateMarketplace,
     fetchMarketplaces,
     fetchUserMarketplaces,
     joinMarketplace,
