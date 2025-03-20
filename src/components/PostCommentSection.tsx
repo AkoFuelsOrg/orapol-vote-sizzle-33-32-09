@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -53,6 +54,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     try {
       setLoading(true);
       
+      // First get the count of top-level comments
       const { count, error: countError } = await supabase
         .from('post_comments')
         .select('id', { count: 'exact', head: false })
@@ -64,6 +66,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       setTotalComments(count || 0);
       updateCommentCount(count || 0);
       
+      // Now get the actual comment data
       const { data: commentsData, error: commentsError } = await supabase
         .from('post_comments')
         .select(`
@@ -88,6 +91,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         return;
       }
       
+      // Get user profiles separately
       const userIds = [...new Set(commentsData.map(comment => comment.user_id))];
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -101,6 +105,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         profileMap.set(profile.id, profile);
       });
       
+      // Get reply counts for each comment
       const commentsWithCounts = await Promise.all(commentsData.map(async (comment) => {
         const { count, error: countError } = await supabase
           .from('post_comments')
@@ -117,6 +122,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       
       let formattedComments: CommentType[] = [];
       
+      // Get like status if user is logged in
       if (user) {
         const { data: likes, error: likesError } = await supabase
           .from('post_comment_likes')
@@ -186,6 +192,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     try {
       setSubmitting(true);
       
+      // Insert new comment directly
       const { data: commentData, error: commentError } = await supabase
         .from('post_comments')
         .insert({
@@ -201,6 +208,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       setTotalComments(newCommentCount);
       updateCommentCount(newCommentCount);
       
+      // Update post comment count
       await supabase
         .from('posts')
         .update({ comment_count: newCommentCount })

@@ -81,6 +81,7 @@ const PostComment: React.FC<PostCommentProps> = ({
     try {
       setLoadingReplies(true);
       
+      // First, get the replies
       const { data: repliesData, error: repliesError } = await supabase
         .from('post_comments')
         .select(`
@@ -101,6 +102,7 @@ const PostComment: React.FC<PostCommentProps> = ({
         return;
       }
       
+      // Then, get the user profiles separately
       const userIds = [...new Set(repliesData.map(reply => reply.user_id))];
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -189,6 +191,7 @@ const PostComment: React.FC<PostCommentProps> = ({
     try {
       setSubmitting(true);
       
+      // Insert the reply directly
       const { data: replyData, error: replyError } = await supabase
         .from('post_comments')
         .insert({
@@ -197,7 +200,7 @@ const PostComment: React.FC<PostCommentProps> = ({
           content: replyContent.trim(),
           parent_id: comment.id
         })
-        .select('*, profiles!inner(id, username, avatar_url)');
+        .select('id, content, created_at, user_id');
       
       if (replyError) throw replyError;
       
