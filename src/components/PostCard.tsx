@@ -11,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Card } from './ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import PostCommentSection from './PostCommentSection';
+import { AspectRatio } from './ui/aspect-ratio';
 
 interface PostCardProps {
   post: Post;
@@ -90,9 +91,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg w-full mx-auto shadow-sm min-h-[70vh]">
       <div className="flex flex-col md:flex-row h-full">
         {post.image && (
-          <div className="md:w-3/5 relative">
+          <div className="md:w-3/5 h-full">
             <div 
-              className="aspect-square w-full overflow-hidden bg-gray-100 relative h-full"
+              className="relative w-full h-full"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -188,7 +189,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             </div>
           </div>
           
-          <div className="flex-grow">
+          <div className="flex-grow overflow-y-auto">
             <PostCommentSection 
               postId={post.id} 
               updateCommentCount={updateCommentCount}
