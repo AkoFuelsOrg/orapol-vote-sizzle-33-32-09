@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -7,6 +8,8 @@ import { toast } from 'sonner';
 import PostComment from './PostComment';
 import EmojiPicker from './EmojiPicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 
 interface Author {
   id: string;
@@ -40,7 +43,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
   const [commentContent, setCommentContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [totalComments, setTotalComments] = useState(0);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
@@ -176,8 +179,8 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
 
   const handleInsertEmoji = (emoji: string) => {
     setCommentContent(prev => prev + emoji);
-    if (inputRef.current) {
-      inputRef.current.focus();
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
   };
 
@@ -339,58 +342,58 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
           </div>
           
           {showCommentForm && (
-            <div className="px-5 pt-2 pb-2 flex items-center border-t">
+            <div className="px-5 pt-3 pb-3 border-t">
               {user ? (
-                <form onSubmit={handleSubmitComment} className="flex w-full items-center">
-                  <Avatar className="h-7 w-7 mr-2">
-                    <AvatarImage src={profile?.avatar_url || ''} />
-                    <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-1 items-center relative">
-                    <input
-                      ref={inputRef}
-                      className="flex-1 border-none bg-transparent text-sm placeholder-gray-500 focus:outline-none"
-                      placeholder="Add a comment..."
-                      value={commentContent}
-                      onChange={(e) => setCommentContent(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSubmitComment();
-                        }
-                      }}
-                    />
-                    <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
-                      <PopoverTrigger asChild>
-                        <button 
-                          type="button" 
-                          className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                        >
-                          <Smile className="h-5 w-5" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0 border-none shadow-lg" align="end">
-                        <EmojiPicker 
-                          onSelectEmoji={handleInsertEmoji} 
-                          onClose={() => setIsEmojiPickerOpen(false)} 
-                        />
-                      </PopoverContent>
-                    </Popover>
+                <form onSubmit={handleSubmitComment} className="flex flex-col space-y-3">
+                  <div className="flex items-start">
+                    <Avatar className="h-8 w-8 mr-3 mt-1">
+                      <AvatarImage src={profile?.avatar_url || ''} />
+                      <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 relative">
+                      <Textarea
+                        ref={textareaRef}
+                        className="min-h-[80px] w-full resize-none bg-gray-50 border-gray-200 rounded-lg focus:border-blue-300 placeholder:text-gray-400 text-sm"
+                        placeholder="Add a comment..."
+                        value={commentContent}
+                        onChange={(e) => setCommentContent(e.target.value)}
+                      />
+                      <div className="absolute bottom-2 right-2">
+                        <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+                          <PopoverTrigger asChild>
+                            <button 
+                              type="button" 
+                              className="text-gray-500 hover:text-gray-700 focus:outline-none p-1 rounded-full hover:bg-gray-100"
+                            >
+                              <Smile className="h-5 w-5" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="p-0 border-none shadow-lg" align="end">
+                            <EmojiPicker 
+                              onSelectEmoji={handleInsertEmoji} 
+                              onClose={() => setIsEmojiPickerOpen(false)} 
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={submitting || !commentContent.trim()}
-                    className={`ml-2 text-blue-500 text-sm font-semibold ${!commentContent.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {submitting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'Post'
-                    )}
-                  </button>
+                  <div className="flex justify-end">
+                    <Button
+                      type="submit"
+                      disabled={submitting || !commentContent.trim()}
+                      className="bg-blue-500 hover:bg-blue-600 text-white rounded-full px-5"
+                    >
+                      {submitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Post'
+                      )}
+                    </Button>
+                  </div>
                 </form>
               ) : (
-                <div className="text-center w-full text-sm text-gray-500">
+                <div className="text-center py-3 bg-gray-50 rounded-lg text-gray-500 text-sm border border-gray-100">
                   Please sign in to leave a comment
                 </div>
               )}
