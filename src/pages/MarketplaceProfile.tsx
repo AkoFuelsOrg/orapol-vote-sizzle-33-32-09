@@ -312,17 +312,6 @@ const MarketplaceProfile = () => {
           </div>
           
           <div className="mt-4 md:mt-0 ml-32 md:ml-0 mb-2 flex gap-2">
-            {isAdmin && (
-              <Button 
-                variant="outline" 
-                onClick={() => setIsEditModalOpen(true)}
-                className="shadow-sm"
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-            )}
-            
             {user ? (
               isMember ? (
                 <Button 
@@ -365,7 +354,7 @@ const MarketplaceProfile = () => {
         </div>
       </div>
       
-      <div className="flex items-center gap-2 px-6 mt-[-10px]">
+      <div className="flex items-center gap-2 px-6 mt-[-10px] flex-wrap">
         <Badge variant="secondary" className="px-3 py-1 text-sm flex items-center gap-1.5">
           <Users className="h-3.5 w-3.5" />
           <span>{membersList.length || 0} {membersList.length === 1 ? 'member' : 'members'}</span>
@@ -374,6 +363,18 @@ const MarketplaceProfile = () => {
           <Calendar className="h-3.5 w-3.5" />
           <span>Created {marketplace.created_at ? formatDistanceToNow(new Date(marketplace.created_at), { addSuffix: false }) + ' ago' : ''}</span>
         </Badge>
+        
+        {isAdmin && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsEditModalOpen(true)}
+            className="ml-1 h-7 shadow-sm"
+          >
+            <Pencil className="mr-1 h-3.5 w-3.5" />
+            Edit
+          </Button>
+        )}
       </div>
       
       {marketplace.description && (
