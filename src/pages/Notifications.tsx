@@ -49,6 +49,7 @@ const Notifications: React.FC = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
+            console.log('New notification received:', payload);
             fetchNotifications();
           }
         )
@@ -75,9 +76,17 @@ const Notifications: React.FC = () => {
         
       if (error) throw error;
       
+      console.log('Fetched notifications:', data);
+      
+      if (!data || data.length === 0) {
+        setNotifications([]);
+        setLoading(false);
+        return;
+      }
+      
       // For each notification with a related_user_id, fetch the user data
       const notificationsWithUserData = await Promise.all(
-        (data || []).map(async (notification) => {
+        data.map(async (notification) => {
           let userData = null;
           
           if (notification.related_user_id) {
@@ -105,6 +114,7 @@ const Notifications: React.FC = () => {
         })
       );
       
+      console.log('Processed notifications with user data:', notificationsWithUserData);
       setNotifications(notificationsWithUserData);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
@@ -253,20 +263,67 @@ const Notifications: React.FC = () => {
     }
   };
 
+  // Debugging function to create a test notification
+  const createTestNotification = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'system',
+          content: 'This is a test notification',
+          is_read: false,
+        });
+        
+      if (error) throw error;
+      
+      toast({
+        title: 'Success',
+        description: 'Test notification created',
+      });
+      
+      // Fetch notifications to update the list
+      fetchNotifications();
+    } catch (error: any) {
+      console.error('Error creating test notification:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create test notification',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <div className={`w-full ${isDesktop ? 'max-w-full' : ''} mx-auto py-8`}>
       <h1 className="text-2xl font-bold mb-6">Your Notifications</h1>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Notifications</CardTitle>
-          {notifications.length > 0 && (
-            <button 
-              onClick={markAllAsRead}
-              className="text-sm text-primary hover:underline"
+          <div className="flex items-center gap-4">
+            {notifications.length > 0 && (
+              <button 
+                onClick={markAllAsRead}
+                className="text-sm text-primary hover:underline"
+              >
+                Mark all as read
+              </button>
+            )}
+            <button
+              onClick={createTestNotification}
+              className="text-sm text-gray-500 hover:underline"
             >
-              Mark all as read
+              Create test notification
             </button>
-          )}
+            <button
+              onClick={fetchNotifications}
+              className="text-sm text-gray-500 hover:underline"
+            >
+              Refresh
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           {!user ? (
