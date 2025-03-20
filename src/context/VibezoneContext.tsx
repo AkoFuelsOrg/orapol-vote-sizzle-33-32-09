@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,43 +32,44 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase
+      // First, get the videos
+      const { data: videosData, error: videosError } = await supabase
         .from('videos')
-        .select(`
-          *,
-          author:profiles(*)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
       
-      if (error) throw error;
+      if (videosError) throw videosError;
       
       // Transform the data to match our Video type
-      const transformedVideos = data.map(video => {
-        // Create a default author object if no author data is available
-        let author = undefined;
-        
-        // Check if author exists and has the expected properties
-        if (video.author && typeof video.author === 'object') {
-          // Use non-null assertion after the check to tell TypeScript that 
-          // we've already verified author is not null
-          const authorData = video.author as Record<string, any>;
-          author = {
-            id: authorData.id || '',
-            name: authorData.username || 'Unknown User',
-            avatar: authorData.avatar_url || '',
-            username: authorData.username || 'Unknown User',
-            avatar_url: authorData.avatar_url || ''
-          };
+      const transformedVideos = await Promise.all(videosData.map(async (video) => {
+        // Fetch the author info separately
+        let authorInfo = null;
+        if (video.user_id) {
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', video.user_id)
+            .single();
+          
+          if (!userError && userData) {
+            authorInfo = {
+              id: userData.id || '',
+              name: userData.username || 'Unknown User',
+              avatar: userData.avatar_url || '',
+              username: userData.username || 'Unknown User',
+              avatar_url: userData.avatar_url || ''
+            };
+          }
         }
         
         return {
           ...video,
-          author
-        };
-      });
+          author: authorInfo
+        } as Video;
+      }));
       
-      return transformedVideos as Video[];
+      return transformedVideos;
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching videos:', error);
@@ -85,39 +85,41 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
+      // Fetch the video
       const { data, error } = await supabase
         .from('videos')
-        .select(`
-          *,
-          author:profiles(*)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
       
       if (error) throw error;
       
-      // Create a default author object if no author data is available
-      let author = undefined;
-      
-      // Check if author exists and has the expected properties
-      if (data.author && typeof data.author === 'object') {
-        // Use type assertion after our check to avoid null issues
-        const authorData = data.author as Record<string, any>;
-        author = {
-          id: authorData.id || '',
-          name: authorData.username || 'Unknown User',
-          avatar: authorData.avatar_url || '',
-          username: authorData.username || 'Unknown User',
-          avatar_url: authorData.avatar_url || ''
-        };
+      // Fetch the author info separately
+      let authorInfo = null;
+      if (data.user_id) {
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user_id)
+          .single();
+        
+        if (!userError && userData) {
+          authorInfo = {
+            id: userData.id || '',
+            name: userData.username || 'Unknown User',
+            avatar: userData.avatar_url || '',
+            username: userData.username || 'Unknown User',
+            avatar_url: userData.avatar_url || ''
+          };
+        }
       }
       
       const transformedVideo = {
         ...data,
-        author
-      };
+        author: authorInfo
+      } as Video;
       
-      return transformedVideo as Video;
+      return transformedVideo;
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching video:', error);
@@ -133,42 +135,44 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase
+      // Fetch the comments
+      const { data: commentsData, error: commentsError } = await supabase
         .from('video_comments')
-        .select(`
-          *,
-          author:profiles(*)
-        `)
+        .select('*')
         .eq('video_id', videoId)
         .order('created_at', { ascending: true });
       
-      if (error) throw error;
+      if (commentsError) throw commentsError;
       
       // Transform the data to match our VideoComment type
-      const transformedComments = data.map(comment => {
-        // Create a default author object if no author data is available
-        let author = undefined;
-        
-        // Check if author exists and has the expected properties
-        if (comment.author && typeof comment.author === 'object') {
-          // Use type assertion after our check to avoid null issues
-          const authorData = comment.author as Record<string, any>;
-          author = {
-            id: authorData.id || '',
-            name: authorData.username || 'Unknown User',
-            avatar: authorData.avatar_url || '',
-            username: authorData.username || 'Unknown User',
-            avatar_url: authorData.avatar_url || ''
-          };
+      const transformedComments = await Promise.all(commentsData.map(async (comment) => {
+        // Fetch the author info separately
+        let authorInfo = null;
+        if (comment.user_id) {
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', comment.user_id)
+            .single();
+          
+          if (!userError && userData) {
+            authorInfo = {
+              id: userData.id || '',
+              name: userData.username || 'Unknown User',
+              avatar: userData.avatar_url || '',
+              username: userData.username || 'Unknown User',
+              avatar_url: userData.avatar_url || ''
+            };
+          }
         }
         
         return {
           ...comment,
-          author
-        };
-      });
+          author: authorInfo
+        } as VideoComment;
+      }));
       
-      return transformedComments as VideoComment[];
+      return transformedComments;
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching video comments:', error);
@@ -189,6 +193,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
+      // Insert the comment
       const { data, error } = await supabase
         .from('video_comments')
         .insert({
@@ -196,37 +201,38 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           user_id: user.id,
           content
         })
-        .select(`
-          *,
-          author:profiles(*)
-        `)
+        .select('*')
         .single();
       
       if (error) throw error;
       
-      // Create a default author object if no author data is available
-      let author = undefined;
-      
-      // Check if author exists and has the expected properties
-      if (data.author && typeof data.author === 'object') {
-        // Use type assertion after our check to avoid null issues
-        const authorData = data.author as Record<string, any>;
-        author = {
-          id: authorData.id || '',
-          name: authorData.username || 'Unknown User',
-          avatar: authorData.avatar_url || '',
-          username: authorData.username || 'Unknown User',
-          avatar_url: authorData.avatar_url || ''
-        };
+      // Fetch the author info separately
+      let authorInfo = null;
+      if (user.id) {
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (!userError && userData) {
+          authorInfo = {
+            id: userData.id || '',
+            name: userData.username || 'Unknown User',
+            avatar: userData.avatar_url || '',
+            username: userData.username || 'Unknown User',
+            avatar_url: userData.avatar_url || ''
+          };
+        }
       }
       
       const transformedComment = {
         ...data,
-        author
-      };
+        author: authorInfo
+      } as VideoComment;
       
       toast.success('Comment added successfully');
-      return transformedComment as VideoComment;
+      return transformedComment;
     } catch (error: any) {
       setError(error.message);
       toast.error('Failed to add comment');
