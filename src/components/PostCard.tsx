@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Heart, Share2, X, Maximize } from 'lucide-react';
+import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
 import { Post } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
@@ -22,10 +22,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'long', 
+      day: 'numeric'
     }).format(date);
   };
 
@@ -75,98 +73,90 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in">
-      <Link to={`/post/${post.id}`} className="block">
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <Link 
-            to={`/user/${post.author.id}`}
-            className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-            onClick={(e) => e.stopPropagation()} // Prevent event propagation
-          >
+    <div className="bg-white rounded-md border border-gray-200 mb-4 overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 flex items-center justify-between">
+        <Link 
+          to={`/user/${post.author.id}`}
+          className="flex items-center space-x-2"
+          onClick={(e) => e.stopPropagation()} // Prevent event propagation
+        >
+          <div className="relative">
             <img 
               src={post.author.avatar} 
               alt={post.author.name} 
-              className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
+              className="w-8 h-8 rounded-full object-cover ring-2 ring-red-500"
             />
-            <div>
-              <p className="text-sm font-medium text-red-500">{post.author.name}</p>
-              <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
-            </div>
-          </Link>
-        </div>
-        
-        {/* Content */}
-        <div className="mb-4">
-          <p className="text-base whitespace-pre-line break-words">
-            {post.content}
-          </p>
-        </div>
-        
-        {/* Image */}
-        {post.image && (
-          <>
-            <div 
-              className="mb-4 rounded-lg overflow-hidden relative cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsImageExpanded(true);
-              }}
-            >
-              <img 
-                src={post.image} 
-                alt="Post" 
-                className="w-full h-auto max-h-[300px] object-cover"
-              />
-              <div className="absolute inset-0 bg-black/10 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
-                <Maximize size={24} className="text-white drop-shadow-lg" />
-              </div>
-            </div>
-            
-            {isImageExpanded && (
-              <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
-                <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
-                  <DialogTitle className="sr-only">Post Image</DialogTitle>
-                  <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
-                    <X size={24} />
-                  </DialogClose>
-                  <div className="relative w-full overflow-hidden rounded-lg p-1">
-                    <img 
-                      src={post.image} 
-                      alt="Post" 
-                      className="w-full h-auto max-h-[80vh] object-contain"
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </>
-        )}
-        
-        {/* Post stats */}
-        <div className="flex items-center justify-between py-2 border-t border-b my-2">
-          <div className="flex items-center space-x-2" onClick={(e) => e.preventDefault()}>
-            <button 
-              className={`flex items-center space-x-1 p-1.5 rounded-md hover:bg-gray-100 ${hasLiked ? 'text-red-500' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleLike();
-              }}
-            >
-              <Heart size={18} className={hasLiked ? 'fill-red-500' : ''} />
-              <span>{likeCount}</span>
-            </button>
-            
-            <button className="flex items-center space-x-1 p-1.5 rounded-md hover:bg-gray-100">
-              <MessageCircle size={18} />
-              <span>{post.commentCount}</span>
-            </button>
+          </div>
+          <div>
+            <p className="text-sm font-semibold">{post.author.name}</p>
+          </div>
+        </Link>
+        <button className="text-gray-700">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+            <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+            <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
+      
+      {/* Image */}
+      {post.image && (
+        <>
+          <div 
+            className="relative"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsImageExpanded(true);
+            }}
+          >
+            <img 
+              src={post.image} 
+              alt="Post" 
+              className="w-full h-auto object-cover"
+            />
           </div>
           
+          {isImageExpanded && (
+            <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
+              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+                <DialogTitle className="sr-only">Post Image</DialogTitle>
+                <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+                  <X size={24} />
+                </DialogClose>
+                <div className="relative w-full overflow-hidden rounded-lg p-1">
+                  <img 
+                    src={post.image} 
+                    alt="Post" 
+                    className="w-full h-auto max-h-[80vh] object-contain"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </>
+      )}
+      
+      {/* Action buttons */}
+      <div className="px-4 pt-3 pb-1 flex justify-between">
+        <div className="flex space-x-4">
           <button 
-            className="p-1.5 rounded-md hover:bg-gray-100"
+            className="focus:outline-none"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLike();
+            }}
+          >
+            <Heart size={24} className={`${hasLiked ? 'fill-red-500 text-red-500' : 'text-black'}`} />
+          </button>
+          <Link to={`/post/${post.id}`} className="focus:outline-none">
+            <MessageCircle size={24} className="text-black" />
+          </Link>
+          <button 
+            className="focus:outline-none"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -174,10 +164,42 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
               toast.success("Link copied to clipboard");
             }}
           >
-            <Share2 size={18} />
+            <Share2 size={24} className="text-black" />
           </button>
         </div>
+        <button className="focus:outline-none">
+          <Bookmark size={24} className="text-black" />
+        </button>
+      </div>
+      
+      {/* Likes count */}
+      <div className="px-4 pt-1 pb-1">
+        <p className="font-semibold text-sm">{likeCount} likes</p>
+      </div>
+      
+      {/* Caption */}
+      <Link to={`/post/${post.id}`} className="block px-4 pb-1">
+        <div className="flex space-x-1">
+          <p className="text-sm">
+            <span className="font-semibold">{post.author.name}</span>{" "}
+            <span className="whitespace-pre-line break-words">
+              {post.content}
+            </span>
+          </p>
+        </div>
       </Link>
+      
+      {/* Comments link */}
+      {post.commentCount > 0 && (
+        <Link to={`/post/${post.id}`} className="block px-4 pb-1">
+          <p className="text-sm text-gray-500">View all {post.commentCount} comments</p>
+        </Link>
+      )}
+      
+      {/* Date */}
+      <div className="px-4 py-2">
+        <p className="text-xs uppercase text-gray-500">{formatDate(post.createdAt)}</p>
+      </div>
     </div>
   );
 };

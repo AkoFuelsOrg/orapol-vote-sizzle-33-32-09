@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Loader2, ChevronDown, ChevronUp, X, Maximize } from 'lucide-react';
+import { MessageCircle, Loader2, ChevronDown, ChevronUp, X, Maximize, Heart, Share2, Bookmark } from 'lucide-react';
 import { Poll, PollOption } from '../lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -84,10 +84,8 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'long', 
+      day: 'numeric' 
     }).format(date);
   };
   
@@ -181,39 +179,49 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
 
   const cardContent = (
     <>
-      <div className="mb-4 flex items-center justify-between">
+      {/* Header */}
+      <div className="px-4 py-3 flex items-center justify-between">
         <Link 
           to={`/user/${poll.author.id}`}
-          className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-          onClick={(e) => e.stopPropagation()} // Prevent double-click handler from triggering
+          className="flex items-center space-x-2"
+          onClick={(e) => e.stopPropagation()}
         >
-          <img 
-            src={poll.author.avatar} 
-            alt={poll.author.name} 
-            className="w-8 h-8 rounded-full border-2 border-red-500 object-cover"
-          />
+          <div className="relative">
+            <img 
+              src={poll.author.avatar} 
+              alt={poll.author.name} 
+              className="w-8 h-8 rounded-full object-cover ring-2 ring-red-500"
+            />
+          </div>
           <div>
-            <p className="text-sm font-medium text-red-500">{poll.author.name}</p>
-            <p className="text-xs text-muted-foreground">{formatDate(poll.createdAt)}</p>
+            <p className="text-sm font-semibold">{poll.author.name}</p>
           </div>
         </Link>
-        <div className="pill bg-secondary text-secondary-foreground">
-          {poll.totalVotes} votes
-        </div>
+        <button className="text-gray-700">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+            <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+            <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+          </svg>
+        </button>
       </div>
       
-      <h3 className="text-lg font-semibold mb-4">{poll.question}</h3>
+      {/* Poll Question */}
+      <div className="px-4 pb-3">
+        <h3 className="text-base font-semibold">{poll.question}</h3>
+      </div>
       
+      {/* Poll Image */}
       {poll.image && (
         <>
           <div 
-            className="mb-4 rounded-lg overflow-hidden relative cursor-pointer"
+            className="relative"
             onDoubleClick={handleImageDoubleClick}
           >
             <img 
               src={poll.image} 
               alt={poll.question} 
-              className="w-full h-48 object-cover"
+              className="w-full h-auto object-cover"
             />
           </div>
           
@@ -237,38 +245,84 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
         </>
       )}
       
-      <Collapsible 
-        open={isExpanded} 
-        onOpenChange={setIsExpanded} 
-        className="w-full"
-      >
-        <div className="space-y-2.5 mb-4 relative">
-          {isVoting && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          )}
+      {/* Poll Options */}
+      <div className="px-4 py-2">
+        <Collapsible 
+          open={isExpanded} 
+          onOpenChange={setIsExpanded} 
+          className="w-full"
+        >
+          <div className="space-y-2.5 relative">
+            {isVoting && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+            
+            {poll.options.slice(0, 2).map((option) => renderOptionContent(option))}
+          </div>
           
-          {poll.options.slice(0, 2).map((option) => renderOptionContent(option))}
+          <CollapsibleContent className="space-y-2.5 mt-2">
+            {poll.options.slice(2).map((option) => renderOptionContent(option))}
+          </CollapsibleContent>
+          
+          {poll.options.length > 2 && (
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-center p-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <span>{isExpanded ? "Show less" : "Show more options"}</span>
+                {isExpanded ? (
+                  <ChevronUp className="ml-1 h-4 w-4" />
+                ) : (
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+          )}
+        </Collapsible>
+      </div>
+      
+      {/* Action buttons */}
+      <div className="px-4 pt-3 pb-1 flex justify-between">
+        <div className="flex space-x-4">
+          <button className="focus:outline-none">
+            <Heart size={24} className="text-black" />
+          </button>
+          <Link to={`/poll/${poll.id}`} className="focus:outline-none">
+            <MessageCircle size={24} className="text-black" />
+          </Link>
+          <button 
+            className="focus:outline-none"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigator.clipboard.writeText(window.location.origin + `/poll/${poll.id}`);
+              toast.success("Link copied to clipboard");
+            }}
+          >
+            <Share2 size={24} className="text-black" />
+          </button>
         </div>
-        
-        <CollapsibleContent className="space-y-2.5">
-          {poll.options.slice(2).map((option) => renderOptionContent(option))}
-        </CollapsibleContent>
-        
-        {poll.options.length > 2 && (
-          <CollapsibleTrigger asChild>
-            <button className="w-full flex items-center justify-center p-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <span>{isExpanded ? "Show less" : "Show more options"}</span>
-              {isExpanded ? (
-                <ChevronUp className="ml-1 h-4 w-4" />
-              ) : (
-                <ChevronDown className="ml-1 h-4 w-4" />
-              )}
-            </button>
-          </CollapsibleTrigger>
-        )}
-      </Collapsible>
+        <button className="focus:outline-none">
+          <Bookmark size={24} className="text-black" />
+        </button>
+      </div>
+      
+      {/* Votes count */}
+      <div className="px-4 pt-1 pb-1">
+        <p className="font-semibold text-sm">{poll.totalVotes} votes</p>
+      </div>
+      
+      {/* Comments count */}
+      {poll.commentCount > 0 && (
+        <Link to={`/poll/${poll.id}`} className="block px-4 pb-1">
+          <p className="text-sm text-gray-500">View all {poll.commentCount} comments</p>
+        </Link>
+      )}
+      
+      {/* Date */}
+      <div className="px-4 py-2">
+        <p className="text-xs uppercase text-gray-500">{formatDate(poll.createdAt)}</p>
+      </div>
       
       {expandedOptionImage && (
         <Dialog open={!!expandedOptionImage} onOpenChange={(open) => !open && setExpandedOptionImage(null)}>
@@ -287,17 +341,12 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           </DialogContent>
         </Dialog>
       )}
-      
-      <div className="flex items-center">
-        <MessageCircle size={15} className="mr-1 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">{poll.commentCount} comments</span>
-      </div>
     </>
   );
 
   return (
     <div 
-      className={`bg-white rounded-xl p-5 shadow-sm border border-border/50 card-hover animate-fade-in ${!preview ? 'block' : ''}`}
+      className="bg-white rounded-md border border-gray-200 mb-4 overflow-hidden"
       onDoubleClick={handleDoubleClick}
     >
       {!preview ? (
@@ -308,7 +357,7 @@ const PollCard: React.FC<PollCardProps> = ({ poll, preview = false }) => {
           {cardContent}
         </Link>
       ) : (
-        <div className="block">
+        <div>
           {cardContent}
         </div>
       )}
