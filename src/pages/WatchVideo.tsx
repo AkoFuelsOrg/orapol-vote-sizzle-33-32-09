@@ -35,7 +35,7 @@ const WatchVideo: React.FC = () => {
         const videoData = await fetchVideo(id);
         if (videoData) {
           setVideo(videoData);
-          setLikesCount(videoData.likes);
+          setLikesCount(videoData.likes || 0);
           
           // Check if the user has liked this video
           if (user) {
@@ -206,13 +206,13 @@ const WatchVideo: React.FC = () => {
           <div className="flex items-center">
             <Avatar className="h-10 w-10">
               <img 
-                src={video.author?.avatar || "https://via.placeholder.com/40"} 
-                alt={video.author?.name || 'Author'} 
+                src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
+                alt={video.author?.name || video.author?.username || 'Author'} 
                 className="rounded-full"
               />
             </Avatar>
             <div className="ml-3">
-              <h3 className="font-semibold">{video.author?.name || 'Unknown'}</h3>
+              <h3 className="font-semibold">{video.author?.name || video.author?.username || 'Unknown'}</h3>
             </div>
           </div>
           
@@ -273,14 +273,14 @@ const WatchVideo: React.FC = () => {
                 <div key={comment.id} className="flex gap-3">
                   <Avatar className="h-8 w-8 mt-1">
                     <img 
-                      src={comment.author?.avatar || "https://via.placeholder.com/32"} 
-                      alt={comment.author?.name || 'User'} 
+                      src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
+                      alt={comment.author?.name || comment.author?.username || 'User'} 
                       className="rounded-full"
                     />
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{comment.author?.name || 'Unknown'}</span>
+                      <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
                       <span className="text-xs text-gray-500">
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                       </span>

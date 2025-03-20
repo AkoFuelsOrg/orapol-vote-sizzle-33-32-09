@@ -52,9 +52,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const transformedVideos = data.map(video => ({
         ...video,
         author: video.author ? {
-          id: video.author.id,
-          name: video.author.username,
-          avatar: video.author.avatar_url
+          id: video.author.id || '',
+          name: video.author.username || '',
+          avatar: video.author.avatar_url || '',
+          username: video.author.username || '',
+          avatar_url: video.author.avatar_url || ''
         } : undefined
       }));
       
@@ -93,9 +95,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const transformedVideo = {
         ...data,
         author: data.author ? {
-          id: data.author.id,
-          name: data.author.username,
-          avatar: data.author.avatar_url
+          id: data.author.id || '',
+          name: data.author.username || '',
+          avatar: data.author.avatar_url || '',
+          username: data.author.username || '',
+          avatar_url: data.author.avatar_url || ''
         } : undefined
       };
       
@@ -134,9 +138,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const transformedComments = data.map(comment => ({
         ...comment,
         author: comment.author ? {
-          id: comment.author.id,
-          name: comment.author.username,
-          avatar: comment.author.avatar_url
+          id: comment.author.id || '',
+          name: comment.author.username || '',
+          avatar: comment.author.avatar_url || '',
+          username: comment.author.username || '',
+          avatar_url: comment.author.avatar_url || ''
         } : undefined
       }));
       
@@ -184,9 +190,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const transformedComment = {
         ...data,
         author: data.author ? {
-          id: data.author.id,
-          name: data.author.username,
-          avatar: data.author.avatar_url
+          id: data.author.id || '',
+          name: data.author.username || '',
+          avatar: data.author.avatar_url || '',
+          username: data.author.username || '',
+          avatar_url: data.author.avatar_url || ''
         } : undefined
       };
       
