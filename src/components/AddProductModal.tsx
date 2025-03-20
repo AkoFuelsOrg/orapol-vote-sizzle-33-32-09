@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,12 @@ interface AddProductModalProps {
 const formSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   description: z.string().optional(),
-  price: z.string().optional().transform(val => val === '' ? null : parseFloat(val)),
+  price: z.string().optional()
+    .transform(val => {
+      if (val === '') return null;
+      const num = parseFloat(val);
+      return isNaN(num) ? null : num;
+    }),
   is_available: z.boolean().default(true),
 });
 
@@ -50,7 +54,6 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
     
     setImageFile(file);
     
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
@@ -64,7 +67,6 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
       
       let imageUrl = null;
       
-      // Upload image if selected
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
@@ -76,7 +78,6 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
           
         if (uploadError) throw uploadError;
         
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('public')
           .getPublicUrl(filePath);
@@ -84,7 +85,6 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
         imageUrl = publicUrl;
       }
       
-      // Create the product
       const { error } = await supabase
         .from('marketplace_products')
         .insert({

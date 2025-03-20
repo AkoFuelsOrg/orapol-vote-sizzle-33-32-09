@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,12 @@ interface EditProductModalProps {
 const formSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   description: z.string().nullable(),
-  price: z.string().optional().transform(val => val === '' ? null : parseFloat(val)),
+  price: z.string().optional()
+    .transform(val => {
+      if (val === '') return null;
+      const num = parseFloat(val);
+      return isNaN(num) ? null : num;
+    }),
   is_available: z.boolean().default(true),
 });
 
@@ -65,7 +69,6 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
     setImageFile(file);
     setKeepExistingImage(false);
     
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
@@ -79,7 +82,6 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
       
       let imageUrl = keepExistingImage ? product.image_url : null;
       
-      // Upload image if selected
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${uuidv4()}.${fileExt}`;
@@ -91,7 +93,6 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
           
         if (uploadError) throw uploadError;
         
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('public')
           .getPublicUrl(filePath);
@@ -99,7 +100,6 @@ const EditProductModal = ({ product, isOpen, onClose, onProductUpdated }: EditPr
         imageUrl = publicUrl;
       }
       
-      // Update the product
       const { error } = await supabase
         .from('marketplace_products')
         .update({
