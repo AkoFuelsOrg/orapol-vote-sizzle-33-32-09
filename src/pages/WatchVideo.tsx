@@ -51,7 +51,7 @@ const WatchVideo: React.FC = () => {
     if (video) {
       console.log("Video author ID:", video?.author?.id);
       console.log("Current user ID:", user?.id);
-      console.log("Show channel actions:", !!video?.author?.id && !!user?.id && video.author.id !== user.id);
+      console.log("Show channel actions:", Boolean(video?.author?.id) && Boolean(user?.id) && video.author.id !== user?.id);
     }
   }, [video, user]);
   
@@ -384,7 +384,7 @@ const WatchVideo: React.FC = () => {
     </div>
   );
   
-  const showChannelActions = video?.author?.id && user?.id && video.author.id !== user?.id;
+  const canShowSubscribeButton = Boolean(video?.author?.id) && Boolean(user?.id) && video?.author?.id !== user?.id;
   
   if (loading && !video) {
     return (
@@ -493,7 +493,7 @@ const WatchVideo: React.FC = () => {
                 </div>
               </div>
               
-              {video.author?.id && video.author.id !== user?.id && (
+              {canShowSubscribeButton && (
                 <Button
                   variant={subscribed ? "outline" : "default"}
                   size="sm"
