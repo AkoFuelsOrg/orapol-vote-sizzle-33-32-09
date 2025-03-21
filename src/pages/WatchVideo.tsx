@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
@@ -18,6 +18,7 @@ import { Progress } from '@/components/ui/progress';
 
 const WatchVideo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { 
     fetchVideo, 
     fetchVideos, 
@@ -75,6 +76,7 @@ const WatchVideo: React.FC = () => {
     mountedRef.current = true;
     let retryCount = 0;
     const maxRetries = 3;
+    viewRecorded.current = false;
     
     const loadVideo = async () => {
       if (!id) return;
@@ -137,8 +139,6 @@ const WatchVideo: React.FC = () => {
     };
     
     loadVideo();
-    
-    viewRecorded.current = false;
     
     return () => {
       mountedRef.current = false;
@@ -302,6 +302,17 @@ const WatchVideo: React.FC = () => {
     }
   };
   
+  // Handle when a related video is clicked
+  const handleRelatedVideoClick = (videoId: string) => {
+    navigate(`/vibezone/watch/${videoId}`);
+    // Reset state for new video
+    viewRecorded.current = false;
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+  
   const renderVideoSkeleton = () => (
     <div className="space-y-2">
       <div className="bg-black rounded-lg overflow-hidden aspect-video">
@@ -334,7 +345,11 @@ const WatchVideo: React.FC = () => {
   );
 
   const renderRelatedVideoItem = (relatedVideo: Video) => (
-    <Link to={`/watch/${relatedVideo.id}`} key={relatedVideo.id} className="block">
+    <div 
+      key={relatedVideo.id} 
+      className="block cursor-pointer"
+      onClick={() => handleRelatedVideoClick(relatedVideo.id)}
+    >
       <Card className="mb-4 hover:bg-gray-50 transition-colors">
         <CardContent className="p-3">
           <div className="flex">
@@ -364,7 +379,7 @@ const WatchVideo: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </div>
   );
   
   const renderRelatedVideosSkeleton = () => (
