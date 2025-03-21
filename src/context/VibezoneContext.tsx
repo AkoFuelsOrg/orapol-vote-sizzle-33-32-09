@@ -7,7 +7,6 @@ import { useSupabase } from './SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
 
 type VibezoneContextType = {
-  videos: Video[];
   fetchVideos: (limit?: number) => Promise<Video[]>;
   fetchVideo: (id: string) => Promise<Video | null>;
   fetchVideoComments: (videoId: string) => Promise<VideoComment[]>;
@@ -26,7 +25,6 @@ const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined
 export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [videos, setVideos] = useState<Video[]>([]);
   const { user } = useSupabase();
 
   // Fetch videos from the database
@@ -81,8 +79,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return videoWithAuthor;
       }));
       
-      // Update the videos state
-      setVideos(transformedVideos);
       return transformedVideos;
     } catch (error: any) {
       setError(error.message);
@@ -472,8 +468,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           video_url: videoUrl,
           thumbnail_url: thumbnailUrl || null,
           duration: videoData.duration || 0,
-          user_id: user.id,
-          is_advertisement: videoData.is_advertisement || false
+          user_id: user.id
         })
         .select('*')
         .single();
@@ -497,7 +492,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const value = {
-    videos,
     fetchVideos,
     fetchVideo,
     fetchVideoComments,

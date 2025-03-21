@@ -13,10 +13,9 @@ import { toast } from 'sonner';
 
 interface VideoCommentSectionProps {
   videoId: string;
-  onNewComment?: () => Promise<void>;
 }
 
-const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onNewComment }) => {
+const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) => {
   const { fetchVideoComments, addVideoComment } = useVibezone();
   const { user, profile } = useSupabase();
   const [comments, setComments] = useState<VideoComment[]>([]);
@@ -34,28 +33,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onNe
       try {
         setLoading(true);
         const commentsData = await fetchVideoComments(videoId);
-        // Process comments to ensure author property is properly typed
-        const processedComments = commentsData.map(comment => {
-          const authorData = comment.author as any;
-          return {
-            ...comment,
-            author: authorData && typeof authorData !== 'string' ? {
-              id: authorData.id || '',
-              name: authorData.username || 'Unknown User',
-              avatar: authorData.avatar_url || '',
-              username: authorData.username || 'Unknown User',
-              avatar_url: authorData.avatar_url || ''
-            } : {
-              id: '',
-              name: 'Unknown User',
-              avatar: '',
-              username: 'Unknown User',
-              avatar_url: ''
-            }
-          } as VideoComment;
-        });
-        
-        setComments(processedComments);
+        setComments(commentsData);
         commentsLoaded.current = true;
       } catch (error) {
         console.error('Error loading comments:', error);
@@ -85,32 +63,9 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onNe
       setSubmitting(true);
       const newComment = await addVideoComment(videoId, commentText.trim());
       if (newComment) {
-        // Ensure the author property is properly typed
-        const authorData = newComment.author as any;
-        const processedComment = {
-          ...newComment,
-          author: authorData && typeof authorData !== 'string' ? {
-            id: authorData.id || '',
-            name: authorData.username || 'Unknown User',
-            avatar: authorData.avatar_url || '',
-            username: authorData.username || 'Unknown User',
-            avatar_url: authorData.avatar_url || ''
-          } : {
-            id: '',
-            name: 'Unknown User',
-            avatar: '',
-            username: 'Unknown User',
-            avatar_url: ''
-          }
-        } as VideoComment;
-        
-        setComments(prev => [processedComment, ...prev]);
+        setComments(prev => [newComment, ...prev]);
         setCommentText('');
         toast.success('Comment added');
-        
-        if (onNewComment) {
-          await onNewComment();
-        }
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -229,57 +184,9 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onNe
         </div>
       )}
       
-      {/* Comments List */}
+      {/* Comments List - Using a stable rendering approach */}
       <div className="space-y-4">
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((_, index) => (
-              <div key={index}>
-                <div className="flex gap-3 mb-4 animate-pulse">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="w-full">
-                    <Skeleton className="h-4 w-1/4 mb-2" />
-                    <Skeleton className="h-3 w-full mb-1" />
-                    <Skeleton className="h-3 w-3/4" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : comments.length === 0 ? (
-          <div className="text-center py-4 text-gray-500">
-            No comments yet. Be the first to comment!
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3 mb-4">
-                <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
-                  <img 
-                    src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
-                    alt={comment.author?.name || comment.author?.username || 'User'} 
-                    className="rounded-full"
-                  />
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
-                    <span className="text-xs text-gray-500">
-                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <p className="text-sm mt-1 break-words">{comment.content}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <button className="text-xs text-gray-500 flex items-center">
-                      <ThumbsUp className="h-3 w-3 mr-1" />
-                      {comment.likes > 0 && comment.likes}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {renderContent()}
       </div>
     </div>
   );
