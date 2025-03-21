@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Home,
@@ -7,7 +8,8 @@ import {
   UserCircle,
   Users,
   ShoppingBag,
-  Film
+  Film,
+  Bookmark
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -31,7 +33,7 @@ const Sidebar = () => {
     return location.pathname === path;
   };
 
-  // Update the navLinks array in the Sidebar component to include Vibezone
+  // Update the navLinks array in the Sidebar component to include Favourites
   const navLinks = [
     { href: '/', icon: Home, label: 'Home' },
     { href: '/search', icon: Search, label: 'Search' },
@@ -40,6 +42,7 @@ const Sidebar = () => {
     { href: '/marketplaces', icon: ShoppingBag, label: 'Marketplaces' },
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
     { href: '/notifications', icon: Bell, label: 'Notifications' },
+    { href: '/favourites', icon: Bookmark, label: 'Favourites' },
     { href: '/profile', icon: UserCircle, label: 'Profile' },
   ];
 
