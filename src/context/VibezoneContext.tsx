@@ -28,7 +28,7 @@ type VibezoneContextType = {
 
 const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined);
 
-// Helper function to fetch with timeout
+// Helper function to fetch with timeout - updated to handle PromiseLike
 const fetchWithTimeout = async <T,>(
   promiseFn: () => Promise<T> | PromiseLike<T>, 
   timeoutMs: number = 10000
@@ -51,7 +51,7 @@ const fetchWithTimeout = async <T,>(
   }
 };
 
-// Helper function for retrying failed requests
+// Helper function for retrying failed requests - updated to handle PromiseLike
 const withRetry = async <T,>(
   fn: () => Promise<T> | PromiseLike<T>,
   retries: number = 2,
@@ -95,13 +95,13 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const authorPromises = videosData.map(video => {
         if (!video.user_id) return Promise.resolve(null);
         
-        return supabase
+        return Promise.resolve(supabase
           .from('profiles')
           .select('*')
           .eq('id', video.user_id)
-          .single()
+          .single())
           .then(({ data }) => data)
-          .catch(() => null);
+          .catch(() => null); // Explicitly handle promise catch here
       });
       
       const authorResults = await Promise.allSettled(authorPromises);
@@ -391,12 +391,12 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!user) return false;
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await Promise.resolve(supabase
         .from('video_likes')
         .select('id')
         .eq('video_id', videoId)
         .eq('user_id', user.id)
-        .single();
+        .single());
       
       if (error && error.code !== 'PGRST116') {
         throw error;
@@ -595,12 +595,12 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!user) return false;
     
     try {
-      const { data, error } = await supabase
+      const { data, error } = await Promise.resolve(supabase
         .from('channel_subscriptions')
         .select('id')
         .eq('channel_id', channelUserId)
         .eq('subscriber_id', user.id)
-        .maybeSingle();
+        .maybeSingle());
       
       if (error) throw error;
       
@@ -613,10 +613,10 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getSubscriberCount = async (channelUserId: string): Promise<number> => {
     try {
-      const { count, error } = await supabase
+      const { count, error } = await Promise.resolve(supabase
         .from('channel_subscriptions')
         .select('id', { count: 'exact', head: true })
-        .eq('channel_id', channelUserId);
+        .eq('channel_id', channelUserId));
       
       if (error) throw error;
       
