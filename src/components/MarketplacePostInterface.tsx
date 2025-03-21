@@ -14,7 +14,7 @@ interface MarketplacePostInterfaceProps {
 const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ marketplaceId }) => {
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
-  const { user } = useSupabase();
+  const { user, profile } = useSupabase();
   const { isMarketplaceMember } = useMarketplace();
   const [isMember, setIsMember] = useState(false);
   
@@ -39,7 +39,7 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
       <div className="bg-white rounded-xl p-4 shadow-sm border border-border/50 mb-6 animate-fade-in">
         <div className="flex items-center gap-3 mb-3">
           <img 
-            src={user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
+            src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
             alt="Your avatar" 
             className="w-10 h-10 rounded-full border-2 border-blue-500 object-cover"
           />

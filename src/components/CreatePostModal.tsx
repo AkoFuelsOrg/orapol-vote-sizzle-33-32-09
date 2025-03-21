@@ -22,7 +22,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user } = useSupabase();
+  const { user, profile } = useSupabase();
   
   useEffect(() => {
     // Reset form when modal is opened
@@ -143,7 +143,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
         <div className="flex items-start gap-3 mt-4">
           {user && (
             <img 
-              src={user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
+              src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
               alt="Your avatar" 
               className="w-10 h-10 rounded-full border-2 border-red-500 shrink-0"
             />

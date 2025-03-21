@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 const CreatePostInterface = () => {
   const [modalOpen, setModalOpen] = useState(false);
-  const { user } = useSupabase();
+  const { user, profile } = useSupabase();
   const navigate = useNavigate();
   
   if (!user) {
@@ -19,7 +19,7 @@ const CreatePostInterface = () => {
       <div className="bg-white rounded-xl p-4 shadow-sm border border-border/50 mb-6 animate-fade-in">
         <div className="flex items-center gap-3 mb-3">
           <img 
-            src={user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
+            src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
             alt="Your avatar" 
             className="w-10 h-10 rounded-full border-2 border-red-500 object-cover"
           />
