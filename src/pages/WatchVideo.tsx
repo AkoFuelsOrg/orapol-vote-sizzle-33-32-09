@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -400,7 +399,7 @@ const WatchVideo: React.FC = () => {
     </div>
   );
   
-  const showChannelActions = video?.author?.id && user?.id && video.author.id !== user.id;
+  const showChannelActions = !!video?.author?.id && !!user?.id && video.author.id !== user.id;
   
   if (loading && !video) {
     return (
