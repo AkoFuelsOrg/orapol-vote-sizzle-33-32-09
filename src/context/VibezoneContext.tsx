@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSupabase } from './SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
+import { PostgrestSingleResponse, PostgrestResponse, SupabaseClient } from '@supabase/supabase-js';
 
 type VibezoneContextType = {
   fetchVideos: (limit?: number) => Promise<Video[]>;
@@ -28,7 +29,10 @@ type VibezoneContextType = {
 const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined);
 
 // Helper function to fetch with timeout
-const fetchWithTimeout = async <T,>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> => {
+const fetchWithTimeout = async <T,>(
+  promiseFn: () => Promise<T> | PromiseLike<T>, 
+  timeoutMs: number = 10000
+): Promise<T> => {
   let timeoutId: NodeJS.Timeout;
   
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -36,6 +40,8 @@ const fetchWithTimeout = async <T,>(promise: Promise<T>, timeoutMs: number = 100
   });
 
   try {
+    // Convert PromiseLike to Promise if needed
+    const promise = Promise.resolve(promiseFn());
     const result = await Promise.race([promise, timeoutPromise]) as T;
     clearTimeout(timeoutId!);
     return result;
@@ -47,12 +53,12 @@ const fetchWithTimeout = async <T,>(promise: Promise<T>, timeoutMs: number = 100
 
 // Helper function for retrying failed requests
 const withRetry = async <T,>(
-  fn: () => Promise<T>,
+  fn: () => Promise<T> | PromiseLike<T>,
   retries: number = 2,
   delay: number = 1000
 ): Promise<T> => {
   try {
-    return await fn();
+    return await Promise.resolve(fn());
   } catch (error) {
     if (retries <= 0) throw error;
     
@@ -72,13 +78,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(null);
       
       const { data: videosData, error: videosError } = await withRetry(
-        () => fetchWithTimeout(
-          supabase
+        () => supabase
             .from('videos')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(limit)
-        )
       );
       
       if (videosError) throw videosError;
@@ -143,13 +147,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // First fetch video data with retry
       const { data, error } = await withRetry(
-        () => fetchWithTimeout(
-          supabase
+        () => supabase
             .from('videos')
             .select('*')
             .eq('id', id)
             .single()
-        )
       );
       
       if (error) throw error;
@@ -160,13 +162,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (data.user_id) {
         try {
           const { data: userData, error: userError } = await withRetry(
-            () => fetchWithTimeout(
-              supabase
+            () => supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', data.user_id)
                 .single()
-            )
           );
           
           if (!userError && userData) {
