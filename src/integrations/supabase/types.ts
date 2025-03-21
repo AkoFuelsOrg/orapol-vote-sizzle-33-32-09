@@ -719,68 +719,6 @@ export type Database = {
         }
         Relationships: []
       }
-      video_campaigns: {
-        Row: {
-          budget: number
-          clicks: number | null
-          created_at: string
-          daily_limit: number | null
-          description: string | null
-          end_date: string | null
-          id: string
-          impressions: number | null
-          start_date: string
-          status: string
-          target_audience: Json | null
-          title: string
-          updated_at: string
-          user_id: string
-          video_id: string
-        }
-        Insert: {
-          budget: number
-          clicks?: number | null
-          created_at?: string
-          daily_limit?: number | null
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          impressions?: number | null
-          start_date?: string
-          status?: string
-          target_audience?: Json | null
-          title: string
-          updated_at?: string
-          user_id: string
-          video_id: string
-        }
-        Update: {
-          budget?: number
-          clicks?: number | null
-          created_at?: string
-          daily_limit?: number | null
-          description?: string | null
-          end_date?: string | null
-          id?: string
-          impressions?: number | null
-          start_date?: string
-          status?: string
-          target_audience?: Json | null
-          title?: string
-          updated_at?: string
-          user_id?: string
-          video_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "video_campaigns_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "videos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       video_comment_likes: {
         Row: {
           comment_id: string

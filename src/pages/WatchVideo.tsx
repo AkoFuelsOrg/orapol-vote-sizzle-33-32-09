@@ -4,7 +4,7 @@ import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, ThumbsUp, MessageSquare, Share2, Megaphone } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
@@ -13,7 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import VideoCommentSection from '@/components/VideoCommentSection';
 import { Card, CardContent } from '@/components/ui/card';
-import PromoteVideoDialog from '@/components/PromoteVideoDialog';
 
 const WatchVideo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +27,6 @@ const WatchVideo: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
   const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
-  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false);
   
   useEffect(() => {
     const loadVideo = async () => {
@@ -41,6 +39,7 @@ const WatchVideo: React.FC = () => {
           setVideo(videoData);
           setLikesCount(videoData.likes || 0);
           
+          // Check if the user has liked this video
           if (user) {
             const userLiked = await hasLikedVideo(id);
             setLiked(userLiked);
@@ -56,13 +55,17 @@ const WatchVideo: React.FC = () => {
     
     loadVideo();
     
+    // Reset viewRecorded when video ID changes
     viewRecorded.current = false;
+    
   }, [id, fetchVideo, hasLikedVideo, user]);
   
+  // Load related videos (all videos except current one) - with caching mechanism
   useEffect(() => {
     const loadRelatedVideos = async () => {
       if (!id) return;
       
+      // If we already have loaded videos for this ID, use them
       if (relatedVideosRef.current && relatedVideosRef.current.id === id) {
         setRelatedVideos(relatedVideosRef.current.videos);
         return;
@@ -72,9 +75,11 @@ const WatchVideo: React.FC = () => {
       
       try {
         const allVideos = await fetchVideos(20);
+        // Filter out the current video
         const filteredVideos = allVideos.filter(v => v.id !== id);
         setRelatedVideos(filteredVideos);
         
+        // Store in our ref for future reference
         relatedVideosRef.current = {
           id: id,
           videos: filteredVideos
@@ -89,6 +94,7 @@ const WatchVideo: React.FC = () => {
     loadRelatedVideos();
   }, [id, fetchVideos]);
   
+  // Record a view when the video starts playing
   const handleVideoPlay = async () => {
     if (!id || viewRecorded.current) return;
     
@@ -134,20 +140,6 @@ const WatchVideo: React.FC = () => {
       console.error('Error toggling like:', error);
       toast.error('Failed to update like');
     }
-  };
-  
-  const handlePromoteClick = () => {
-    if (!user) {
-      toast.error('You must be logged in to promote videos');
-      return;
-    }
-    
-    if (video && video.author && video.author.id !== user.id) {
-      toast.error('You can only promote your own videos');
-      return;
-    }
-    
-    setIsPromoteDialogOpen(true);
   };
   
   const formatViews = (views: number): string => {
@@ -273,6 +265,7 @@ const WatchVideo: React.FC = () => {
       {video && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
+            {/* Video Player */}
             <div className="bg-black rounded-lg overflow-hidden">
               <video
                 ref={videoRef}
@@ -284,6 +277,7 @@ const WatchVideo: React.FC = () => {
               />
             </div>
             
+            {/* Video Info */}
             <div className="mt-4">
               <h1 className="text-2xl font-bold">{video.title}</h1>
               <div className="flex items-center justify-between mt-2">
@@ -306,24 +300,13 @@ const WatchVideo: React.FC = () => {
                     <Share2 className="h-5 w-5 mr-1" />
                     Share
                   </Button>
-                  
-                  {user && video.author && user.id === video.author.id && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="flex items-center text-blue-600" 
-                      onClick={handlePromoteClick}
-                    >
-                      <Megaphone className="h-5 w-5 mr-1" />
-                      Promote
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
             
             <Separator className="my-4" />
             
+            {/* Channel Info */}
             <div className="flex items-center">
               <Avatar className="h-10 w-10">
                 <img 
@@ -337,6 +320,7 @@ const WatchVideo: React.FC = () => {
               </div>
             </div>
             
+            {/* Video Description */}
             {video.description && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
@@ -345,9 +329,11 @@ const WatchVideo: React.FC = () => {
             
             <Separator className="my-6" />
             
+            {/* Comments Section - Using a dedicated component */}
             {id && <VideoCommentSection videoId={id} />}
           </div>
           
+          {/* Related Videos */}
           <div className="hidden lg:block">
             <h3 className="font-semibold mb-4">Related Videos</h3>
             {loadingRelated ? (
@@ -363,14 +349,6 @@ const WatchVideo: React.FC = () => {
             )}
           </div>
         </div>
-      )}
-      
-      {video && (
-        <PromoteVideoDialog 
-          video={video} 
-          isOpen={isPromoteDialogOpen}
-          onClose={() => setIsPromoteDialogOpen(false)}
-        />
       )}
     </div>
   );
