@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -38,7 +39,8 @@ const WatchVideo: React.FC = () => {
   const [likesCount, setLikesCount] = useState(0);
   const [subscribed, setSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [subscribeLoading, setSubscribeLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
   const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
@@ -183,6 +185,8 @@ const WatchVideo: React.FC = () => {
       return;
     }
     
+    setSubscribeLoading(true);
+    
     try {
       if (subscribed) {
         const success = await unsubscribeFromChannel(video.author.id);
@@ -200,6 +204,8 @@ const WatchVideo: React.FC = () => {
     } catch (error) {
       console.error('Error updating subscription:', error);
       toast.error('Failed to update subscription');
+    } finally {
+      setSubscribeLoading(false);
     }
   };
   
@@ -327,6 +333,8 @@ const WatchVideo: React.FC = () => {
     );
   }
   
+  const isOwnChannel = user && video?.author?.id === user.id;
+  
   return (
     <div className="container mx-auto py-6">
       {video && (
@@ -398,22 +406,29 @@ const WatchVideo: React.FC = () => {
                 </div>
               </div>
               
-              <Button
-                variant={subscribed ? "outline" : "default"}
-                size="sm"
-                onClick={handleSubscribe}
-                disabled={checkingSubscription || !user}
-                className="flex items-center"
-              >
-                {checkingSubscription ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : subscribed ? (
-                  <BellOff className="h-4 w-4 mr-1" />
-                ) : (
-                  <Bell className="h-4 w-4 mr-1" />
-                )}
-                {subscribed ? 'Unsubscribe' : 'Subscribe'}
-              </Button>
+              {!isOwnChannel && (
+                <Button
+                  variant={subscribed ? "outline" : "default"}
+                  size="sm"
+                  onClick={handleSubscribe}
+                  disabled={checkingSubscription || subscribeLoading || !user}
+                  className="flex items-center min-w-[120px] justify-center"
+                >
+                  {checkingSubscription || subscribeLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : subscribed ? (
+                    <>
+                      <BellOff className="h-4 w-4 mr-1" />
+                      <span>Unsubscribe</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="h-4 w-4 mr-1" />
+                      <span>Subscribe</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
             
             {/* Video Description */}
