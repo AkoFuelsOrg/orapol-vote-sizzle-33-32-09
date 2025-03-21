@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -28,7 +27,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   const isInitialMount = useRef(true);
   const commentsLoaded = useRef(false);
 
-  // Load comments only once on initial mount
   useEffect(() => {
     const loadComments = async () => {
       if (!videoId || commentsLoaded.current) return;
@@ -37,18 +35,14 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         setLoading(true);
         let commentsData = await fetchVideoComments(videoId);
         
-        // Organize comments into parent comments and replies
         const parentComments: VideoComment[] = [];
         const repliesMap: Record<string, VideoComment[]> = {};
         
-        // First, separate parent comments and replies
         commentsData.forEach(comment => {
           if (!comment.parent_id) {
-            // This is a parent comment
             comment.replies = [];
             parentComments.push(comment);
           } else {
-            // This is a reply
             if (!repliesMap[comment.parent_id]) {
               repliesMap[comment.parent_id] = [];
             }
@@ -56,7 +50,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           }
         });
         
-        // Then attach replies to their parent comments
         parentComments.forEach(parent => {
           if (repliesMap[parent.id]) {
             parent.replies = repliesMap[parent.id];
@@ -118,7 +111,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     try {
       setSubmitting(true);
       
-      // Add reply to database
       const { data, error } = await supabase
         .from('video_comments')
         .insert({
@@ -139,14 +131,13 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         throw new Error("No data returned from insert operation");
       }
       
-      // Create a new reply object
       const newReply: VideoComment = {
         id: data.id,
         video_id: data.video_id,
         user_id: data.user_id,
         content: data.content,
         created_at: data.created_at,
-        parent_id: data.parent_id || undefined, // Handle possibly null parent_id
+        parent_id: data.parent_id || undefined,
         author: {
           id: user.id,
           username: profile?.username || user?.user_metadata?.username || 'Unknown User',
@@ -155,9 +146,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         likes: 0
       };
       
-      console.log("Successfully created reply:", newReply);
-      
-      // Update comments state
       setComments(prevComments => {
         return prevComments.map(comment => {
           if (comment.id === replyingTo) {
@@ -181,6 +169,90 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     }
   };
 
+  const handleLikeComment = async (commentId: string, isReply: boolean, parentId?: string) => {
+    if (!user) {
+      toast.error('You must be logged in to like comments');
+      return;
+    }
+    
+    try {
+      let currentlyLiked = false;
+      
+      if (isReply && parentId) {
+        const parentComment = comments.find(c => c.id === parentId);
+        if (parentComment && parentComment.replies) {
+          const reply = parentComment.replies.find(r => r.id === commentId);
+          currentlyLiked = reply?.user_has_liked || false;
+        }
+      } else {
+        const comment = comments.find(c => c.id === commentId);
+        currentlyLiked = comment?.user_has_liked || false;
+      }
+      
+      if (currentlyLiked) {
+        const { error } = await supabase
+          .from('video_comment_likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('comment_id', commentId);
+        
+        if (error) throw error;
+        
+        const { error: updateError } = await supabase
+          .from('video_comments')
+          .update({ likes: supabase.rpc('decrement_likes', { comment_id: commentId }) })
+          .eq('id', commentId);
+          
+        if (updateError) throw updateError;
+      } else {
+        const { error } = await supabase
+          .from('video_comment_likes')
+          .insert({
+            user_id: user.id,
+            comment_id: commentId
+          });
+        
+        if (error) throw error;
+        
+        const { error: updateError } = await supabase
+          .from('video_comments')
+          .update({ likes: supabase.rpc('increment_likes', { comment_id: commentId }) })
+          .eq('id', commentId);
+          
+        if (updateError) throw updateError;
+      }
+      
+      setComments(prevComments => 
+        prevComments.map(comment => {
+          if (!isReply && comment.id === commentId) {
+            return {
+              ...comment,
+              likes: currentlyLiked ? Math.max(0, comment.likes - 1) : comment.likes + 1,
+              user_has_liked: !currentlyLiked
+            };
+          } else if (isReply && parentId && comment.id === parentId && comment.replies) {
+            return {
+              ...comment,
+              replies: comment.replies.map(reply => 
+                reply.id === commentId
+                  ? {
+                      ...reply,
+                      likes: currentlyLiked ? Math.max(0, reply.likes - 1) : reply.likes + 1,
+                      user_has_liked: !currentlyLiked
+                    }
+                  : reply
+              )
+            };
+          }
+          return comment;
+        })
+      );
+    } catch (error: any) {
+      console.error('Error liking comment:', error);
+      toast.error('Failed to update like status');
+    }
+  };
+
   const renderCommentSkeleton = () => (
     <div className="flex gap-3 mb-4 animate-pulse">
       <Skeleton className="h-8 w-8 rounded-full" />
@@ -192,7 +264,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     </div>
   );
 
-  const renderComment = (comment: VideoComment, isReply = false) => (
+  const renderComment = (comment: VideoComment, isReply = false, parentId?: string) => (
     <div key={comment.id} className={`flex gap-3 mb-4 ${isReply ? 'ml-12 border-l-2 pl-4 border-gray-100' : ''}`}>
       <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
         <img 
@@ -210,8 +282,11 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         </div>
         <p className="text-sm mt-1 break-words">{comment.content}</p>
         <div className="flex items-center gap-4 mt-1">
-          <button className="text-xs text-gray-500 flex items-center">
-            <ThumbsUp className="h-3 w-3 mr-1" />
+          <button 
+            className={`text-xs flex items-center ${comment.user_has_liked ? 'text-red-500' : 'text-gray-500'}`}
+            onClick={() => handleLikeComment(comment.id, isReply, parentId)}
+          >
+            <ThumbsUp className={`h-3 w-3 mr-1 ${comment.user_has_liked ? 'fill-red-500' : ''}`} />
             {comment.likes > 0 && comment.likes}
           </button>
           {!isReply && user && (
@@ -267,7 +342,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         
         {!isReply && comment.replies && comment.replies.length > 0 && (
           <div className="mt-2">
-            {comment.replies.map(reply => renderComment(reply, true))}
+            {comment.replies.map(reply => renderComment(reply, true, comment.id))}
           </div>
         )}
       </div>
