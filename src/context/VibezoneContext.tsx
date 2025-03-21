@@ -469,6 +469,9 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     
     try {
+      setLoading(true);
+      setError(null);
+      
       const { error } = await supabase
         .from('channel_subscriptions')
         .insert({
@@ -476,10 +479,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           subscriber_id: user.id
         });
       
-      if (error) {
-        console.error('Subscribe error:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       toast.success('Subscribed successfully');
       return true;
@@ -492,6 +492,8 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Error subscribing to channel:', error);
       toast.error('Failed to subscribe');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -502,16 +504,16 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     
     try {
+      setLoading(true);
+      setError(null);
+      
       const { error } = await supabase
         .from('channel_subscriptions')
         .delete()
         .eq('channel_id', channelUserId)
         .eq('subscriber_id', user.id);
       
-      if (error) {
-        console.error('Unsubscribe error:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       toast.success('Unsubscribed successfully');
       return true;
@@ -520,6 +522,8 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Error unsubscribing from channel:', error);
       toast.error('Failed to unsubscribe');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -534,10 +538,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .eq('subscriber_id', user.id)
         .maybeSingle();
       
-      if (error) {
-        console.error('Check subscription error:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       return !!data;
     } catch (error: any) {
@@ -553,10 +554,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .select('id', { count: 'exact', head: true })
         .eq('channel_id', channelUserId);
       
-      if (error) {
-        console.error('Get subscriber count error:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       return count || 0;
     } catch (error: any) {
