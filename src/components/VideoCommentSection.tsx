@@ -204,7 +204,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         // Update the comment likes count directly
         const { error: updateError } = await supabase
           .from('video_comments')
-          .update({ likes: supabase.sql`likes - 1` })
+          .update({ likes: Math.max(0, comments.find(c => c.id === commentId)?.likes || 0) - 1 })
           .eq('id', commentId);
           
         if (updateError) throw updateError;
@@ -222,7 +222,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         // Update the comment likes count directly
         const { error: updateError } = await supabase
           .from('video_comments')
-          .update({ likes: supabase.sql`likes + 1` })
+          .update({ likes: (comments.find(c => c.id === commentId)?.likes || 0) + 1 })
           .eq('id', commentId);
           
         if (updateError) throw updateError;
