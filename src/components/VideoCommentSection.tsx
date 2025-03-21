@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -143,7 +144,8 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           username: profile?.username || user?.user_metadata?.username || 'Unknown User',
           avatar_url: profile?.avatar_url || user?.user_metadata?.avatar_url || '',
         },
-        likes: 0
+        likes: 0,
+        user_has_liked: false
       };
       
       setComments(prevComments => {
@@ -190,6 +192,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       }
       
       if (currentlyLiked) {
+        // Unlike the comment
         const { error } = await supabase
           .from('video_comment_likes')
           .delete()
@@ -198,13 +201,15 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         
         if (error) throw error;
         
+        // Update the comment likes count directly
         const { error: updateError } = await supabase
           .from('video_comments')
-          .update({ likes: supabase.rpc('decrement_likes', { comment_id: commentId }) })
+          .update({ likes: supabase.sql`likes - 1` })
           .eq('id', commentId);
           
         if (updateError) throw updateError;
       } else {
+        // Like the comment
         const { error } = await supabase
           .from('video_comment_likes')
           .insert({
@@ -214,14 +219,16 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         
         if (error) throw error;
         
+        // Update the comment likes count directly
         const { error: updateError } = await supabase
           .from('video_comments')
-          .update({ likes: supabase.rpc('increment_likes', { comment_id: commentId }) })
+          .update({ likes: supabase.sql`likes + 1` })
           .eq('id', commentId);
           
         if (updateError) throw updateError;
       }
       
+      // Update state to reflect like/unlike
       setComments(prevComments => 
         prevComments.map(comment => {
           if (!isReply && comment.id === commentId) {
