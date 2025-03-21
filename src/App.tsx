@@ -51,7 +51,10 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
   }
   
-  const showRightChat = isDesktop && !location.pathname.startsWith('/messages');
+  // Hide right chat on messages page and video watch pages
+  const showRightChat = isDesktop && 
+    !location.pathname.startsWith('/messages') && 
+    !location.pathname.startsWith('/vibezone/watch/');
   
   const isFullWidthPage = 
     location.pathname === '/profile' || 
