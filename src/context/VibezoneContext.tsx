@@ -1,10 +1,39 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSupabase } from './SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
+
+interface CampaignData {
+  video_id: string;
+  title: string;
+  description?: string;
+  budget: number;
+  daily_limit?: number | null;
+  start_date: string;
+  end_date?: string | null;
+  target_audience?: object;
+}
+
+interface Campaign {
+  id: string;
+  video_id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  budget: number;
+  daily_limit: number | null;
+  start_date: string;
+  end_date: string | null;
+  status: 'pending' | 'active' | 'paused' | 'completed' | 'rejected';
+  impressions: number;
+  clicks: number;
+  target_audience: object;
+  created_at: string;
+  updated_at: string;
+  video?: Video;
+}
 
 type VibezoneContextType = {
   fetchVideos: (limit?: number) => Promise<Video[]>;
@@ -16,6 +45,11 @@ type VibezoneContextType = {
   viewVideo: (videoId: string) => Promise<boolean>;
   uploadVideo: (videoData: Partial<Video>, videoFile: File, thumbnailFile?: File) => Promise<Video | null>;
   hasLikedVideo: (videoId: string) => Promise<boolean>;
+  createCampaign: (campaignData: CampaignData) => Promise<boolean>;
+  fetchCampaigns: () => Promise<Campaign[]>;
+  fetchVideoCampaigns: (videoId: string) => Promise<Campaign[]>;
+  updateCampaignStatus: (campaignId: string, status: Campaign['status']) => Promise<boolean>;
+  deleteCampaign: (campaignId: string) => Promise<boolean>;
   loading: boolean;
   error: string | null;
 };
@@ -27,13 +61,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const { user } = useSupabase();
 
-  // Fetch videos from the database
   const fetchVideos = async (limit = 20): Promise<Video[]> => {
     try {
       setLoading(true);
       setError(null);
       
-      // First, get the videos
       const { data: videosData, error: videosError } = await supabase
         .from('videos')
         .select('*')
@@ -42,9 +74,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (videosError) throw videosError;
       
-      // Transform the data to match our Video type
       const transformedVideos = await Promise.all(videosData.map(async (video) => {
-        // Fetch the author info separately
         let authorInfo = null;
         if (video.user_id) {
           const { data: userData, error: userError } = await supabase
@@ -64,7 +94,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
         
-        // Safely add author to the video object
         const videoWithAuthor = {
           ...video,
           author: authorInfo || { 
@@ -89,13 +118,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Fetch a single video by ID
   const fetchVideo = async (id: string): Promise<Video | null> => {
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch the video
       const { data, error } = await supabase
         .from('videos')
         .select('*')
@@ -104,7 +131,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
-      // Fetch the author info separately
       let authorInfo = null;
       if (data.user_id) {
         const { data: userData, error: userError } = await supabase
@@ -124,7 +150,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
       
-      // Safely add author to the video object
       const transformedVideo = {
         ...data,
         author: authorInfo || { 
@@ -146,13 +171,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Fetch comments for a video
   const fetchVideoComments = async (videoId: string): Promise<VideoComment[]> => {
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch the comments
       const { data: commentsData, error: commentsError } = await supabase
         .from('video_comments')
         .select('*')
@@ -161,9 +184,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (commentsError) throw commentsError;
       
-      // Transform the data to match our VideoComment type
       const transformedComments = await Promise.all(commentsData.map(async (comment) => {
-        // Fetch the author info separately
         let authorInfo = null;
         if (comment.user_id) {
           const { data: userData, error: userError } = await supabase
@@ -183,7 +204,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
         
-        // Safely add author to the comment object
         const commentWithAuthor = {
           ...comment,
           author: authorInfo || { 
@@ -208,7 +228,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Add a comment to a video
   const addVideoComment = async (videoId: string, content: string): Promise<VideoComment | null> => {
     if (!user) {
       toast.error('You must be logged in to comment');
@@ -219,7 +238,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
-      // Insert the comment
       const { data, error } = await supabase
         .from('video_comments')
         .insert({
@@ -232,7 +250,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
-      // Fetch the author info separately
       let authorInfo = null;
       if (user.id) {
         const { data: userData, error: userError } = await supabase
@@ -252,7 +269,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
       
-      // Safely add author to the comment object
       const transformedComment = {
         ...data,
         author: authorInfo || { 
@@ -276,7 +292,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Like a video
   const likeVideo = async (videoId: string): Promise<boolean> => {
     if (!user) {
       toast.error('You must be logged in to like videos');
@@ -298,7 +313,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       return true;
     } catch (error: any) {
-      // If the error is a duplicate key error, it means the user has already liked the video
       if (error.code === '23505') {
         return true;
       }
@@ -311,7 +325,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Unlike a video
   const unlikeVideo = async (videoId: string): Promise<boolean> => {
     if (!user) {
       toast.error('You must be logged in to unlike videos');
@@ -340,7 +353,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Check if user has liked a video
   const hasLikedVideo = async (videoId: string): Promise<boolean> => {
     if (!user) return false;
     
@@ -352,7 +364,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .eq('user_id', user.id)
         .single();
       
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
       
@@ -363,7 +375,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Record a view for a video
   const viewVideo = async (videoId: string): Promise<boolean> => {
     try {
       setLoading(true);
@@ -373,12 +384,10 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         video_id: videoId
       };
       
-      // If user is logged in, associate the view with their account
       if (user) {
         viewData.user_id = user.id;
       } else {
-        // Otherwise, record the IP address (in a real app, would get this from the backend)
-        viewData.ip_address = '127.0.0.1'; // Placeholder IP
+        viewData.ip_address = '127.0.0.1';
       }
       
       const { error } = await supabase
@@ -397,7 +406,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Upload a video
   const uploadVideo = async (
     videoData: Partial<Video>, 
     videoFile: File,
@@ -414,8 +422,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       console.log("Starting video upload process");
       
-      // 1. Upload the video file to Storage - using avatars bucket as a fallback
-      // Since we see the bucket not found error, let's use an existing bucket
       const videoFileName = `${user.id}/${Date.now()}-${videoFile.name.replace(/\s+/g, '-')}`;
       console.log("Uploading video to storage:", videoFileName);
       
@@ -428,14 +434,12 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         throw videoUploadError;
       }
       
-      // Get the public URL for the video
       const { data: { publicUrl: videoUrl } } = await supabase.storage
         .from('avatars')
         .getPublicUrl(videoFileName);
       
       console.log("Video uploaded successfully. URL:", videoUrl);
       
-      // 2. Upload the thumbnail if provided
       let thumbnailUrl = '';
       if (thumbnailFile) {
         console.log("Uploading thumbnail");
@@ -449,7 +453,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           throw thumbnailUploadError;
         }
         
-        // Get the public URL for the thumbnail
         const { data: { publicUrl } } = await supabase.storage
           .from('avatars')
           .getPublicUrl(thumbnailFileName);
@@ -458,8 +461,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log("Thumbnail uploaded successfully. URL:", thumbnailUrl);
       }
       
-      // 3. Insert the video record in the database
-      console.log("Inserting video record in database");
       const { data, error } = await supabase
         .from('videos')
         .insert({
@@ -491,6 +492,154 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const createCampaign = async (campaignData: CampaignData): Promise<boolean> => {
+    if (!user) {
+      toast.error('You must be logged in to create campaigns');
+      return false;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { error } = await supabase
+        .from('video_campaigns')
+        .insert({
+          ...campaignData,
+          user_id: user.id
+        });
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error: any) {
+      setError(error.message);
+      console.error('Error creating campaign:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCampaigns = async (): Promise<Campaign[]> => {
+    if (!user) {
+      return [];
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .from('video_campaigns')
+        .select(`
+          *,
+          video:video_id (
+            id,
+            title,
+            thumbnail_url,
+            views
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return data as Campaign[];
+    } catch (error: any) {
+      setError(error.message);
+      console.error('Error fetching campaigns:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchVideoCampaigns = async (videoId: string): Promise<Campaign[]> => {
+    if (!user) {
+      return [];
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .from('video_campaigns')
+        .select('*')
+        .eq('video_id', videoId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return data as Campaign[];
+    } catch (error: any) {
+      setError(error.message);
+      console.error('Error fetching video campaigns:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateCampaignStatus = async (campaignId: string, status: Campaign['status']): Promise<boolean> => {
+    if (!user) {
+      toast.error('You must be logged in to update campaigns');
+      return false;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { error } = await supabase
+        .from('video_campaigns')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', campaignId)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error: any) {
+      setError(error.message);
+      console.error('Error updating campaign status:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteCampaign = async (campaignId: string): Promise<boolean> => {
+    if (!user) {
+      toast.error('You must be logged in to delete campaigns');
+      return false;
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { error } = await supabase
+        .from('video_campaigns')
+        .delete()
+        .eq('id', campaignId)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error: any) {
+      setError(error.message);
+      console.error('Error deleting campaign:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     fetchVideos,
     fetchVideo,
@@ -501,6 +650,11 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     viewVideo,
     uploadVideo,
     hasLikedVideo,
+    createCampaign,
+    fetchCampaigns,
+    fetchVideoCampaigns,
+    updateCampaignStatus,
+    deleteCampaign,
     loading,
     error
   };

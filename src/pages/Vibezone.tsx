@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon } from 'lucide-react';
+import { Loader2, FilmIcon, Upload, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -45,14 +44,24 @@ const Vibezone: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Vibezone</h1>
-        <Button 
-          onClick={() => navigate('/vibezone/upload')}
-          className="bg-red-500 hover:bg-red-600"
-        >
-          Upload Video
-        </Button>
+        <div className="flex gap-2 mt-4 md:mt-0">
+          <Button
+            onClick={() => navigate('/vibezone/upload')}
+            className="bg-red-500 hover:bg-red-600"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload Video
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/vibezone/campaigns')}
+          >
+            <Megaphone className="h-4 w-4 mr-2" />
+            My Campaigns
+          </Button>
+        </div>
       </div>
 
       {loading && (
