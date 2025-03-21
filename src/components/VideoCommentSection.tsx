@@ -146,7 +146,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         user_id: data.user_id,
         content: data.content,
         created_at: data.created_at,
-        parent_id: data.parent_id,
+        parent_id: data.parent_id || undefined, // Handle possibly null parent_id
         author: {
           id: user.id,
           username: profile?.username || user?.user_metadata?.username || 'Unknown User',
