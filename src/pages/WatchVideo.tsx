@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -39,7 +40,7 @@ const WatchVideo: React.FC = () => {
   const [likesCount, setLikesCount] = useState(0);
   const [subscribed, setSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [videoRequestProgress, setVideoRequestProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
@@ -101,8 +102,6 @@ const WatchVideo: React.FC = () => {
             }
             
             if (videoData.author?.id) {
-              setCheckingSubscription(true);
-              
               try {
                 const count = await getSubscriberCount(videoData.author.id);
                 if (mountedRef.current) setSubscriberCount(count);
@@ -113,8 +112,6 @@ const WatchVideo: React.FC = () => {
                 }
               } catch (error) {
                 console.error('Error fetching subscription data:', error);
-              } finally {
-                if (mountedRef.current) setCheckingSubscription(false);
               }
             }
           }
@@ -251,12 +248,16 @@ const WatchVideo: React.FC = () => {
       return;
     }
     
+    // Prevent multiple clicks
+    if (subscriptionLoading) return;
+    
     try {
-      setCheckingSubscription(true);
+      setSubscriptionLoading(true);
       
       const previousSubscribed = subscribed;
       const previousCount = subscriberCount;
       
+      // Optimistically update UI immediately
       setSubscribed(!subscribed);
       setSubscriberCount(prev => prev + (subscribed ? -1 : 1));
       
@@ -270,6 +271,7 @@ const WatchVideo: React.FC = () => {
       }
       
       if (!success && mountedRef.current) {
+        // Revert to previous state if operation failed
         setSubscribed(previousSubscribed);
         setSubscriberCount(previousCount);
         toast.error(`Failed to ${previousSubscribed ? 'unsubscribe from' : 'subscribe to'} channel`);
@@ -279,10 +281,10 @@ const WatchVideo: React.FC = () => {
       toast.error('Failed to update subscription');
     } finally {
       if (mountedRef.current) {
-        setCheckingSubscription(false);
+        setSubscriptionLoading(false);
       }
     }
-  }, [user, video, subscribed, subscriberCount, unsubscribeFromChannel, subscribeToChannel]);
+  }, [user, video, subscribed, subscriberCount, unsubscribeFromChannel, subscribeToChannel, subscriptionLoading]);
   
   const handleDownload = useCallback(() => {
     if (!video) return;
@@ -384,6 +386,8 @@ const WatchVideo: React.FC = () => {
     </div>
   );
   
+  // Determine if the subscribe button should be shown
+  // Stable value that doesn't change during render
   const canShowSubscribeButton = Boolean(video?.author?.id) && Boolean(user?.id) && video?.author?.id !== user?.id;
   
   if (loading && !video) {
@@ -498,17 +502,17 @@ const WatchVideo: React.FC = () => {
                   variant={subscribed ? "outline" : "default"}
                   size="sm"
                   onClick={handleSubscribe}
-                  disabled={checkingSubscription}
-                  className="flex items-center"
+                  disabled={subscriptionLoading}
+                  className="flex items-center min-w-[120px] justify-center"
                 >
-                  {checkingSubscription ? (
+                  {subscriptionLoading ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   ) : subscribed ? (
                     <BellOff className="h-4 w-4 mr-1" />
                   ) : (
                     <Bell className="h-4 w-4 mr-1" />
                   )}
-                  {subscribed ? 'Unsubscribe' : 'Subscribe'}
+                  {subscriptionLoading ? 'Processing...' : subscribed ? 'Unsubscribe' : 'Subscribe'}
                 </Button>
               )}
             </div>
