@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Video, VideoComment } from '../lib/types';
+import { Video, VideoComment, User } from '../lib/types';
 import Header from '../components/Header';
 import VideoCommentSection from '../components/VideoCommentSection';
 import { Loader2, Heart, MessageSquare, Share2 } from 'lucide-react';
@@ -15,14 +15,12 @@ const WatchVideo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useSupabase();
   const [video, setVideo] = useState<Video | null>(null);
-  const [comments, setComments] = useState<VideoComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [viewRecorded, setViewRecorded] = useState(false);
   
   useEffect(() => {
     fetchVideo();
-    fetchComments();
     
     // Record view once per video session
     if (id && !viewRecorded) {
@@ -49,7 +47,26 @@ const WatchVideo: React.FC = () => {
       
       if (videoError) throw videoError;
       
-      setVideo(videoData);
+      // Create a properly typed author object before setting video state
+      const authorData = videoData.author as any;
+      const processedVideo: Video = {
+        ...videoData,
+        author: authorData && typeof authorData !== 'string' ? {
+          id: authorData.id || '',
+          name: authorData.username || 'Unknown User',
+          avatar: authorData.avatar_url || '',
+          username: authorData.username || 'Unknown User',
+          avatar_url: authorData.avatar_url || ''
+        } : {
+          id: '',
+          name: 'Unknown User',
+          avatar: '',
+          username: 'Unknown User',
+          avatar_url: ''
+        }
+      };
+
+      setVideo(processedVideo);
       
       // Check if user liked the video
       if (user) {
@@ -69,31 +86,6 @@ const WatchVideo: React.FC = () => {
       toast.error('Failed to load video');
     } finally {
       setLoading(false);
-    }
-  };
-  
-  const fetchComments = async () => {
-    if (!id) return;
-    
-    try {
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('video_comments')
-        .select(`
-          *,
-          author:user_id(
-            id,
-            username,
-            avatar_url
-          )
-        `)
-        .eq('video_id', id)
-        .order('created_at', { ascending: false });
-      
-      if (commentsError) throw commentsError;
-      
-      setComments(commentsData || []);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
     }
   };
   
@@ -235,7 +227,7 @@ const WatchVideo: React.FC = () => {
                   
                   <button className="flex flex-col items-center text-gray-600 hover:text-gray-900">
                     <MessageSquare className="h-6 w-6" />
-                    <span className="text-xs mt-1">{comments.length}</span>
+                    <span className="text-xs mt-1">Comments</span>
                   </button>
                   
                   <button className="flex flex-col items-center text-gray-600 hover:text-gray-900">
@@ -265,11 +257,7 @@ const WatchVideo: React.FC = () => {
               )}
             </div>
             
-            <VideoCommentSection 
-              videoId={id || ''} 
-              comments={comments}
-              onNewComment={fetchComments}
-            />
+            {id && <VideoCommentSection videoId={id} />}
           </div>
           
           <div className="hidden lg:block">

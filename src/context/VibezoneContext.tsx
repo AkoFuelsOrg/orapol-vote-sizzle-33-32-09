@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +7,7 @@ import { useSupabase } from './SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
 
 type VibezoneContextType = {
+  videos: Video[];
   fetchVideos: (limit?: number) => Promise<Video[]>;
   fetchVideo: (id: string) => Promise<Video | null>;
   fetchVideoComments: (videoId: string) => Promise<VideoComment[]>;
@@ -24,6 +26,7 @@ const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined
 export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videos, setVideos] = useState<Video[]>([]);
   const { user } = useSupabase();
 
   // Fetch videos from the database
@@ -78,6 +81,8 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return videoWithAuthor;
       }));
       
+      // Update the videos state
+      setVideos(transformedVideos);
       return transformedVideos;
     } catch (error: any) {
       setError(error.message);
@@ -492,6 +497,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const value = {
+    videos,
     fetchVideos,
     fetchVideo,
     fetchVideoComments,
