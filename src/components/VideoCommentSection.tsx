@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -127,7 +126,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           content: replyText.trim(),
           parent_id: replyingTo
         })
-        .select('*, author:user_id(id, username, avatar_url)')
+        .select('id, content, created_at, video_id, user_id, parent_id')
         .single();
       
       if (error) {
@@ -141,7 +140,12 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       
       // Create a new reply object
       const newReply: VideoComment = {
-        ...data,
+        id: data.id,
+        video_id: data.video_id,
+        user_id: data.user_id,
+        content: data.content,
+        created_at: data.created_at,
+        parent_id: data.parent_id,
         author: {
           id: user.id,
           username: profile?.username || user?.user_metadata?.username || 'Unknown User',
@@ -176,7 +180,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     }
   };
 
-  // Render comment skeleton
   const renderCommentSkeleton = () => (
     <div className="flex gap-3 mb-4 animate-pulse">
       <Skeleton className="h-8 w-8 rounded-full" />
@@ -188,7 +191,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     </div>
   );
 
-  // Render a comment with its replies
   const renderComment = (comment: VideoComment, isReply = false) => (
     <div key={comment.id} className={`flex gap-3 mb-4 ${isReply ? 'ml-12 border-l-2 pl-4 border-gray-100' : ''}`}>
       <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
@@ -222,7 +224,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           )}
         </div>
         
-        {/* Reply form */}
         {replyingTo === comment.id && (
           <form onSubmit={handleAddReply} className="mt-3 flex items-start gap-2">
             <Avatar className="h-6 w-6 mt-1">
@@ -263,7 +264,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           </form>
         )}
         
-        {/* Render replies */}
         {!isReply && comment.replies && comment.replies.length > 0 && (
           <div className="mt-2">
             {comment.replies.map(reply => renderComment(reply, true))}
@@ -273,7 +273,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     </div>
   );
 
-  // Render the content based on loading state
   const renderContent = () => {
     if (loading) {
       return (
@@ -308,7 +307,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           `${comments.length} ${comments.length === 1 ? 'Comment' : 'Comments'}`}
       </h3>
       
-      {/* Comment Form */}
       {user ? (
         <form onSubmit={handleAddComment} className="mb-6 flex items-start gap-3">
           <Avatar className="h-8 w-8 mt-1">
@@ -345,7 +343,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         </div>
       )}
       
-      {/* Comments List */}
       <div className="space-y-4">
         {renderContent()}
       </div>
