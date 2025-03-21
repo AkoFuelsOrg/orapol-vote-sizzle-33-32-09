@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSupabase } from './SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
+import { Json } from '@/integrations/supabase/types';
 
 interface CampaignData {
   video_id: string;
@@ -13,7 +14,7 @@ interface CampaignData {
   daily_limit?: number | null;
   start_date: string;
   end_date?: string | null;
-  target_audience?: object;
+  target_audience?: Json;
 }
 
 interface Campaign {
@@ -29,7 +30,7 @@ interface Campaign {
   status: 'pending' | 'active' | 'paused' | 'completed' | 'rejected';
   impressions: number;
   clicks: number;
-  target_audience: object;
+  target_audience: Json;
   created_at: string;
   updated_at: string;
   video?: Video;

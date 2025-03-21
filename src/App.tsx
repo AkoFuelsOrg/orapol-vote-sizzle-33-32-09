@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
-import { useAuth } from '@/context/AuthContext';
-import { AppLoader } from '@/components/AppLoader';
+import { useAuth } from './context/AuthContext';
+import AppLoader from './components/AppLoader';
 
 const Index = React.lazy(() => import('./pages/Index'));
 const Auth = React.lazy(() => import('./pages/Auth'));

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -11,6 +10,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2, Play, Pause, StopCircle, Trash2, Megaphone, Ban, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
+import { Json } from '@/integrations/supabase/types';
+
+interface CampaignVideo {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  views: number;
+}
 
 interface Campaign {
   id: string;
@@ -24,12 +31,11 @@ interface Campaign {
   impressions: number;
   clicks: number;
   created_at: string;
-  video?: {
-    id: string;
-    title: string;
-    thumbnail_url: string | null;
-    views: number;
-  };
+  video?: CampaignVideo;
+  target_audience: Json;
+  updated_at: string;
+  user_id: string;
+  video_id: string;
 }
 
 const MyCampaigns: React.FC = () => {
@@ -51,7 +57,7 @@ const MyCampaigns: React.FC = () => {
     const loadCampaigns = async () => {
       setLoading(true);
       const data = await fetchCampaigns();
-      setCampaigns(data);
+      setCampaigns(data as Campaign[]);
       setLoading(false);
     };
     
