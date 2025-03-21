@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -24,12 +25,27 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   const [replyingTo, setReplyingTo] = useState<VideoComment | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
-  const [updatingLike, setUpdatingLike] = useState(false);
+  const [updatingLike, setUpdatingLike] = useState<string | null>(null);
+  const [commentsFetched, setCommentsFetched] = useState(false);
+  const mountedRef = useRef(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Setup mount/unmount tracking
   useEffect(() => {
-    fetchComments();
-  }, [videoId, fetchVideoComments, user]);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Fetch comments only once when component mounts or videoId changes
+  useEffect(() => {
+    if (videoId) {
+      fetchComments();
+    }
+    // We intentionally don't include user in dependencies to prevent refetching on login state changes
+    // This prevents flickering when auth state changes
+  }, [videoId]);
 
   const handleLikeComment = async (comment: VideoComment) => {
     if (!user) {
@@ -37,8 +53,10 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       return;
     }
     
+    if (updatingLike === comment.id) return; // Prevent duplicate operations
+    
     try {
-      setUpdatingLike(true);
+      setUpdatingLike(comment.id);
       
       // Find the comment in our state
       const updatedComments = [...comments];
@@ -46,6 +64,19 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       
       if (commentIndex !== -1) {
         const isCurrentlyLiked = updatedComments[commentIndex].user_has_liked;
+        
+        // Optimistic update
+        updatedComments[commentIndex] = {
+          ...updatedComments[commentIndex],
+          likes: isCurrentlyLiked 
+            ? Math.max(0, (updatedComments[commentIndex].likes || 1) - 1) 
+            : (updatedComments[commentIndex].likes || 0) + 1,
+          user_has_liked: !isCurrentlyLiked
+        };
+        
+        if (mountedRef.current) {
+          setComments(updatedComments);
+        }
         
         if (isCurrentlyLiked) {
           // Unlike the comment
@@ -55,22 +86,21 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
             .eq('comment_id', comment.id)
             .eq('user_id', user.id);
             
-          if (error) throw error;
+          if (error && mountedRef.current) {
+            // Revert optimistic update if server operation fails
+            const revertedComments = [...comments];
+            revertedComments[commentIndex] = comment;
+            setComments(revertedComments);
+            throw error;
+          }
           
           // Update likes count in video_comments table
-          const newLikesCount = Math.max(0, (updatedComments[commentIndex].likes || 0) - 1);
+          const newLikesCount = Math.max(0, (comment.likes || 0) - 1);
           
           await supabase
             .from('video_comments')
             .update({ likes: newLikesCount })
             .eq('id', comment.id);
-            
-          // Update in our state
-          updatedComments[commentIndex] = {
-            ...updatedComments[commentIndex],
-            likes: newLikesCount,
-            user_has_liked: false
-          };
         } else {
           // Like the comment
           const { error } = await supabase
@@ -80,31 +110,32 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
               user_id: user.id
             });
             
-          if (error) throw error;
+          if (error && mountedRef.current) {
+            // Revert optimistic update if server operation fails
+            const revertedComments = [...comments];
+            revertedComments[commentIndex] = comment;
+            setComments(revertedComments);
+            throw error;
+          }
           
           // Update likes count in video_comments table
-          const newLikesCount = (updatedComments[commentIndex].likes || 0) + 1;
+          const newLikesCount = (comment.likes || 0) + 1;
           
           await supabase
             .from('video_comments')
             .update({ likes: newLikesCount })
             .eq('id', comment.id);
-            
-          // Update in our state
-          updatedComments[commentIndex] = {
-            ...updatedComments[commentIndex],
-            likes: newLikesCount,
-            user_has_liked: true
-          };
         }
-        
-        setComments(updatedComments);
       }
     } catch (error) {
       console.error('Error updating like status:', error);
-      toast.error('Failed to update like status');
+      if (mountedRef.current) {
+        toast.error('Failed to update like status');
+      }
     } finally {
-      setUpdatingLike(false);
+      if (mountedRef.current) {
+        setUpdatingLike(null);
+      }
     }
   };
 
@@ -114,8 +145,10 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       return;
     }
     
+    if (updatingLike === reply.id) return; // Prevent duplicate operations
+    
     try {
-      setUpdatingLike(true);
+      setUpdatingLike(reply.id);
       
       // Find the parent comment and the reply
       const updatedComments = [...comments];
@@ -127,6 +160,21 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         if (replyIndex !== -1) {
           const isCurrentlyLiked = updatedComments[parentIndex].replies![replyIndex].user_has_liked;
           
+          // Optimistic update
+          const updatedReply = {
+            ...updatedComments[parentIndex].replies![replyIndex],
+            likes: isCurrentlyLiked 
+              ? Math.max(0, (updatedComments[parentIndex].replies![replyIndex].likes || 1) - 1) 
+              : (updatedComments[parentIndex].replies![replyIndex].likes || 0) + 1,
+            user_has_liked: !isCurrentlyLiked
+          };
+          
+          updatedComments[parentIndex].replies![replyIndex] = updatedReply;
+          
+          if (mountedRef.current) {
+            setComments(updatedComments);
+          }
+          
           if (isCurrentlyLiked) {
             // Unlike the reply
             const { error } = await supabase
@@ -135,22 +183,20 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
               .eq('comment_id', reply.id)
               .eq('user_id', user.id);
               
-            if (error) throw error;
+            if (error && mountedRef.current) {
+              // Revert on error
+              const revertedComments = [...comments];
+              setComments(revertedComments);
+              throw error;
+            }
             
             // Update likes count in video_comments table
-            const newLikesCount = Math.max(0, (updatedComments[parentIndex].replies![replyIndex].likes || 0) - 1);
+            const newLikesCount = Math.max(0, (reply.likes || 0) - 1);
             
             await supabase
               .from('video_comments')
               .update({ likes: newLikesCount })
               .eq('id', reply.id);
-              
-            // Update in our state
-            updatedComments[parentIndex].replies![replyIndex] = {
-              ...updatedComments[parentIndex].replies![replyIndex],
-              likes: newLikesCount,
-              user_has_liked: false
-            };
           } else {
             // Like the reply
             const { error } = await supabase
@@ -160,32 +206,32 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
                 user_id: user.id
               });
               
-            if (error) throw error;
+            if (error && mountedRef.current) {
+              // Revert on error
+              const revertedComments = [...comments];
+              setComments(revertedComments);
+              throw error;
+            }
             
             // Update likes count in video_comments table
-            const newLikesCount = (updatedComments[parentIndex].replies![replyIndex].likes || 0) + 1;
+            const newLikesCount = (reply.likes || 0) + 1;
             
             await supabase
               .from('video_comments')
               .update({ likes: newLikesCount })
               .eq('id', reply.id);
-              
-            // Update in our state
-            updatedComments[parentIndex].replies![replyIndex] = {
-              ...updatedComments[parentIndex].replies![replyIndex],
-              likes: newLikesCount,
-              user_has_liked: true
-            };
           }
-          
-          setComments(updatedComments);
         }
       }
     } catch (error) {
       console.error('Error updating reply like status:', error);
-      toast.error('Failed to update like status');
+      if (mountedRef.current) {
+        toast.error('Failed to update like status');
+      }
     } finally {
-      setUpdatingLike(false);
+      if (mountedRef.current) {
+        setUpdatingLike(null);
+      }
     }
   };
 
@@ -200,7 +246,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     try {
       setLoading(true);
       const comment = await addVideoComment(videoId, newComment);
-      if (comment) {
+      if (comment && mountedRef.current) {
         setComments(prevComments => [comment, ...prevComments]);
         setNewComment('');
         if (inputRef.current) {
@@ -209,9 +255,13 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      toast.error('Failed to add comment');
+      if (mountedRef.current) {
+        toast.error('Failed to add comment');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -225,6 +275,8 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   };
 
   const fetchComments = async () => {
+    if (commentsFetched) return; // Only fetch once to prevent flickering
+    
     setLoading(true);
     try {
       const commentsData = await fetchVideoComments(videoId);
@@ -249,7 +301,10 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           user_has_liked: likedCommentsMap.has(comment.id)
         }));
         
-        setComments(commentsWithLikeStatus);
+        if (mountedRef.current) {
+          setComments(commentsWithLikeStatus);
+          setCommentsFetched(true);
+        }
       } else {
         // If no user, no comments are liked
         const commentsWithLikeStatus = commentsData.map(comment => ({
@@ -257,13 +312,20 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           user_has_liked: false
         }));
         
-        setComments(commentsWithLikeStatus);
+        if (mountedRef.current) {
+          setComments(commentsWithLikeStatus);
+          setCommentsFetched(true);
+        }
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
-      toast.error('Failed to load comments');
+      if (mountedRef.current) {
+        toast.error('Failed to load comments');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -276,7 +338,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     try {
       const newReply = await addVideoComment(videoId, replyContent);
       
-      if (newReply) {
+      if (newReply && mountedRef.current) {
         // Add parent_id to the reply
         const { error } = await supabase
           .from('video_comments')
@@ -299,20 +361,35 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
             user_has_liked: false
           });
           
-          setComments(updatedComments);
+          if (mountedRef.current) {
+            setComments(updatedComments);
+            
+            // Clear the reply form
+            setReplyContent('');
+            setReplyingTo(null);
+          }
         }
-        
-        // Clear the reply form
-        setReplyContent('');
-        setReplyingTo(null);
       }
     } catch (error) {
       console.error('Error submitting reply:', error);
-      toast.error('Failed to add reply');
+      if (mountedRef.current) {
+        toast.error('Failed to add reply');
+      }
     } finally {
-      setSubmittingReply(false);
+      if (mountedRef.current) {
+        setSubmittingReply(false);
+      }
     }
   };
+
+  // If component is in initial loading state, show a minimal loader instead of flickering UI
+  if (loading && !commentsFetched) {
+    return (
+      <div className="py-4 text-center">
+        <div className="inline-block animate-pulse bg-gray-200 h-8 w-48 rounded"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -339,7 +416,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           }}
           ref={inputRef}
         />
-        <Button onClick={addComment} disabled={loading}>
+        <Button onClick={addComment} disabled={loading || !newComment.trim()}>
           <Send className="h-4 w-4 mr-2" />
           Post
         </Button>
@@ -347,131 +424,135 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       
       <Separator className="my-4" />
       
-      {loading ? (
-        <div>Loading comments...</div>
-      ) : (
-        <div>
-          {comments.map((comment) => (
-            <div key={comment.id} className="mb-4">
-              <div className="flex items-start space-x-3">
-                <Avatar className="h-8 w-8">
-                  <img
-                    src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/40"}
-                    alt={comment.author?.name || comment.author?.username || 'User'}
-                    className="rounded-full"
-                  />
-                </Avatar>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-sm font-semibold">{comment.author?.name || comment.author?.username || 'Unknown'}</p>
-                    <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</p>
-                  </div>
-                  <p className="text-sm">{comment.content}</p>
-                  <div className="mt-2 flex items-center space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center"
-                      onClick={() => handleLikeComment(comment)}
-                      disabled={updatingLike}
-                    >
-                      <ThumbsUp className={`h-4 w-4 mr-1 ${comment.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
-                      {comment.likes && comment.likes > 0 && <span>{comment.likes}</span>}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center"
-                      onClick={() => replyToComment(comment)}
-                    >
-                      <Reply className="h-4 w-4 mr-1" />
-                      Reply
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  {/* Reply Form */}
-                  {replyingTo?.id === comment.id && (
-                    <div className="mt-4 flex items-center space-x-2">
-                      <Avatar className="h-6 w-6">
-                        {user?.user_metadata?.avatar_url && (
-                          <img
-                            src={user?.user_metadata?.avatar_url as string}
-                            alt={user?.user_metadata?.username as string}
-                            className="rounded-full"
-                          />
-                        )}
-                      </Avatar>
-                      <Input
-                        type="text"
-                        placeholder="Add a reply..."
-                        className="flex-1"
-                        value={replyContent}
-                        onChange={(e) => setReplyContent(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            submitReply();
-                          }
-                        }}
-                      />
-                      <Button onClick={submitReply} disabled={submittingReply}>
-                        <Send className="h-4 w-4 mr-2" />
+      <div>
+        {comments.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">
+            No comments yet. Be the first to comment!
+          </div>
+        ) : (
+          <div>
+            {comments.map((comment) => (
+              <div key={comment.id} className="mb-4">
+                <div className="flex items-start space-x-3">
+                  <Avatar className="h-8 w-8">
+                    <img
+                      src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/40"}
+                      alt={comment.author?.name || comment.author?.username || 'User'}
+                      className="rounded-full"
+                    />
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-sm font-semibold">{comment.author?.name || comment.author?.username || 'Unknown'}</p>
+                      <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</p>
+                    </div>
+                    <p className="text-sm">{comment.content}</p>
+                    <div className="mt-2 flex items-center space-x-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center"
+                        onClick={() => handleLikeComment(comment)}
+                        disabled={updatingLike === comment.id}
+                      >
+                        <ThumbsUp className={`h-4 w-4 mr-1 ${comment.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
+                        {comment.likes && comment.likes > 0 && <span>{comment.likes}</span>}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center"
+                        onClick={() => replyToComment(comment)}
+                      >
+                        <Reply className="h-4 w-4 mr-1" />
                         Reply
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={cancelReply}>
-                        Cancel
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4" />
                       </Button>
                     </div>
-                  )}
-                  
-                  {/* Replies */}
-                  {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-4 ml-6">
-                      {comment.replies.map((reply) => (
-                        <div key={reply.id} className="mb-4">
-                          <div className="flex items-start space-x-3">
-                            <Avatar className="h-6 w-6">
-                              <img
-                                src={reply.author?.avatar || reply.author?.avatar_url || "https://via.placeholder.com/40"}
-                                alt={reply.author?.name || reply.author?.username || 'User'}
-                                className="rounded-full"
-                              />
-                            </Avatar>
-                            <div>
-                              <div className="flex items-center space-x-2">
-                                <p className="text-sm font-semibold">{reply.author?.name || reply.author?.username || 'Unknown'}</p>
-                                <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</p>
-                              </div>
-                              <p className="text-sm">{reply.content}</p>
-                              <div className="mt-2 flex items-center space-x-4">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="flex items-center"
-                                  onClick={() => handleLikeReply(comment.id, reply)}
-                                  disabled={updatingLike}
-                                >
-                                  <ThumbsUp className={`h-4 w-4 mr-1 ${reply.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
-                                  {reply.likes && reply.likes > 0 && <span>{reply.likes}</span>}
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
+                    
+                    {/* Reply Form */}
+                    {replyingTo?.id === comment.id && (
+                      <div className="mt-4 flex items-center space-x-2">
+                        <Avatar className="h-6 w-6">
+                          {user?.user_metadata?.avatar_url && (
+                            <img
+                              src={user?.user_metadata?.avatar_url as string}
+                              alt={user?.user_metadata?.username as string}
+                              className="rounded-full"
+                            />
+                          )}
+                        </Avatar>
+                        <Input
+                          type="text"
+                          placeholder="Add a reply..."
+                          className="flex-1"
+                          value={replyContent}
+                          onChange={(e) => setReplyContent(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              submitReply();
+                            }
+                          }}
+                        />
+                        <Button onClick={submitReply} disabled={submittingReply || !replyContent.trim()}>
+                          <Send className="h-4 w-4 mr-2" />
+                          Reply
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={cancelReply}>
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* Replies */}
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="mt-4 ml-6">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.id} className="mb-4">
+                            <div className="flex items-start space-x-3">
+                              <Avatar className="h-6 w-6">
+                                <img
+                                  src={reply.author?.avatar || reply.author?.avatar_url || "https://via.placeholder.com/40"}
+                                  alt={reply.author?.name || reply.author?.username || 'User'}
+                                  className="rounded-full"
+                                />
+                              </Avatar>
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <p className="text-sm font-semibold">{reply.author?.name || reply.author?.username || 'Unknown'}</p>
+                                  <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</p>
+                                </div>
+                                <p className="text-sm">{reply.content}</p>
+                                <div className="mt-2 flex items-center space-x-4">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="flex items-center"
+                                    onClick={() => handleLikeReply(comment.id, reply)}
+                                    disabled={updatingLike === reply.id}
+                                  >
+                                    <ThumbsUp className={`h-4 w-4 mr-1 ${reply.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
+                                    {reply.likes && reply.likes > 0 && <span>{reply.likes}</span>}
+                                  </Button>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
