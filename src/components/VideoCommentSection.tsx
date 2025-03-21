@@ -127,32 +127,30 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           content: replyText.trim(),
           parent_id: replyingTo
         })
-        .select('*')
+        .select('*, author:user_id(id, username, avatar_url)')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Database insert error:", error);
+        throw error;
+      }
       
-      // Fetch author info
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (userError) throw userError;
+      if (!data) {
+        throw new Error("No data returned from insert operation");
+      }
       
       // Create a new reply object
       const newReply: VideoComment = {
         ...data,
         author: {
-          id: userData.id || '',
-          name: userData.username || 'Unknown User',
-          avatar: userData.avatar_url || '',
-          username: userData.username || 'Unknown User',
-          avatar_url: userData.avatar_url || ''
+          id: user.id,
+          username: profile?.username || user?.user_metadata?.username || 'Unknown User',
+          avatar_url: profile?.avatar_url || user?.user_metadata?.avatar_url || '',
         },
         likes: 0
       };
+      
+      console.log("Successfully created reply:", newReply);
       
       // Update comments state
       setComments(prevComments => {
