@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Upload, Image, Loader2, AlertTriangle, Film } from 'lucide-react';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const UploadVideo: React.FC = () => {
   const { uploadVideo } = useVibezone();
@@ -24,6 +25,7 @@ const UploadVideo: React.FC = () => {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [isAdvertisement, setIsAdvertisement] = useState(false);
   
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
@@ -144,7 +146,8 @@ const UploadVideo: React.FC = () => {
         {
           title: title.trim(),
           description: description.trim(),
-          duration: videoDuration
+          duration: videoDuration,
+          is_advertisement: isAdvertisement
         },
         videoFile,
         thumbnailFile || undefined
@@ -307,6 +310,18 @@ const UploadVideo: React.FC = () => {
                   placeholder="Tell viewers about your video"
                   rows={4}
                 />
+              </div>
+
+              {/* Advertisement Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="isAdvertisement" 
+                  checked={isAdvertisement} 
+                  onCheckedChange={(checked) => setIsAdvertisement(checked === true)}
+                />
+                <Label htmlFor="isAdvertisement" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  This is an advertisement video
+                </Label>
               </div>
             </div>
           </CardContent>

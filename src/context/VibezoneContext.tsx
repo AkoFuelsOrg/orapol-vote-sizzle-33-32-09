@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -468,7 +467,8 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           video_url: videoUrl,
           thumbnail_url: thumbnailUrl || null,
           duration: videoData.duration || 0,
-          user_id: user.id
+          user_id: user.id,
+          is_advertisement: videoData.is_advertisement || false
         })
         .select('*')
         .single();
