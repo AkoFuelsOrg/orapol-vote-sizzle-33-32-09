@@ -157,7 +157,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .from('video_comments')
         .select('*')
         .eq('video_id', videoId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
       
       if (commentsError) throw commentsError;
       

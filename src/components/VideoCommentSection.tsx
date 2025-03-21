@@ -4,12 +4,13 @@ import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { VideoComment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, ThumbsUp, MessageSquare } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, Reply } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VideoCommentSectionProps {
   videoId: string;
@@ -22,6 +23,8 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
   const isInitialMount = useRef(true);
   const commentsLoaded = useRef(false);
 
@@ -32,8 +35,35 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       
       try {
         setLoading(true);
-        const commentsData = await fetchVideoComments(videoId);
-        setComments(commentsData);
+        let commentsData = await fetchVideoComments(videoId);
+        
+        // Organize comments into parent comments and replies
+        const parentComments: VideoComment[] = [];
+        const repliesMap: Record<string, VideoComment[]> = {};
+        
+        // First, separate parent comments and replies
+        commentsData.forEach(comment => {
+          if (!comment.parent_id) {
+            // This is a parent comment
+            comment.replies = [];
+            parentComments.push(comment);
+          } else {
+            // This is a reply
+            if (!repliesMap[comment.parent_id]) {
+              repliesMap[comment.parent_id] = [];
+            }
+            repliesMap[comment.parent_id].push(comment);
+          }
+        });
+        
+        // Then attach replies to their parent comments
+        parentComments.forEach(parent => {
+          if (repliesMap[parent.id]) {
+            parent.replies = repliesMap[parent.id];
+          }
+        });
+        
+        setComments(parentComments);
         commentsLoaded.current = true;
       } catch (error) {
         console.error('Error loading comments:', error);
@@ -75,6 +105,79 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     }
   };
 
+  const handleAddReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error('You must be logged in to reply');
+      return;
+    }
+    
+    if (!videoId || !replyText.trim() || !replyingTo) return;
+    
+    try {
+      setSubmitting(true);
+      
+      // Add reply to database
+      const { data, error } = await supabase
+        .from('video_comments')
+        .insert({
+          video_id: videoId,
+          user_id: user.id,
+          content: replyText.trim(),
+          parent_id: replyingTo
+        })
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      // Fetch author info
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (userError) throw userError;
+      
+      // Create a new reply object
+      const newReply: VideoComment = {
+        ...data,
+        author: {
+          id: userData.id || '',
+          name: userData.username || 'Unknown User',
+          avatar: userData.avatar_url || '',
+          username: userData.username || 'Unknown User',
+          avatar_url: userData.avatar_url || ''
+        },
+        likes: 0
+      };
+      
+      // Update comments state
+      setComments(prevComments => {
+        return prevComments.map(comment => {
+          if (comment.id === replyingTo) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), newReply]
+            };
+          }
+          return comment;
+        });
+      });
+      
+      setReplyText('');
+      setReplyingTo(null);
+      toast.success('Reply added');
+    } catch (error) {
+      console.error('Error adding reply:', error);
+      toast.error('Failed to add reply');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Render comment skeleton
   const renderCommentSkeleton = () => (
     <div className="flex gap-3 mb-4 animate-pulse">
@@ -83,6 +186,91 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         <Skeleton className="h-4 w-1/4 mb-2" />
         <Skeleton className="h-3 w-full mb-1" />
         <Skeleton className="h-3 w-3/4" />
+      </div>
+    </div>
+  );
+
+  // Render a comment with its replies
+  const renderComment = (comment: VideoComment, isReply = false) => (
+    <div key={comment.id} className={`flex gap-3 mb-4 ${isReply ? 'ml-12 border-l-2 pl-4 border-gray-100' : ''}`}>
+      <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
+        <img 
+          src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
+          alt={comment.author?.name || comment.author?.username || 'User'} 
+          className="rounded-full"
+        />
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
+          <span className="text-xs text-gray-500">
+            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+          </span>
+        </div>
+        <p className="text-sm mt-1 break-words">{comment.content}</p>
+        <div className="flex items-center gap-4 mt-1">
+          <button className="text-xs text-gray-500 flex items-center">
+            <ThumbsUp className="h-3 w-3 mr-1" />
+            {comment.likes > 0 && comment.likes}
+          </button>
+          {!isReply && user && (
+            <button 
+              className="text-xs text-gray-500 flex items-center"
+              onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+            >
+              <Reply className="h-3 w-3 mr-1" />
+              Reply
+            </button>
+          )}
+        </div>
+        
+        {/* Reply form */}
+        {replyingTo === comment.id && (
+          <form onSubmit={handleAddReply} className="mt-3 flex items-start gap-2">
+            <Avatar className="h-6 w-6 mt-1">
+              <img 
+                src={profile?.avatar_url || user?.user_metadata?.avatar_url || "https://via.placeholder.com/24"} 
+                alt={profile?.username || user?.user_metadata?.username || 'You'} 
+                className="rounded-full"
+              />
+            </Avatar>
+            <div className="flex-1">
+              <Input
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Write a reply..."
+                className="w-full text-sm"
+              />
+              <div className="flex justify-end mt-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  type="button" 
+                  onClick={() => setReplyingTo(null)}
+                  className="mr-2"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  size="sm"
+                  disabled={!replyText.trim() || submitting}
+                  className="bg-red-500 hover:bg-red-600 text-white"
+                >
+                  {submitting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Reply
+                </Button>
+              </div>
+            </div>
+          </form>
+        )}
+        
+        {/* Render replies */}
+        {!isReply && comment.replies && comment.replies.length > 0 && (
+          <div className="mt-2">
+            {comment.replies.map(reply => renderComment(reply, true))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -109,32 +297,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
 
     return (
       <div className="space-y-4">
-        {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-3 mb-4">
-            <Avatar className="h-8 w-8 mt-1 flex-shrink-0">
-              <img 
-                src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/32"} 
-                alt={comment.author?.name || comment.author?.username || 'User'} 
-                className="rounded-full"
-              />
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm">{comment.author?.name || comment.author?.username || 'Unknown'}</span>
-                <span className="text-xs text-gray-500">
-                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                </span>
-              </div>
-              <p className="text-sm mt-1 break-words">{comment.content}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <button className="text-xs text-gray-500 flex items-center">
-                  <ThumbsUp className="h-3 w-3 mr-1" />
-                  {comment.likes > 0 && comment.likes}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+        {comments.map(comment => renderComment(comment))}
       </div>
     );
   };
@@ -184,7 +347,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         </div>
       )}
       
-      {/* Comments List - Using a stable rendering approach */}
+      {/* Comments List */}
       <div className="space-y-4">
         {renderContent()}
       </div>

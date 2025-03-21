@@ -39,6 +39,8 @@ export interface VideoComment {
   updated_at?: string;
   author?: User;
   likes: number;
+  parent_id?: string; // Added to support replies
+  replies?: VideoComment[]; // Added to store replies
 }
 
 export interface Message {
