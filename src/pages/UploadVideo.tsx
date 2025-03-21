@@ -8,8 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Upload, Image, Loader2, AlertTriangle, Film } from 'lucide-react';
+import { Upload, Image, Loader2, AlertTriangle, Film, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 
 const UploadVideo: React.FC = () => {
   const { uploadVideo } = useVibezone();
@@ -24,6 +28,16 @@ const UploadVideo: React.FC = () => {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number>(0);
+  
+  // Advertisement campaign related states
+  const [isAdvertisement, setIsAdvertisement] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState('');
+  const [campaignDescription, setCampaignDescription] = useState('');
+  const [budget, setBudget] = useState('');
+  const [dailyLimit, setDailyLimit] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
   
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
@@ -137,21 +151,68 @@ const UploadVideo: React.FC = () => {
       return;
     }
     
+    if (isAdvertisement) {
+      // Validate advertisement campaign fields
+      if (!campaignTitle.trim()) {
+        toast.error('Please enter a campaign title');
+        return;
+      }
+      
+      if (!budget.trim() || isNaN(Number(budget)) || Number(budget) <= 0) {
+        toast.error('Please enter a valid budget amount');
+        return;
+      }
+      
+      if (!startDate) {
+        toast.error('Please select a start date for your campaign');
+        return;
+      }
+    }
+    
     setUploading(true);
     
     try {
+      // Upload the video first
       const result = await uploadVideo(
         {
           title: title.trim(),
           description: description.trim(),
-          duration: videoDuration
+          duration: videoDuration,
+          is_advertisement: isAdvertisement
         },
         videoFile,
         thumbnailFile || undefined
       );
       
       if (result) {
-        toast.success('Video uploaded successfully!');
+        // If video is an advertisement, create campaign record
+        if (isAdvertisement && result.id) {
+          // Create campaign in database
+          const { error } = await supabase
+            .from('video_campaigns')
+            .insert({
+              video_id: result.id,
+              user_id: user.id,
+              title: campaignTitle.trim(),
+              description: campaignDescription.trim(),
+              budget: Number(budget),
+              daily_limit: dailyLimit ? Number(dailyLimit) : null,
+              start_date: new Date(startDate).toISOString(),
+              end_date: endDate ? new Date(endDate).toISOString() : null,
+              target_audience: targetAudience ? JSON.parse(targetAudience) : {},
+              status: 'pending' // Initial status
+            });
+            
+          if (error) {
+            console.error('Error creating campaign:', error);
+            toast.error('Video uploaded but campaign creation failed');
+          } else {
+            toast.success('Video and campaign created successfully!');
+          }
+        } else {
+          toast.success('Video uploaded successfully!');
+        }
+        
         navigate(`/vibezone/watch/${result.id}`);
       }
     } catch (error) {
@@ -308,7 +369,126 @@ const UploadVideo: React.FC = () => {
                   rows={4}
                 />
               </div>
+              
+              {/* Advertisement Option */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="is-advertisement" 
+                  checked={isAdvertisement}
+                  onCheckedChange={(checked) => setIsAdvertisement(checked as boolean)}
+                />
+                <Label 
+                  htmlFor="is-advertisement" 
+                  className="text-sm font-medium cursor-pointer flex items-center"
+                >
+                  Run this video as an advertisement
+                  <Badge variant="secondary" className="ml-2">
+                    <DollarSign className="h-3 w-3 mr-1" />
+                    Paid promotion
+                  </Badge>
+                </Label>
+              </div>
             </div>
+            
+            {/* Campaign Details Section - shown only when isAdvertisement is true */}
+            {isAdvertisement && (
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <h3 className="text-lg font-semibold mb-4">Campaign Details</h3>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="campaign-title">Campaign Title *</Label>
+                    <Input
+                      id="campaign-title"
+                      value={campaignTitle}
+                      onChange={(e) => setCampaignTitle(e.target.value)}
+                      placeholder="Enter a title for your campaign"
+                      required={isAdvertisement}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="campaign-description">Campaign Description</Label>
+                    <Textarea
+                      id="campaign-description"
+                      value={campaignDescription}
+                      onChange={(e) => setCampaignDescription(e.target.value)}
+                      placeholder="Describe your advertising campaign"
+                      rows={2}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="budget">Total Budget ($) *</Label>
+                      <Input
+                        id="budget"
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        value={budget}
+                        onChange={(e) => setBudget(e.target.value)}
+                        placeholder="E.g., 100.00"
+                        required={isAdvertisement}
+                      />
+                      <p className="text-xs text-gray-500">Total amount you're willing to spend</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="daily-limit">Daily Spend Limit ($)</Label>
+                      <Input
+                        id="daily-limit"
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        value={dailyLimit}
+                        onChange={(e) => setDailyLimit(e.target.value)}
+                        placeholder="Optional"
+                      />
+                      <p className="text-xs text-gray-500">Maximum daily spend (optional)</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="start-date">Start Date *</Label>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        required={isAdvertisement}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="end-date">End Date</Label>
+                      <Input
+                        id="end-date"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        min={startDate || new Date().toISOString().split('T')[0]}
+                      />
+                      <p className="text-xs text-gray-500">Leave empty for continuous campaign</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="target-audience">Target Audience</Label>
+                    <Textarea
+                      id="target-audience"
+                      value={targetAudience}
+                      onChange={(e) => setTargetAudience(e.target.value)}
+                      placeholder='{"interests": ["sports", "music"], "age_range": "18-35", "regions": ["US", "EU"]}'
+                      rows={2}
+                    />
+                    <p className="text-xs text-gray-500">Enter JSON format targeting parameters (optional)</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
           
           <CardFooter className="flex justify-between">
@@ -333,7 +513,7 @@ const UploadVideo: React.FC = () => {
               ) : (
                 <>
                   <Film className="mr-2 h-4 w-4" />
-                  Upload Video
+                  {isAdvertisement ? 'Create Campaign' : 'Upload Video'}
                 </>
               )}
             </Button>
