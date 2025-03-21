@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -286,11 +285,34 @@ const WatchVideo: React.FC = () => {
     }
   }, [user, video, subscribed, subscriberCount, unsubscribeFromChannel, subscribeToChannel, subscriptionLoading]);
   
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!video) return;
     
-    downloadVideo(video.video_url, video.title);
-  }, [video, downloadVideo]);
+    try {
+      toast.loading('Preparing download...');
+      
+      const response = await fetch(video.video_url);
+      const blob = await response.blob();
+      
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${video.title.replace(/\s+/g, '_')}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      
+      toast.dismiss();
+      toast.success('Video download started');
+    } catch (error) {
+      console.error('Error downloading video:', error);
+      toast.dismiss();
+      toast.error('Failed to download video');
+    }
+  }, [video]);
 
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
@@ -302,10 +324,8 @@ const WatchVideo: React.FC = () => {
     }
   };
   
-  // Handle when a related video is clicked
   const handleRelatedVideoClick = (videoId: string) => {
     navigate(`/vibezone/watch/${videoId}`);
-    // Reset state for new video
     viewRecorded.current = false;
     if (videoRef.current) {
       videoRef.current.pause();
@@ -401,8 +421,6 @@ const WatchVideo: React.FC = () => {
     </div>
   );
   
-  // Determine if the subscribe button should be shown
-  // Stable value that doesn't change during render
   const canShowSubscribeButton = Boolean(video?.author?.id) && Boolean(user?.id) && video?.author?.id !== user?.id;
   
   if (loading && !video) {
