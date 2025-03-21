@@ -48,6 +48,14 @@ const WatchVideo: React.FC = () => {
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
+    if (video) {
+      console.log("Video author ID:", video?.author?.id);
+      console.log("Current user ID:", user?.id);
+      console.log("Show channel actions:", !!video?.author?.id && !!user?.id && video.author.id !== user.id);
+    }
+  }, [video, user]);
+  
+  useEffect(() => {
     if (loading) {
       const interval = setInterval(() => {
         setVideoRequestProgress(prev => {
@@ -376,7 +384,7 @@ const WatchVideo: React.FC = () => {
     </div>
   );
   
-  const showChannelActions = video?.author?.id && user?.id && video.author.id !== user.id;
+  const showChannelActions = video?.author?.id && user?.id && video.author.id !== user?.id;
   
   if (loading && !video) {
     return (
@@ -485,26 +493,24 @@ const WatchVideo: React.FC = () => {
                 </div>
               </div>
               
-              {console.log("Video author ID:", video?.author?.id)}
-              {console.log("Current user ID:", user?.id)}
-              {console.log("Show channel actions:", showChannelActions)}
-              
-              <Button
-                variant={subscribed ? "outline" : "default"}
-                size="sm"
-                onClick={handleSubscribe}
-                disabled={checkingSubscription}
-                className="flex items-center"
-              >
-                {checkingSubscription ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : subscribed ? (
-                  <BellOff className="h-4 w-4 mr-1" />
-                ) : (
-                  <Bell className="h-4 w-4 mr-1" />
-                )}
-                {subscribed ? 'Unsubscribe' : 'Subscribe'}
-              </Button>
+              {video.author?.id && video.author.id !== user?.id && (
+                <Button
+                  variant={subscribed ? "outline" : "default"}
+                  size="sm"
+                  onClick={handleSubscribe}
+                  disabled={checkingSubscription}
+                  className="flex items-center"
+                >
+                  {checkingSubscription ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : subscribed ? (
+                    <BellOff className="h-4 w-4 mr-1" />
+                  ) : (
+                    <Bell className="h-4 w-4 mr-1" />
+                  )}
+                  {subscribed ? 'Unsubscribe' : 'Subscribe'}
+                </Button>
+              )}
             </div>
             
             {video.description && (
