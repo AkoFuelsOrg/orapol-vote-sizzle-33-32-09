@@ -26,7 +26,7 @@ const WatchVideo: React.FC = () => {
   const [likesCount, setLikesCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
-  const relatedVideosLoaded = useRef(false);
+  const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
   
   useEffect(() => {
     const loadVideo = async () => {
@@ -55,16 +55,22 @@ const WatchVideo: React.FC = () => {
     
     loadVideo();
     
-    // Reset refs when video ID changes
+    // Reset viewRecorded when video ID changes
     viewRecorded.current = false;
-    relatedVideosLoaded.current = false;
     
   }, [id, fetchVideo, hasLikedVideo, user]);
   
-  // Load related videos (all videos except current one) - only once
+  // Load related videos (all videos except current one) - with caching mechanism
   useEffect(() => {
     const loadRelatedVideos = async () => {
-      if (!id || relatedVideosLoaded.current) return;
+      if (!id) return;
+      
+      // If we already have loaded videos for this ID, use them
+      if (relatedVideosRef.current && relatedVideosRef.current.id === id) {
+        setRelatedVideos(relatedVideosRef.current.videos);
+        return;
+      }
+      
       setLoadingRelated(true);
       
       try {
@@ -72,7 +78,12 @@ const WatchVideo: React.FC = () => {
         // Filter out the current video
         const filteredVideos = allVideos.filter(v => v.id !== id);
         setRelatedVideos(filteredVideos);
-        relatedVideosLoaded.current = true;
+        
+        // Store in our ref for future reference
+        relatedVideosRef.current = {
+          id: id,
+          videos: filteredVideos
+        };
       } catch (error) {
         console.error('Error loading related videos:', error);
       } finally {
