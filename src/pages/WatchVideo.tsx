@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -43,45 +44,59 @@ const WatchVideo: React.FC = () => {
   const viewRecorded = useRef(false);
   const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
   
+  // Load video data once when component mounts or id changes
   useEffect(() => {
+    let isMounted = true;
+    
     const loadVideo = async () => {
       if (!id) return;
       setLoading(true);
       
       try {
         const videoData = await fetchVideo(id);
-        if (videoData) {
+        if (videoData && isMounted) {
           setVideo(videoData);
           setLikesCount(videoData.likes || 0);
           
-          // Check if the user has liked this video
-          if (user) {
-            const userLiked = await hasLikedVideo(id);
-            setLiked(userLiked);
-          }
-          
-          // If the video has an author, check subscription status and count
-          if (videoData.author?.id) {
-            setCheckingSubscription(true);
-            
-            // Get subscriber count
-            const count = await getSubscriberCount(videoData.author.id);
-            setSubscriberCount(count);
-            
-            // Check if user is subscribed to this channel
+          // Only run additional queries if component is still mounted
+          if (isMounted) {
+            // Check if the user has liked this video
             if (user) {
-              const userSubscribed = await hasSubscribedToChannel(videoData.author.id);
-              setSubscribed(userSubscribed);
+              try {
+                const userLiked = await hasLikedVideo(id);
+                if (isMounted) setLiked(userLiked);
+              } catch (error) {
+                console.error('Error checking if user liked video:', error);
+              }
             }
             
-            setCheckingSubscription(false);
+            // If the video has an author, check subscription status and count
+            if (videoData.author?.id) {
+              setCheckingSubscription(true);
+              
+              try {
+                // Get subscriber count
+                const count = await getSubscriberCount(videoData.author.id);
+                if (isMounted) setSubscriberCount(count);
+                
+                // Check if user is subscribed to this channel
+                if (user) {
+                  const userSubscribed = await hasSubscribedToChannel(videoData.author.id);
+                  if (isMounted) setSubscribed(userSubscribed);
+                }
+              } catch (error) {
+                console.error('Error fetching subscription data:', error);
+              } finally {
+                if (isMounted) setCheckingSubscription(false);
+              }
+            }
           }
         }
       } catch (error) {
         console.error('Error loading video:', error);
-        toast.error('Failed to load video');
+        if (isMounted) toast.error('Failed to load video');
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     
@@ -90,15 +105,23 @@ const WatchVideo: React.FC = () => {
     // Reset viewRecorded when video ID changes
     viewRecorded.current = false;
     
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, [id, fetchVideo, hasLikedVideo, hasSubscribedToChannel, getSubscriberCount, user]);
   
+  // Load related videos separately
   useEffect(() => {
+    let isMounted = true;
+    
     const loadRelatedVideos = async () => {
       if (!id) return;
       
       // If we already have loaded videos for this ID, use them
       if (relatedVideosRef.current && relatedVideosRef.current.id === id) {
         setRelatedVideos(relatedVideosRef.current.videos);
+        setLoadingRelated(false);
         return;
       }
       
@@ -106,23 +129,31 @@ const WatchVideo: React.FC = () => {
       
       try {
         const allVideos = await fetchVideos(20);
-        // Filter out the current video
-        const filteredVideos = allVideos.filter(v => v.id !== id);
-        setRelatedVideos(filteredVideos);
-        
-        // Store in our ref for future reference
-        relatedVideosRef.current = {
-          id: id,
-          videos: filteredVideos
-        };
+        // Only update state if component is still mounted
+        if (isMounted) {
+          // Filter out the current video
+          const filteredVideos = allVideos.filter(v => v.id !== id);
+          setRelatedVideos(filteredVideos);
+          
+          // Store in our ref for future reference
+          relatedVideosRef.current = {
+            id: id,
+            videos: filteredVideos
+          };
+        }
       } catch (error) {
         console.error('Error loading related videos:', error);
       } finally {
-        setLoadingRelated(false);
+        if (isMounted) setLoadingRelated(false);
       }
     };
     
     loadRelatedVideos();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, [id, fetchVideos]);
   
   const handleVideoPlay = async () => {
@@ -153,17 +184,28 @@ const WatchVideo: React.FC = () => {
     if (!id) return;
     
     try {
+      // Optimistic update
+      const previousLiked = liked;
+      const previousCount = likesCount;
+      
+      setLiked(!liked);
+      setLikesCount(prev => prev + (liked ? -1 : 1));
+      
       if (liked) {
         const success = await unlikeVideo(id);
-        if (success) {
-          setLiked(false);
-          setLikesCount(prev => prev - 1);
+        if (!success) {
+          // Revert if failed
+          setLiked(previousLiked);
+          setLikesCount(previousCount);
+          toast.error('Failed to unlike video');
         }
       } else {
         const success = await likeVideo(id);
-        if (success) {
-          setLiked(true);
-          setLikesCount(prev => prev + 1);
+        if (!success) {
+          // Revert if failed
+          setLiked(previousLiked);
+          setLikesCount(previousCount);
+          toast.error('Failed to like video');
         }
       }
     } catch (error) {
@@ -184,22 +226,36 @@ const WatchVideo: React.FC = () => {
     }
     
     try {
-      if (subscribed) {
-        const success = await unsubscribeFromChannel(video.author.id);
-        if (success) {
-          setSubscribed(false);
-          setSubscriberCount(prev => Math.max(0, prev - 1));
-        }
+      setCheckingSubscription(true);
+      
+      // Store previous values for rollback if needed
+      const previousSubscribed = subscribed;
+      const previousCount = subscriberCount;
+      
+      // Optimistic update
+      setSubscribed(!subscribed);
+      setSubscriberCount(prev => prev + (subscribed ? -1 : 1));
+      
+      const channelId = video.author.id;
+      let success = false;
+      
+      if (previousSubscribed) {
+        success = await unsubscribeFromChannel(channelId);
       } else {
-        const success = await subscribeToChannel(video.author.id);
-        if (success) {
-          setSubscribed(true);
-          setSubscriberCount(prev => prev + 1);
-        }
+        success = await subscribeToChannel(channelId);
+      }
+      
+      if (!success) {
+        // Revert on failure
+        setSubscribed(previousSubscribed);
+        setSubscriberCount(previousCount);
+        toast.error(`Failed to ${previousSubscribed ? 'unsubscribe from' : 'subscribe to'} channel`);
       }
     } catch (error) {
       console.error('Error updating subscription:', error);
       toast.error('Failed to update subscription');
+    } finally {
+      setCheckingSubscription(false);
     }
   };
   
@@ -398,22 +454,24 @@ const WatchVideo: React.FC = () => {
                 </div>
               </div>
               
-              <Button
-                variant={subscribed ? "outline" : "default"}
-                size="sm"
-                onClick={handleSubscribe}
-                disabled={checkingSubscription || !user}
-                className="flex items-center"
-              >
-                {checkingSubscription ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : subscribed ? (
-                  <BellOff className="h-4 w-4 mr-1" />
-                ) : (
-                  <Bell className="h-4 w-4 mr-1" />
-                )}
-                {subscribed ? 'Unsubscribe' : 'Subscribe'}
-              </Button>
+              {video.author?.id && video.author.id !== user?.id && (
+                <Button
+                  variant={subscribed ? "outline" : "default"}
+                  size="sm"
+                  onClick={handleSubscribe}
+                  disabled={checkingSubscription || !user}
+                  className="flex items-center"
+                >
+                  {checkingSubscription ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : subscribed ? (
+                    <BellOff className="h-4 w-4 mr-1" />
+                  ) : (
+                    <Bell className="h-4 w-4 mr-1" />
+                  )}
+                  {subscribed ? 'Unsubscribe' : 'Subscribe'}
+                </Button>
+              )}
             </div>
             
             {/* Video Description */}
