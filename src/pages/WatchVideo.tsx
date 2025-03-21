@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -27,6 +26,7 @@ const WatchVideo: React.FC = () => {
   const [likesCount, setLikesCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
+  const relatedVideosLoaded = useRef(false);
   
   useEffect(() => {
     const loadVideo = async () => {
@@ -54,12 +54,17 @@ const WatchVideo: React.FC = () => {
     };
     
     loadVideo();
+    
+    // Reset refs when video ID changes
+    viewRecorded.current = false;
+    relatedVideosLoaded.current = false;
+    
   }, [id, fetchVideo, hasLikedVideo, user]);
   
-  // Load related videos (all videos except current one)
+  // Load related videos (all videos except current one) - only once
   useEffect(() => {
     const loadRelatedVideos = async () => {
-      if (!id) return;
+      if (!id || relatedVideosLoaded.current) return;
       setLoadingRelated(true);
       
       try {
@@ -67,6 +72,7 @@ const WatchVideo: React.FC = () => {
         // Filter out the current video
         const filteredVideos = allVideos.filter(v => v.id !== id);
         setRelatedVideos(filteredVideos);
+        relatedVideosLoaded.current = true;
       } catch (error) {
         console.error('Error loading related videos:', error);
       } finally {
@@ -135,14 +141,12 @@ const WatchVideo: React.FC = () => {
     }
   };
   
-  // Render loading skeleton for the video player
   const renderVideoSkeleton = () => (
     <div className="bg-black rounded-lg overflow-hidden aspect-video">
       <Skeleton className="w-full h-full" />
     </div>
   );
   
-  // Render loading skeleton for video info
   const renderVideoInfoSkeleton = () => (
     <div className="mt-4 space-y-2">
       <Skeleton className="h-8 w-4/5" />
@@ -156,7 +160,6 @@ const WatchVideo: React.FC = () => {
     </div>
   );
   
-  // Render loading skeleton for user
   const renderUserSkeleton = () => (
     <div className="flex items-center">
       <Skeleton className="h-10 w-10 rounded-full" />
@@ -164,7 +167,6 @@ const WatchVideo: React.FC = () => {
     </div>
   );
 
-  // Render related video item
   const renderRelatedVideoItem = (relatedVideo: Video) => (
     <Link to={`/watch/${relatedVideo.id}`} key={relatedVideo.id} className="block">
       <Card className="mb-4 hover:bg-gray-50 transition-colors">
@@ -198,7 +200,6 @@ const WatchVideo: React.FC = () => {
     </Link>
   );
   
-  // Render loading skeleton for related videos
   const renderRelatedVideosSkeleton = () => (
     <div className="space-y-4">
       {[1, 2, 3, 4].map((_, index) => (
