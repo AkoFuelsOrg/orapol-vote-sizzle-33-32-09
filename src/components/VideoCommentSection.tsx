@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -126,7 +127,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           content: replyText.trim(),
           parent_id: replyingTo
         })
-        .select('id, content, created_at, video_id, user_id, parent_id')
+        .select()
         .single();
       
       if (error) {
