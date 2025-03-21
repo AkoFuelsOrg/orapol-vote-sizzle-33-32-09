@@ -912,6 +912,7 @@ export type Database = {
           description: string | null
           duration: number | null
           id: string
+          is_advertisement: boolean | null
           likes: number | null
           thumbnail_url: string | null
           title: string
@@ -925,6 +926,7 @@ export type Database = {
           description?: string | null
           duration?: number | null
           id?: string
+          is_advertisement?: boolean | null
           likes?: number | null
           thumbnail_url?: string | null
           title: string
@@ -938,6 +940,7 @@ export type Database = {
           description?: string | null
           duration?: number | null
           id?: string
+          is_advertisement?: boolean | null
           likes?: number | null
           thumbnail_url?: string | null
           title?: string
