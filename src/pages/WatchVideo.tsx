@@ -4,7 +4,7 @@ import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, ThumbsUp, MessageSquare, Share2 } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
@@ -16,7 +16,19 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const WatchVideo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { fetchVideo, fetchVideos, hasLikedVideo, likeVideo, unlikeVideo, viewVideo } = useVibezone();
+  const { 
+    fetchVideo, 
+    fetchVideos, 
+    hasLikedVideo, 
+    likeVideo, 
+    unlikeVideo, 
+    viewVideo,
+    subscribeToChannel,
+    unsubscribeFromChannel,
+    hasSubscribedToChannel,
+    getSubscriberCount,
+    downloadVideo
+  } = useVibezone();
   const { user } = useSupabase();
   const [video, setVideo] = useState<Video | null>(null);
   const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
@@ -24,6 +36,9 @@ const WatchVideo: React.FC = () => {
   const [loadingRelated, setLoadingRelated] = useState(true);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
   const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
@@ -44,6 +59,23 @@ const WatchVideo: React.FC = () => {
             const userLiked = await hasLikedVideo(id);
             setLiked(userLiked);
           }
+          
+          // If the video has an author, check subscription status and count
+          if (videoData.author?.id) {
+            setCheckingSubscription(true);
+            
+            // Get subscriber count
+            const count = await getSubscriberCount(videoData.author.id);
+            setSubscriberCount(count);
+            
+            // Check if user is subscribed to this channel
+            if (user) {
+              const userSubscribed = await hasSubscribedToChannel(videoData.author.id);
+              setSubscribed(userSubscribed);
+            }
+            
+            setCheckingSubscription(false);
+          }
         }
       } catch (error) {
         console.error('Error loading video:', error);
@@ -58,9 +90,8 @@ const WatchVideo: React.FC = () => {
     // Reset viewRecorded when video ID changes
     viewRecorded.current = false;
     
-  }, [id, fetchVideo, hasLikedVideo, user]);
+  }, [id, fetchVideo, hasLikedVideo, hasSubscribedToChannel, getSubscriberCount, user]);
   
-  // Load related videos (all videos except current one) - with caching mechanism
   useEffect(() => {
     const loadRelatedVideos = async () => {
       if (!id) return;
@@ -94,7 +125,6 @@ const WatchVideo: React.FC = () => {
     loadRelatedVideos();
   }, [id, fetchVideos]);
   
-  // Record a view when the video starts playing
   const handleVideoPlay = async () => {
     if (!id || viewRecorded.current) return;
     
@@ -142,6 +172,43 @@ const WatchVideo: React.FC = () => {
     }
   };
   
+  const handleSubscribe = async () => {
+    if (!user) {
+      toast.error('You must be logged in to subscribe');
+      return;
+    }
+    
+    if (!video || !video.author?.id) {
+      toast.error('Cannot identify channel to subscribe to');
+      return;
+    }
+    
+    try {
+      if (subscribed) {
+        const success = await unsubscribeFromChannel(video.author.id);
+        if (success) {
+          setSubscribed(false);
+          setSubscriberCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        const success = await subscribeToChannel(video.author.id);
+        if (success) {
+          setSubscribed(true);
+          setSubscriberCount(prev => prev + 1);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      toast.error('Failed to update subscription');
+    }
+  };
+  
+  const handleDownload = () => {
+    if (!video) return;
+    
+    downloadVideo(video.video_url, video.title);
+  };
+
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
       return `${(views / 1000000).toFixed(1)}M views`;
@@ -284,7 +351,7 @@ const WatchVideo: React.FC = () => {
                 <div className="text-sm text-gray-600">
                   {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                 </div>
-                <div className="flex space-x-4">
+                <div className="flex space-x-2">
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -295,6 +362,15 @@ const WatchVideo: React.FC = () => {
                       className={`h-5 w-5 mr-1 ${liked ? 'fill-red-500 text-red-500' : ''}`} 
                     />
                     {likesCount > 0 && <span>{likesCount}</span>}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center"
+                    onClick={handleDownload}
+                  >
+                    <Download className="h-5 w-5 mr-1" />
+                    Download
                   </Button>
                   <Button variant="ghost" size="sm" className="flex items-center">
                     <Share2 className="h-5 w-5 mr-1" />
@@ -307,17 +383,37 @@ const WatchVideo: React.FC = () => {
             <Separator className="my-4" />
             
             {/* Channel Info */}
-            <div className="flex items-center">
-              <Avatar className="h-10 w-10">
-                <img 
-                  src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
-                  alt={video.author?.name || video.author?.username || 'Author'} 
-                  className="rounded-full"
-                />
-              </Avatar>
-              <div className="ml-3">
-                <h3 className="font-semibold">{video.author?.name || video.author?.username || 'Unknown'}</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Avatar className="h-10 w-10">
+                  <img 
+                    src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
+                    alt={video.author?.name || video.author?.username || 'Author'} 
+                    className="rounded-full"
+                  />
+                </Avatar>
+                <div className="ml-3">
+                  <h3 className="font-semibold">{video.author?.name || video.author?.username || 'Unknown'}</h3>
+                  <p className="text-sm text-gray-500">{subscriberCount} {subscriberCount === 1 ? 'subscriber' : 'subscribers'}</p>
+                </div>
               </div>
+              
+              <Button
+                variant={subscribed ? "outline" : "default"}
+                size="sm"
+                onClick={handleSubscribe}
+                disabled={checkingSubscription || !user}
+                className="flex items-center"
+              >
+                {checkingSubscription ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : subscribed ? (
+                  <BellOff className="h-4 w-4 mr-1" />
+                ) : (
+                  <Bell className="h-4 w-4 mr-1" />
+                )}
+                {subscribed ? 'Unsubscribe' : 'Subscribe'}
+              </Button>
             </div>
             
             {/* Video Description */}

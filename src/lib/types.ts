@@ -28,6 +28,7 @@ export interface Video {
   likes: number;
   author?: User;
   is_advertisement?: boolean;
+  subscribers?: number;
 }
 
 export interface VideoComment {
