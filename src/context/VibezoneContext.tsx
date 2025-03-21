@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +27,40 @@ type VibezoneContextType = {
 
 const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined);
 
+// Helper function to fetch with timeout
+const fetchWithTimeout = async <T,>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> => {
+  let timeoutId: NodeJS.Timeout;
+  
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Request timed out')), timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]) as T;
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
+};
+
+// Helper function for retrying failed requests
+const withRetry = async <T,>(
+  fn: () => Promise<T>,
+  retries: number = 2,
+  delay: number = 1000
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return withRetry(fn, retries - 1, delay * 1.5);
+  }
+};
+
 export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,47 +71,60 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
-      const { data: videosData, error: videosError } = await supabase
-        .from('videos')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const { data: videosData, error: videosError } = await withRetry(
+        () => fetchWithTimeout(
+          supabase
+            .from('videos')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit)
+        )
+      );
       
       if (videosError) throw videosError;
       
-      const transformedVideos = await Promise.all(videosData.map(async (video) => {
-        let authorInfo = null;
-        if (video.user_id) {
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', video.user_id)
-            .single();
-          
-          if (!userError && userData) {
-            authorInfo = {
-              id: userData.id || '',
-              name: userData.username || 'Unknown User',
-              avatar: userData.avatar_url || '',
-              username: userData.username || 'Unknown User',
-              avatar_url: userData.avatar_url || ''
-            };
-          }
-        }
+      if (!videosData || videosData.length === 0) {
+        return [];
+      }
+      
+      // Improve performance by doing all author queries in parallel
+      const authorPromises = videosData.map(video => {
+        if (!video.user_id) return Promise.resolve(null);
         
-        const videoWithAuthor = {
+        return supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', video.user_id)
+          .single()
+          .then(({ data }) => data)
+          .catch(() => null);
+      });
+      
+      const authorResults = await Promise.allSettled(authorPromises);
+      
+      const transformedVideos = videosData.map((video, index) => {
+        const authorResult = authorResults[index];
+        const userData = authorResult.status === 'fulfilled' ? authorResult.value : null;
+        
+        const authorInfo = userData ? {
+          id: userData.id || '',
+          name: userData.username || 'Unknown User',
+          avatar: userData.avatar_url || '',
+          username: userData.username || 'Unknown User',
+          avatar_url: userData.avatar_url || ''
+        } : { 
+          id: '', 
+          name: 'Unknown User', 
+          avatar: '', 
+          username: 'Unknown User', 
+          avatar_url: '' 
+        };
+        
+        return {
           ...video,
-          author: authorInfo || { 
-            id: '', 
-            name: 'Unknown User', 
-            avatar: '', 
-            username: 'Unknown User', 
-            avatar_url: '' 
-          }
+          author: authorInfo
         } as Video;
-        
-        return videoWithAuthor;
-      }));
+      });
       
       return transformedVideos;
     } catch (error: any) {
@@ -93,30 +141,46 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase
-        .from('videos')
-        .select('*')
-        .eq('id', id)
-        .single();
+      // First fetch video data with retry
+      const { data, error } = await withRetry(
+        () => fetchWithTimeout(
+          supabase
+            .from('videos')
+            .select('*')
+            .eq('id', id)
+            .single()
+        )
+      );
       
       if (error) throw error;
+      if (!data) return null;
       
+      // Separately fetch author data with retry
       let authorInfo = null;
       if (data.user_id) {
-        const { data: userData, error: userError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user_id)
-          .single();
-        
-        if (!userError && userData) {
-          authorInfo = {
-            id: userData.id || '',
-            name: userData.username || 'Unknown User',
-            avatar: userData.avatar_url || '',
-            username: userData.username || 'Unknown User',
-            avatar_url: userData.avatar_url || ''
-          };
+        try {
+          const { data: userData, error: userError } = await withRetry(
+            () => fetchWithTimeout(
+              supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', data.user_id)
+                .single()
+            )
+          );
+          
+          if (!userError && userData) {
+            authorInfo = {
+              id: userData.id || '',
+              name: userData.username || 'Unknown User',
+              avatar: userData.avatar_url || '',
+              username: userData.username || 'Unknown User',
+              avatar_url: userData.avatar_url || ''
+            };
+          }
+        } catch (err) {
+          console.error('Error fetching author info:', err);
+          // Continue with default author info if author fetch fails
         }
       }
       

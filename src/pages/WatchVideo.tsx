@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import VideoCommentSection from '@/components/VideoCommentSection';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 const WatchVideo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,13 +41,34 @@ const WatchVideo: React.FC = () => {
   const [subscribed, setSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [videoRequestProgress, setVideoRequestProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
   const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
+  const mountedRef = useRef(true);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Load video data once when component mounts or id changes
+  // Progress simulation for loading
   useEffect(() => {
-    let isMounted = true;
+    if (loading) {
+      const interval = setInterval(() => {
+        setVideoRequestProgress(prev => {
+          const newProgress = prev + (Math.random() * 10);
+          return newProgress > 95 ? 95 : newProgress; // Cap at 95%
+        });
+      }, 300);
+      
+      return () => clearInterval(interval);
+    } else {
+      setVideoRequestProgress(100);
+    }
+  }, [loading]);
+  
+  // Main video loading effect
+  useEffect(() => {
+    mountedRef.current = true;
+    let retryCount = 0;
+    const maxRetries = 3;
     
     const loadVideo = async () => {
       if (!id) return;
@@ -54,17 +76,23 @@ const WatchVideo: React.FC = () => {
       
       try {
         const videoData = await fetchVideo(id);
-        if (videoData && isMounted) {
+        if (videoData && mountedRef.current) {
           setVideo(videoData);
           setLikesCount(videoData.likes || 0);
           
+          // Reset retry timer if we had a successful load
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+          }
+          
           // Only run additional queries if component is still mounted
-          if (isMounted) {
+          if (mountedRef.current) {
             // Check if the user has liked this video
             if (user) {
               try {
                 const userLiked = await hasLikedVideo(id);
-                if (isMounted) setLiked(userLiked);
+                if (mountedRef.current) setLiked(userLiked);
               } catch (error) {
                 console.error('Error checking if user liked video:', error);
               }
@@ -77,26 +105,39 @@ const WatchVideo: React.FC = () => {
               try {
                 // Get subscriber count
                 const count = await getSubscriberCount(videoData.author.id);
-                if (isMounted) setSubscriberCount(count);
+                if (mountedRef.current) setSubscriberCount(count);
                 
                 // Check if user is subscribed to this channel
                 if (user) {
                   const userSubscribed = await hasSubscribedToChannel(videoData.author.id);
-                  if (isMounted) setSubscribed(userSubscribed);
+                  if (mountedRef.current) setSubscribed(userSubscribed);
                 }
               } catch (error) {
                 console.error('Error fetching subscription data:', error);
               } finally {
-                if (isMounted) setCheckingSubscription(false);
+                if (mountedRef.current) setCheckingSubscription(false);
               }
             }
           }
         }
       } catch (error) {
         console.error('Error loading video:', error);
-        if (isMounted) toast.error('Failed to load video');
+        if (mountedRef.current) {
+          // Retry after delay if still mounted
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const delay = Math.min(2000 * retryCount, 10000);
+            console.log(`Attempt ${retryCount}/${maxRetries}: Retrying video load in ${delay}ms`);
+            
+            retryTimeoutRef.current = setTimeout(() => {
+              if (mountedRef.current) loadVideo();
+            }, delay);
+          } else {
+            toast.error('Unable to load video after multiple attempts');
+          }
+        }
       } finally {
-        if (isMounted) setLoading(false);
+        if (mountedRef.current) setLoading(false);
       }
     };
     
@@ -107,14 +148,15 @@ const WatchVideo: React.FC = () => {
     
     // Cleanup function to prevent state updates after unmount
     return () => {
-      isMounted = false;
+      mountedRef.current = false;
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
     };
   }, [id, fetchVideo, hasLikedVideo, hasSubscribedToChannel, getSubscriberCount, user]);
   
   // Load related videos separately
   useEffect(() => {
-    let isMounted = true;
-    
     const loadRelatedVideos = async () => {
       if (!id) return;
       
@@ -128,9 +170,10 @@ const WatchVideo: React.FC = () => {
       setLoadingRelated(true);
       
       try {
-        const allVideos = await fetchVideos(20);
+        const allVideos = await fetchVideos(10); // Reduced from 20 to improve load time
+        
         // Only update state if component is still mounted
-        if (isMounted) {
+        if (mountedRef.current) {
           // Filter out the current video
           const filteredVideos = allVideos.filter(v => v.id !== id);
           setRelatedVideos(filteredVideos);
@@ -143,20 +186,16 @@ const WatchVideo: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading related videos:', error);
+        // Don't show error toast for related videos, just silently fail
       } finally {
-        if (isMounted) setLoadingRelated(false);
+        if (mountedRef.current) setLoadingRelated(false);
       }
     };
     
     loadRelatedVideos();
-    
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
   }, [id, fetchVideos]);
   
-  const handleVideoPlay = async () => {
+  const handleVideoPlay = useCallback(async () => {
     if (!id || viewRecorded.current) return;
     
     try {
@@ -173,9 +212,9 @@ const WatchVideo: React.FC = () => {
     } catch (error) {
       console.error('Error recording view:', error);
     }
-  };
+  }, [id, viewVideo, video]);
   
-  const handleLike = async () => {
+  const handleLike = useCallback(async () => {
     if (!user) {
       toast.error('You must be logged in to like videos');
       return;
@@ -193,7 +232,7 @@ const WatchVideo: React.FC = () => {
       
       if (liked) {
         const success = await unlikeVideo(id);
-        if (!success) {
+        if (!success && mountedRef.current) {
           // Revert if failed
           setLiked(previousLiked);
           setLikesCount(previousCount);
@@ -201,7 +240,7 @@ const WatchVideo: React.FC = () => {
         }
       } else {
         const success = await likeVideo(id);
-        if (!success) {
+        if (!success && mountedRef.current) {
           // Revert if failed
           setLiked(previousLiked);
           setLikesCount(previousCount);
@@ -212,9 +251,9 @@ const WatchVideo: React.FC = () => {
       console.error('Error toggling like:', error);
       toast.error('Failed to update like');
     }
-  };
+  }, [user, id, liked, likesCount, unlikeVideo, likeVideo]);
   
-  const handleSubscribe = async () => {
+  const handleSubscribe = useCallback(async () => {
     if (!user) {
       toast.error('You must be logged in to subscribe');
       return;
@@ -245,7 +284,7 @@ const WatchVideo: React.FC = () => {
         success = await subscribeToChannel(channelId);
       }
       
-      if (!success) {
+      if (!success && mountedRef.current) {
         // Revert on failure
         setSubscribed(previousSubscribed);
         setSubscriberCount(previousCount);
@@ -255,15 +294,17 @@ const WatchVideo: React.FC = () => {
       console.error('Error updating subscription:', error);
       toast.error('Failed to update subscription');
     } finally {
-      setCheckingSubscription(false);
+      if (mountedRef.current) {
+        setCheckingSubscription(false);
+      }
     }
-  };
+  }, [user, video, subscribed, subscriberCount, unsubscribeFromChannel, subscribeToChannel]);
   
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     if (!video) return;
     
     downloadVideo(video.video_url, video.title);
-  };
+  }, [video, downloadVideo]);
 
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
@@ -276,8 +317,13 @@ const WatchVideo: React.FC = () => {
   };
   
   const renderVideoSkeleton = () => (
-    <div className="bg-black rounded-lg overflow-hidden aspect-video">
-      <Skeleton className="w-full h-full" />
+    <div className="space-y-2">
+      <div className="bg-black rounded-lg overflow-hidden aspect-video">
+        <Skeleton className="w-full h-full" />
+      </div>
+      {videoRequestProgress < 100 && (
+        <Progress value={videoRequestProgress} className="h-2" />
+      )}
     </div>
   );
   
@@ -312,6 +358,7 @@ const WatchVideo: React.FC = () => {
                   src={relatedVideo.thumbnail_url} 
                   alt={relatedVideo.title} 
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
@@ -353,6 +400,8 @@ const WatchVideo: React.FC = () => {
     </div>
   );
   
+  const showChannelActions = video?.author?.id && user?.id && video.author.id !== user.id;
+  
   if (loading && !video) {
     return (
       <div className="container mx-auto py-6">
@@ -378,6 +427,13 @@ const WatchVideo: React.FC = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold">Video not found</h2>
           <p className="mt-2 text-gray-600">The video you're looking for doesn't exist or has been removed.</p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => window.location.href = "/vibezone"}
+          >
+            Return to Videos
+          </Button>
         </div>
       </div>
     );
@@ -397,6 +453,7 @@ const WatchVideo: React.FC = () => {
                 controls
                 onPlay={handleVideoPlay}
                 poster={video.thumbnail_url}
+                preload="metadata"
               />
             </div>
             
@@ -446,6 +503,7 @@ const WatchVideo: React.FC = () => {
                     src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
                     alt={video.author?.name || video.author?.username || 'Author'} 
                     className="rounded-full"
+                    loading="lazy"
                   />
                 </Avatar>
                 <div className="ml-3">
@@ -454,12 +512,12 @@ const WatchVideo: React.FC = () => {
                 </div>
               </div>
               
-              {video.author?.id && video.author.id !== user?.id && (
+              {showChannelActions && (
                 <Button
                   variant={subscribed ? "outline" : "default"}
                   size="sm"
                   onClick={handleSubscribe}
-                  disabled={checkingSubscription || !user}
+                  disabled={checkingSubscription}
                   className="flex items-center"
                 >
                   {checkingSubscription ? (
