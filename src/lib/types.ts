@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name?: string;
@@ -28,6 +27,7 @@ export interface Video {
   duration?: number;
   likes: number;
   author?: User;
+  is_advertisement?: boolean;
 }
 
 export interface VideoComment {

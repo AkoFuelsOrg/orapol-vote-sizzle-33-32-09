@@ -3,6 +3,7 @@ import React, { useState, useRef, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
