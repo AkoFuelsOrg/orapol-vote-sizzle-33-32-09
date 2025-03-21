@@ -9,6 +9,27 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      channel_subscriptions: {
+        Row: {
+          channel_id: string
+          created_at: string
+          id: string
+          subscriber_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string
+          id?: string
+          subscriber_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string
+          id?: string
+          subscriber_id?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string

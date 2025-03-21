@@ -536,11 +536,9 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .select('id')
         .eq('channel_id', channelUserId)
         .eq('subscriber_id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+      if (error) throw error;
       
       return !!data;
     } catch (error: any) {
