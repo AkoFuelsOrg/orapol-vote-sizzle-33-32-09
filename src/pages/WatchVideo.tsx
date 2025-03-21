@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,16 +19,8 @@ const WatchVideo: React.FC = () => {
   const [liked, setLiked] = useState(false);
   const [viewRecorded, setViewRecorded] = useState(false);
   
-  useEffect(() => {
-    fetchVideo();
-    
-    // Record view once per video session
-    if (id && !viewRecorded) {
-      recordView();
-    }
-  }, [id]);
-  
-  const fetchVideo = async () => {
+  // Using useCallback to prevent recreating the function on each render
+  const fetchVideo = useCallback(async () => {
     if (!id) return;
     
     try {
@@ -36,7 +28,7 @@ const WatchVideo: React.FC = () => {
         .from('videos')
         .select(`
           *,
-          author:user_id(
+          author:profiles(
             id,
             username,
             avatar_url
@@ -68,7 +60,7 @@ const WatchVideo: React.FC = () => {
 
       setVideo(processedVideo);
       
-      // Check if user liked the video
+      // Only check for likes if user is logged in and we haven't already set the liked state
       if (user) {
         const { data: likeData, error: likeError } = await supabase
           .from('video_likes')
@@ -77,8 +69,8 @@ const WatchVideo: React.FC = () => {
           .eq('user_id', user.id)
           .maybeSingle();
         
-        if (!likeError && likeData) {
-          setLiked(true);
+        if (!likeError) {
+          setLiked(!!likeData);
         }
       }
     } catch (error) {
@@ -87,10 +79,11 @@ const WatchVideo: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user]);
   
-  const recordView = async () => {
-    if (!id) return;
+  // Separate function for recording view to avoid unnecessary re-renders
+  const recordView = useCallback(async () => {
+    if (!id || viewRecorded) return;
     
     try {
       const { error } = await supabase
@@ -106,7 +99,26 @@ const WatchVideo: React.FC = () => {
     } catch (error) {
       console.error('Error recording view:', error);
     }
-  };
+  }, [id, user?.id, viewRecorded]);
+  
+  useEffect(() => {
+    // Reset states when video ID changes
+    setLoading(true);
+    setLiked(false);
+    setViewRecorded(false);
+    
+    fetchVideo();
+    
+    // Record view once per video session
+    if (id && !viewRecorded) {
+      recordView();
+    }
+    
+    // Clean up function
+    return () => {
+      // Any cleanup if needed
+    };
+  }, [id, fetchVideo, recordView, viewRecorded]);
   
   const handleLike = async () => {
     if (!user) {
@@ -114,7 +126,7 @@ const WatchVideo: React.FC = () => {
       return;
     }
     
-    if (!id) return;
+    if (!id || !video) return;
     
     try {
       if (liked) {
@@ -128,9 +140,7 @@ const WatchVideo: React.FC = () => {
         if (error) throw error;
         
         setLiked(false);
-        if (video) {
-          setVideo({ ...video, likes: video.likes - 1 });
-        }
+        setVideo({ ...video, likes: video.likes - 1 });
       } else {
         // Like
         const { error } = await supabase
@@ -143,9 +153,7 @@ const WatchVideo: React.FC = () => {
         if (error) throw error;
         
         setLiked(true);
-        if (video) {
-          setVideo({ ...video, likes: video.likes + 1 });
-        }
+        setVideo({ ...video, likes: video.likes + 1 });
       }
     } catch (error) {
       console.error('Error liking video:', error);
