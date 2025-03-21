@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
 import PollCard from '../components/PollCard';
@@ -17,48 +17,11 @@ const Index: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [animateItems, setAnimateItems] = useState(false);
+  const [contentFetched, setContentFetched] = useState(false);
   const { user } = useSupabase();
   
-  useEffect(() => {
-    fetchContent();
-    
-    // Set up realtime subscription for polls
-    const pollsChannel = supabase
-      .channel('public:polls')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'polls' },
-        (payload) => {
-          fetchPollWithDetails(payload.new.id);
-        }
-      )
-      .subscribe();
-    
-    // Set up realtime subscription for posts
-    const postsChannel = supabase
-      .channel('public:posts')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'posts' },
-        (payload: any) => {
-          fetchPostWithDetails(payload.new.id);
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(pollsChannel);
-      supabase.removeChannel(postsChannel);
-    };
-  }, []);
-  
-  useEffect(() => {
-    // Trigger animations after a small delay for a staggered effect
-    setAnimateItems(true);
-  }, [polls, posts]);
-  
   // Function to convert JSON options from Supabase to PollOption type
-  const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
+  const convertJsonToPollOptions = useCallback((jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
       try {
         return JSON.parse(jsonOptions);
@@ -85,9 +48,9 @@ const Index: React.FC = () => {
     }
     
     return [];
-  };
+  }, []);
 
-  const fetchPostWithDetails = async (postId: string) => {
+  const fetchPostWithDetails = useCallback(async (postId: string) => {
     try {
       // First fetch the post
       const { data: postData, error: postError } = await supabase
@@ -167,9 +130,9 @@ const Index: React.FC = () => {
     } catch (error) {
       console.error('Error fetching post details:', error);
     }
-  };
+  }, [user]);
 
-  const fetchPollWithDetails = async (pollId: string) => {
+  const fetchPollWithDetails = useCallback(async (pollId: string) => {
     try {
       // Fetch the poll with author information
       const { data: pollData, error: pollError } = await supabase
@@ -234,9 +197,11 @@ const Index: React.FC = () => {
     } catch (error) {
       console.error('Error fetching poll details:', error);
     }
-  };
+  }, [user, convertJsonToPollOptions]);
   
-  const fetchContent = async () => {
+  const fetchContent = useCallback(async () => {
+    if (contentFetched) return; // Prevent multiple fetches
+    
     try {
       setLoading(true);
       
@@ -281,7 +246,7 @@ const Index: React.FC = () => {
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
-        .in('id', profileIds);
+        .in('id', profileIds.length > 0 ? profileIds : ['00000000-0000-0000-0000-000000000000']); // Prevent empty IN clause
       
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
@@ -385,13 +350,57 @@ const Index: React.FC = () => {
       // Set the formatted data
       setPolls(formattedPolls);
       setPosts(formattedPosts);
+      setContentFetched(true); // Mark content as fetched
     } catch (error: any) {
       console.error('Error fetching content:', error);
       toast.error('Failed to load content');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, convertJsonToPollOptions, contentFetched]);
+  
+  useEffect(() => {
+    // Only fetch content if it hasn't been fetched yet
+    if (!contentFetched) {
+      fetchContent();
+    }
+    
+    // Set up realtime subscription for polls
+    const pollsChannel = supabase
+      .channel('public:polls')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'polls' },
+        (payload) => {
+          fetchPollWithDetails(payload.new.id);
+        }
+      )
+      .subscribe();
+    
+    // Set up realtime subscription for posts
+    const postsChannel = supabase
+      .channel('public:posts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        (payload: any) => {
+          fetchPostWithDetails(payload.new.id);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(pollsChannel);
+      supabase.removeChannel(postsChannel);
+    };
+  }, [contentFetched, fetchContent, fetchPollWithDetails, fetchPostWithDetails]);
+  
+  useEffect(() => {
+    // Trigger animations after content has loaded
+    if (!loading) {
+      setAnimateItems(true);
+    }
+  }, [loading]);
   
   // Combine and sort all content items by creation date
   const allContent = [...polls, ...posts].sort((a, b) => 
