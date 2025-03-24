@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Home,
   Search,
@@ -28,7 +28,7 @@ import CreatePostModal from './CreatePostModal';
 import { ScrollArea } from './ui/scroll-area';
 
 const Sidebar = () => {
-  const { user, signOut } = useSupabase();
+  const { user, profile, signOut } = useSupabase();
   const location = useLocation();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
@@ -44,10 +44,11 @@ const Sidebar = () => {
     { href: '/profile', icon: UserCircle, label: 'Profile' },
   ];
 
-  // Get the user's profile data
-  const avatarUrl = user?.user_metadata?.avatar_url;
-  const coverUrl = user?.user_metadata?.cover_url;
-  const username = user?.user_metadata?.username || 'User';
+  // Get the user's profile data directly from the profile object
+  // This is coming from useSupabase hook which already fetches the profile
+  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
+  const coverUrl = profile?.cover_url || user?.user_metadata?.cover_url;
+  const username = profile?.username || user?.user_metadata?.username || 'User';
   const email = user?.email || '';
 
   return (
