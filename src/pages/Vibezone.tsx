@@ -27,10 +27,20 @@ const Vibezone: React.FC = () => {
         setIsInitialLoading(true);
         const fetchedVideos = await fetchVideos();
         console.log("Fetched videos:", fetchedVideos);
-        setVideos(fetchedVideos);
+        
+        // Check if we actually got videos back
+        if (fetchedVideos && Array.isArray(fetchedVideos)) {
+          setVideos(fetchedVideos);
+          console.log("Videos set in state:", fetchedVideos.length);
+        } else {
+          console.error("No videos returned or invalid format:", fetchedVideos);
+          setVideos([]);
+          toast.error("No videos available");
+        }
       } catch (error) {
         console.error("Error loading videos:", error);
         toast.error("Failed to load videos");
+        setVideos([]);
       } finally {
         setIsInitialLoading(false);
       }
@@ -57,6 +67,9 @@ const Vibezone: React.FC = () => {
     
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  console.log("Current video state:", videos);
+  console.log("isInitialLoading:", isInitialLoading);
 
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6">
@@ -111,7 +124,7 @@ const Vibezone: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {videos.map((video) => (
             <Card 
-              key={video.id} 
+              key={video.id || `video-${Math.random()}`} 
               className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
               onClick={() => navigate(`/vibezone/watch/${video.id}`)}
             >
@@ -119,7 +132,7 @@ const Vibezone: React.FC = () => {
                 {video.thumbnail_url ? (
                   <img 
                     src={video.thumbnail_url} 
-                    alt={video.title} 
+                    alt={video.title || 'Video'} 
                     className="w-full h-full object-cover transition-opacity duration-200"
                     loading="lazy"
                   />
@@ -133,7 +146,7 @@ const Vibezone: React.FC = () => {
                 </div>
               </div>
               <CardContent className="p-3">
-                <h3 className="font-semibold text-sm line-clamp-2 mb-1.5">{video.title}</h3>
+                <h3 className="font-semibold text-sm line-clamp-2 mb-1.5">{video.title || 'Untitled Video'}</h3>
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     {video.author?.avatar ? (
