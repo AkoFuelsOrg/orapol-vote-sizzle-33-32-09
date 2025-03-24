@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Home,
@@ -11,7 +12,6 @@ import {
   Bookmark,
   Settings,
   LogOut,
-  BarChart,
   PlusCircle
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -90,14 +90,6 @@ const Sidebar = () => {
         </nav>
 
         <div className="p-4 space-y-3">
-          <Button 
-            onClick={() => navigate('/create')}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start gap-2"
-          >
-            <BarChart className="h-4 w-4" />
-            <span>Create Poll</span>
-          </Button>
-          
           <Button 
             variant="outline"
             onClick={() => setModalOpen(true)}
