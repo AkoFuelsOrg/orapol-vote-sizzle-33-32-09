@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   Home,
   Search,
-  Bell,
   MessageSquare,
   UserCircle,
   Users,
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useNavigate } from 'react-router-dom';
 import CreatePostModal from './CreatePostModal';
+import { ScrollArea } from './ui/scroll-area';
 
 const Sidebar = () => {
   const { user, signOut } = useSupabase();
@@ -46,60 +46,62 @@ const Sidebar = () => {
 
   return (
     <>
-      <div className="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-100 flex flex-col shadow-md mt-12">
+      <div className="fixed top-0 left-0 h-[95vh] w-64 bg-white border-r border-gray-100 flex flex-col shadow-md mt-12">
         {user && (
-          <div className="p-4 border-b border-gray-100 bg-gray-50">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12 border-2 border-primary shadow-sm">
+          <div className="p-3 border-b border-gray-100 bg-gray-50 shrink-0">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-10 w-10 border-2 border-primary shadow-sm">
                 <AvatarImage src={user.user_metadata?.avatar_url as string} />
                 <AvatarFallback className="bg-primary/10 text-primary font-medium">{user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-gray-900">{user.user_metadata?.username || 'User'}</span>
-                <span className="text-xs text-gray-500 truncate max-w-[140px]">{user.email}</span>
+                <span className="text-sm font-semibold text-gray-900 truncate max-w-[180px]">{user.user_metadata?.username || 'User'}</span>
+                <span className="text-xs text-gray-500 truncate max-w-[180px]">{user.email}</span>
               </div>
             </div>
           </div>
         )}
 
-        <nav className="flex-1 pt-4 pb-6 overflow-y-auto no-scrollbar px-2">
-          {navLinks.map((link) => {
-            const isActive = location.pathname === link.href;
-            return (
-              <NavLink
-                key={link.href}
-                to={link.href}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 mb-1 ${
-                    isActive 
-                      ? 'bg-primary/10 text-primary font-medium' 
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`
-                }
-              >
-                <link.icon className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
-                <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>{link.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <nav className="py-2 px-2">
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.href;
+              return (
+                <NavLink
+                  key={link.href}
+                  to={link.href}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 mb-1 ${
+                      isActive 
+                        ? 'bg-primary/10 text-primary font-medium' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  <link.icon className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
+                  <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>{link.label}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
+        </ScrollArea>
 
-        <div className="p-4 space-y-3 bg-gray-50 border-t border-gray-100">
+        <div className="p-3 space-y-2 bg-gray-50 border-t border-gray-100 shrink-0">
           <Button 
             variant="outline"
             onClick={() => setModalOpen(true)}
-            className="w-full border-gray-200 hover:bg-gray-100 text-gray-700 justify-start gap-2 shadow-sm"
+            className="w-full border-gray-200 hover:bg-gray-100 text-gray-700 justify-start gap-2 shadow-sm py-1.5"
           >
             <PlusCircle className="h-4 w-4 text-primary" />
-            <span>Create Post</span>
+            <span className="text-sm">Create Post</span>
           </Button>
           
           <Button 
             onClick={signOut}
-            className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 justify-start gap-2 shadow-sm"
+            className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 justify-start gap-2 shadow-sm py-1.5"
           >
             <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
+            <span className="text-sm">Sign Out</span>
           </Button>
         </div>
       </div>
