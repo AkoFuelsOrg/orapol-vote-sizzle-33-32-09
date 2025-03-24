@@ -63,7 +63,7 @@ const Sidebar = () => {
         )}
 
         <ScrollArea className="flex-1 overflow-y-auto">
-          <nav className="flex flex-col h-full py-2">
+          <nav className="flex flex-col py-6 px-2 space-y-4">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.href;
               return (
@@ -71,7 +71,7 @@ const Sidebar = () => {
                   key={link.href}
                   to={link.href}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
+                    `flex items-center gap-3 px-5 py-3 mx-2 rounded-lg transition-all duration-200 ${
                       isActive 
                         ? 'bg-primary/10 text-primary font-medium' 
                         : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
