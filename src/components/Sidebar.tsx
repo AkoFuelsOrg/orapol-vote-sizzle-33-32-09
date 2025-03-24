@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Home,
@@ -55,7 +54,7 @@ const Sidebar = () => {
     <>
       <div className="fixed top-0 left-0 h-[95vh] w-64 bg-white border-r border-gray-100 flex flex-col shadow-md mt-12">
         {user && (
-          <div className="border-b border-gray-100 shrink-0">
+          <div className="border-b border-gray-100 shrink-0 mt-4">
             {/* Profile Cover Image */}
             <div className="relative h-24 bg-gradient-to-r from-purple-100 to-purple-300 overflow-hidden">
               {coverUrl ? (
