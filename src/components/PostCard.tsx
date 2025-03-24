@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Card } from './ui/card';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
 import PostCommentSection from './PostCommentSection';
 import { AspectRatio } from './ui/aspect-ratio';
 import { 
@@ -32,6 +32,7 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   const { user } = useSupabase();
   const isMobile = useIsMobile();
+  const breakpoint = useBreakpoint();
   const [isImageExpanded, setIsImageExpanded] = React.useState(false);
   const [hasLiked, setHasLiked] = React.useState(post.userLiked || false);
   const [likeCount, setLikeCount] = React.useState(post.likeCount);
@@ -238,6 +239,147 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     </div>
   );
 
+  // Use Facebook-like mobile layout for mobile devices
+  if (breakpoint === 'mobile') {
+    return (
+      <Card className="mb-4 overflow-hidden border-t border-b border-x-0 rounded-none w-full shadow-none">
+        {/* Author header */}
+        <div className="p-3 flex items-center justify-between">
+          <Link 
+            to={`/user/${post.author.id}`}
+            className="flex items-center space-x-2"
+          >
+            <Avatar className="w-10 h-10 border border-gray-200">
+              <AvatarImage src={post.author.avatar} alt={post.author.name} />
+              <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-semibold">{post.author.name}</p>
+              <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
+            </div>
+          </Link>
+          <button className="text-gray-500">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+              <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+              <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Post content */}
+        <div className="px-3 pb-2">
+          <p className="text-sm whitespace-pre-line break-words mb-2">{post.content}</p>
+        </div>
+        
+        {/* Post image */}
+        {post.image && (
+          <div 
+            className="relative w-full"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsImageExpanded(true);
+            }}
+          >
+            <img 
+              src={post.image} 
+              alt="Post content" 
+              className="w-full object-cover max-h-[50vh]"
+            />
+            
+            {isImageExpanded && (
+              <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
+                <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+                  <DialogTitle className="sr-only">Post Image</DialogTitle>
+                  <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+                    <X size={24} />
+                  </DialogClose>
+                  <div className="relative w-full overflow-hidden rounded-lg p-1">
+                    <img 
+                      src={post.image} 
+                      alt="Post" 
+                      className="w-full h-auto max-h-[80vh] object-contain"
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        )}
+        
+        {/* Like/comment counts */}
+        <div className="px-3 py-2 flex justify-between text-xs text-gray-500 border-t border-gray-100">
+          <div>{likeCount > 0 && `${likeCount} likes`}</div>
+          <div>{commentCount > 0 && `${commentCount} comments`}</div>
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex border-t border-gray-200">
+          <button 
+            className="flex-1 py-2 flex items-center justify-center space-x-1"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLike();
+            }}
+          >
+            <Heart size={18} className={`${hasLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+            <span className="text-xs text-gray-600">Like</span>
+          </button>
+          
+          <button 
+            className="flex-1 py-2 flex items-center justify-center space-x-1"
+            onClick={toggleCommentForm}
+          >
+            <MessageCircle size={18} className="text-gray-500" />
+            <span className="text-xs text-gray-600">Comment</span>
+          </button>
+          
+          <Drawer open={isShareOpen} onOpenChange={setIsShareOpen}>
+            <DrawerTrigger asChild>
+              <button 
+                className="flex-1 py-2 flex items-center justify-center space-x-1"
+                onClick={(e) => handleShare(e)}
+              >
+                <Share2 size={18} className="text-gray-500" />
+                <span className="text-xs text-gray-600">Share</span>
+              </button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle>Share</DrawerTitle>
+                <DrawerDescription>
+                  Choose a platform to share this post.
+                </DrawerDescription>
+              </DrawerHeader>
+              <div className="px-4">
+                <ShareOptions />
+              </div>
+              <DrawerFooter>
+                <DrawerClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
+        </div>
+        
+        {/* Comments section */}
+        {showCommentForm && (
+          <div className="border-t border-gray-200">
+            <PostCommentSection 
+              postId={post.id} 
+              updateCommentCount={updateCommentCount}
+              showCommentForm={showCommentForm}
+            />
+          </div>
+        )}
+      </Card>
+    );
+  }
+
+  // Desktop layout (original)
   return (
     <Card className="mb-8 overflow-hidden border border-gray-200 rounded-lg w-full mx-auto shadow-sm min-h-[70vh]">
       <div className="flex flex-col md:flex-row h-full">

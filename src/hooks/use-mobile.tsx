@@ -37,12 +37,10 @@ export function useBreakpoint() {
       }
     }
 
-    const mobileQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const tabletQuery = window.matchMedia(
-      `(min-width: ${MOBILE_BREAKPOINT}px) and (max-width: ${TABLET_BREAKPOINT - 1}px)`
-    )
-
+    // Initial breakpoint check
     updateBreakpoint()
+    
+    // Add resize event listener
     window.addEventListener("resize", updateBreakpoint)
 
     return () => {
