@@ -40,7 +40,6 @@ const Sidebar = () => {
     { href: '/marketplaces', icon: ShoppingBag, label: 'Marketplaces' },
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
     { href: '/favourites', icon: Bookmark, label: 'Favourites' },
-    { href: '/profile', icon: UserCircle, label: 'Profile' },
   ];
 
   // Get the user's profile data directly from the profile object
