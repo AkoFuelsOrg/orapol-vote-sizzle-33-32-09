@@ -21,7 +21,7 @@ const CreatePostInterface = () => {
           <img 
             src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
             alt="Your avatar" 
-            className="w-10 h-10 rounded-full border-2 border-red-500 object-cover"
+            className="w-10 h-10 rounded-full border border-gray-200 object-cover"
           />
           <button 
             onClick={() => setModalOpen(true)}

@@ -11,7 +11,9 @@ import {
   Film,
   Bookmark,
   Settings,
-  LogOut
+  LogOut,
+  BarChart,
+  PlusCircle
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -44,12 +46,23 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="fixed top-0 left-0 h-full w-64 bg-gradient-to-br from-white via-gray-50 to-blue-50 border-r border-gray-200 flex flex-col shadow-md mt-12">
-      <div className="pt-6 px-4 pb-6">
-        {/* Logo or branding could go here */}
-      </div>
+    <div className="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm mt-12">
+      {user && (
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border border-gray-200">
+              <AvatarImage src={user.user_metadata?.avatar_url as string} />
+              <AvatarFallback className="bg-gray-100 text-gray-500">{user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-gray-900">{user.user_metadata?.username || 'User'}</span>
+              <span className="text-xs text-gray-500">{user.email}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <nav className="flex-1 px-3 space-y-2 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 pt-2 pb-6 overflow-y-auto no-scrollbar">
         {navLinks.map((link) => {
           const isActive = location.pathname === link.href;
           return (
@@ -57,62 +70,49 @@ const Sidebar = () => {
               key={link.href}
               to={link.href}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                `flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-gradient-to-r from-blue-500/15 to-indigo-500/10 text-primary font-medium shadow-sm border-l-4 border-primary' 
-                    : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 hover:border-l-4 hover:border-gray-200'
+                    ? 'bg-blue-50 text-blue-500' 
+                    : 'text-gray-600 hover:bg-gray-50'
                 }`
               }
             >
-              <link.icon className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
-              <span className="font-medium">{link.label}</span>
+              <link.icon className={`h-5 w-5 ${isActive ? 'text-blue-500' : 'text-gray-500'}`} />
+              <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>{link.label}</span>
               {link.label === 'Notifications' && (
-                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-white shadow-sm">3</span>
+                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-medium text-white">3</span>
               )}
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="mt-auto border-t border-gray-200 pt-4 px-3 pb-6">
-        {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start px-3 py-3 rounded-lg hover:bg-blue-50 transition-all">
-                <Avatar className="mr-2 h-10 w-10 border-2 border-primary/20 shadow-sm">
-                  <AvatarImage src={user.user_metadata?.avatar_url as string} />
-                  <AvatarFallback className="bg-gradient-to-br from-blue-100 to-blue-200 text-primary font-semibold">{user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-medium text-gray-900">{user.user_metadata?.username}</span>
-                  <span className="text-xs text-gray-500">View profile</span>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuItem onClick={() => navigate('/profile')} className="flex items-center gap-2 py-2">
-                <UserCircle className="h-4 w-4 text-blue-500" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')} className="flex items-center gap-2 py-2">
-                <Settings className="h-4 w-4 text-gray-600" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 py-2 text-red-500 hover:text-red-600 hover:bg-red-50">
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button 
-            onClick={() => navigate('/auth')} 
-            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md"
-          >
-            Login
-          </Button>
-        )}
+      <div className="p-4 space-y-3">
+        <Button 
+          onClick={() => navigate('/create')}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white justify-start gap-2"
+        >
+          <BarChart className="h-4 w-4" />
+          <span>Create Poll</span>
+        </Button>
+        
+        <Button 
+          variant="outline"
+          onClick={() => setModalOpen(true)}
+          className="w-full border-gray-200 hover:bg-gray-50 text-gray-700 justify-start gap-2"
+        >
+          <PlusCircle className="h-4 w-4" />
+          <span>Create Post</span>
+        </Button>
+        
+        <Button 
+          variant="outline"
+          onClick={signOut}
+          className="w-full border-gray-200 hover:bg-gray-50 text-red-500 justify-start gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sign Out</span>
+        </Button>
       </div>
     </div>
   );
