@@ -1,13 +1,15 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { MessageCircle, Plus, User, LogOut, MessageSquare } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { MessageCircle, Plus, User, LogOut, MessageSquare, Search } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { Button } from './ui/button';
 
 const Header: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, profile, signOut, loading } = useSupabase();
   const breakpoint = useBreakpoint();
   
@@ -15,6 +17,10 @@ const Header: React.FC = () => {
   if (breakpoint === "desktop") {
     return null;
   }
+
+  const handleSearchClick = () => {
+    navigate('/search');
+  };
   
   return (
     <header className="fixed top-0 left-0 right-0 z-40 glass-card h-[4.3rem] px-4 animate-fade-in">
@@ -26,6 +32,17 @@ const Header: React.FC = () => {
         </Link>
         
         <nav className="flex items-center space-x-1">
+          <Button
+            onClick={handleSearchClick}
+            variant="ghost"
+            size="icon"
+            className={`p-2.5 rounded-full transition-colors duration-200 ${
+              location.pathname === '/search' ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
+            }`}
+          >
+            <Search size={20} />
+          </Button>
+          
           <Link 
             to="/" 
             className={`p-2.5 rounded-full transition-colors duration-200 ${

@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Home,
-  Search,
   MessageSquare,
   UserCircle,
   Users,
@@ -34,7 +34,6 @@ const Sidebar = () => {
   
   const navLinks = [
     { href: '/', icon: Home, label: 'Home' },
-    { href: '/search', icon: Search, label: 'Search' },
     { href: '/vibezone', icon: Film, label: 'Vibezone' },
     { href: '/groups', icon: Users, label: 'Groups' },
     { href: '/marketplaces', icon: ShoppingBag, label: 'Marketplaces' },
