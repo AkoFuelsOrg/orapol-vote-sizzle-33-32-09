@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -22,7 +21,6 @@ const Index: React.FC = () => {
   useEffect(() => {
     fetchContent();
     
-    // Set up realtime subscription for polls
     const pollsChannel = supabase
       .channel('public:polls')
       .on(
@@ -34,7 +32,6 @@ const Index: React.FC = () => {
       )
       .subscribe();
     
-    // Set up realtime subscription for posts
     const postsChannel = supabase
       .channel('public:posts')
       .on(
@@ -53,11 +50,9 @@ const Index: React.FC = () => {
   }, []);
   
   useEffect(() => {
-    // Trigger animations after a small delay for a staggered effect
     setAnimateItems(true);
   }, [polls, posts]);
   
-  // Function to convert JSON options from Supabase to PollOption type
   const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
       try {
@@ -71,7 +66,6 @@ const Index: React.FC = () => {
     if (Array.isArray(jsonOptions)) {
       return jsonOptions.map(opt => {
         if (typeof opt === 'object' && opt !== null) {
-          // Use type assertion with optional chaining to safely access properties
           const option = opt as Record<string, unknown>;
           return {
             id: String(option?.id || ''),
@@ -89,7 +83,6 @@ const Index: React.FC = () => {
 
   const fetchPostWithDetails = async (postId: string) => {
     try {
-      // First fetch the post
       const { data: postData, error: postError } = await supabase
         .from('posts')
         .select(`
@@ -105,7 +98,6 @@ const Index: React.FC = () => {
       
       if (postError) throw postError;
       
-      // Then fetch profile data separately
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -114,10 +106,8 @@ const Index: React.FC = () => {
       
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        // Continue with default profile values
       }
       
-      // Check if the user has liked this post
       let userLiked = false;
       
       if (user) {
@@ -131,7 +121,6 @@ const Index: React.FC = () => {
         userLiked = !!likeData;
       }
       
-      // Get like count
       const { data: likeCountData, error: likeCountError } = await supabase
         .from('post_likes')
         .select('id', { count: 'exact' })
@@ -139,7 +128,6 @@ const Index: React.FC = () => {
       
       if (likeCountError) throw likeCountError;
       
-      // Format the post for our application
       const formattedPost: Post = {
         id: postData.id,
         content: postData.content,
@@ -155,7 +143,6 @@ const Index: React.FC = () => {
         userLiked
       };
       
-      // Add to posts without duplicates
       setPosts(prevPosts => {
         const postExists = prevPosts.some(p => p.id === formattedPost.id);
         if (postExists) {
@@ -171,7 +158,6 @@ const Index: React.FC = () => {
 
   const fetchPollWithDetails = async (pollId: string) => {
     try {
-      // Fetch the poll with author information
       const { data: pollData, error: pollError } = await supabase
         .from('polls')
         .select(`
@@ -189,7 +175,6 @@ const Index: React.FC = () => {
       
       if (pollError) throw pollError;
       
-      // Check if the user has voted on this poll
       let userVoted = undefined;
       
       if (user) {
@@ -205,7 +190,6 @@ const Index: React.FC = () => {
         }
       }
       
-      // Format the poll for our application
       const formattedPoll: Poll = {
         id: pollData.id,
         question: pollData.question,
@@ -222,7 +206,6 @@ const Index: React.FC = () => {
         image: pollData.image
       };
       
-      // Add to polls without duplicates
       setPolls(prevPolls => {
         const pollExists = prevPolls.some(p => p.id === formattedPoll.id);
         if (pollExists) {
@@ -240,7 +223,6 @@ const Index: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch polls with author information
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select(`
@@ -258,7 +240,6 @@ const Index: React.FC = () => {
       
       if (pollsError) throw pollsError;
       
-      // Fetch posts and user profiles separately
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -274,10 +255,8 @@ const Index: React.FC = () => {
       
       if (postsError) throw postsError;
       
-      // Get all profile IDs from posts
       const profileIds = postsData ? postsData.map(post => post.user_id) : [];
       
-      // Fetch all needed profiles in a single query
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -285,10 +264,8 @@ const Index: React.FC = () => {
       
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
-        // Continue without profile data, we'll use defaults
       }
       
-      // Create a map of profiles for easy lookup
       const profilesMap = new Map();
       if (profilesData) {
         profilesData.forEach(profile => {
@@ -296,7 +273,6 @@ const Index: React.FC = () => {
         });
       }
       
-      // Fetch user votes if the user is logged in
       let userVotes: Record<string, string> = {};
       
       if (user) {
@@ -313,7 +289,6 @@ const Index: React.FC = () => {
         }
       }
       
-      // Fetch user likes if the user is logged in
       let userLikes: Record<string, boolean> = {};
       
       if (user) {
@@ -330,7 +305,6 @@ const Index: React.FC = () => {
         }
       }
       
-      // Get like counts for all posts
       const { data: likeCounts, error: likeCountsError } = await supabase
         .from('post_likes')
         .select('post_id');
@@ -344,7 +318,6 @@ const Index: React.FC = () => {
         });
       }
       
-      // Format polls for our application
       const formattedPolls: Poll[] = pollsData ? pollsData.map(poll => ({
         id: poll.id,
         question: poll.question,
@@ -361,9 +334,7 @@ const Index: React.FC = () => {
         image: poll.image
       })) : [];
       
-      // Format posts for our application
       const formattedPosts: Post[] = postsData ? postsData.map(post => {
-        // Get profile from map or use default
         const profile = profilesMap.get(post.user_id);
         
         return {
@@ -382,7 +353,6 @@ const Index: React.FC = () => {
         };
       }) : [];
       
-      // Set the formatted data
       setPolls(formattedPolls);
       setPosts(formattedPosts);
     } catch (error: any) {
@@ -393,7 +363,6 @@ const Index: React.FC = () => {
     }
   };
   
-  // Combine and sort all content items by creation date
   const allContent = [...polls, ...posts].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -402,8 +371,8 @@ const Index: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Header />
       
-      <main className="pt-20 px-4 max-w-3xl mx-auto">
-        <div className="mb-6 animate-fade-in">
+      <main className="pt-14 px-4 max-w-3xl mx-auto">
+        <div className="mb-4 animate-fade-in">
           <h2 className="text-2xl font-bold">Discover</h2>
           <p className="text-muted-foreground">See what people are sharing</p>
         </div>
