@@ -20,6 +20,7 @@ interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProductAdded: () => void;
+  asSheet?: boolean;
 }
 
 const formSchema = z.object({
@@ -41,7 +42,7 @@ const formSchema = z.object({
 
 type ProductFormValues = z.infer<typeof formSchema>;
 
-const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: AddProductModalProps) => {
+const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded, asSheet = false }: AddProductModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -150,6 +151,158 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded }: Add
       setIsSubmitting(false);
     }
   };
+
+  if (asSheet) {
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Product Name*</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter product name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Describe your product or service" 
+                    className="resize-none min-h-[100px]"
+                    {...field} 
+                    value={field.value || ''}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field: { onChange, value, ...rest }}) => (
+              <FormItem>
+                <FormLabel>Price</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                    <Input 
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Leave empty for 'Contact for price'" 
+                      className="pl-7"
+                      value={value === null ? '' : value}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        onChange(val === '' ? null : val);
+                      }}
+                      {...rest}
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="is_available"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                <div className="space-y-0.5">
+                  <FormLabel>Available</FormLabel>
+                  <div className="text-sm text-muted-foreground">
+                    Mark this product as available for purchase
+                  </div>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          
+          {uploadError && (
+            <Alert variant="destructive">
+              <AlertTitle>Upload Error</AlertTitle>
+              <AlertDescription>{uploadError}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="space-y-2">
+            <Label htmlFor="image">Product Image</Label>
+            <div className="border rounded-md p-4">
+              {imagePreview ? (
+                <div className="relative">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="mx-auto max-h-[200px] object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                      setUploadError(null);
+                    }}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 text-xs"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
+                  <ImagePlus className="h-10 w-10 text-muted-foreground/60" />
+                  <p className="text-sm text-muted-foreground">
+                    Upload a product image (optional)
+                  </p>
+                  <label htmlFor="image-upload" className="cursor-pointer">
+                    <span className="relative inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90">
+                      Select Image
+                    </span>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="sr-only"
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 justify-end mt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Adding...' : 'Add Product'}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
