@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -371,7 +372,7 @@ const Index: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       <Header />
       
-      <main className="pt-14 px-4 max-w-3xl mx-auto">
+      <main className="pt-8 px-4 max-w-3xl mx-auto">
         <div className="mb-4 animate-fade-in">
           <h2 className="text-2xl font-bold">Discover</h2>
           <p className="text-muted-foreground">See what people are sharing</p>
