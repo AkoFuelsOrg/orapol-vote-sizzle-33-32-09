@@ -22,7 +22,7 @@ const TopHeader: React.FC = () => {
   return (
     <div className="w-full bg-gradient-to-r from-[#3eb0ff]/90 to-[#3eb0ff] text-white py-3 shadow-md fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 ml-4">
           <img 
             src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
             alt="Tuwaye Logo" 
