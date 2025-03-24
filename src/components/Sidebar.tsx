@@ -63,7 +63,7 @@ const Sidebar = () => {
         )}
 
         <ScrollArea className="flex-1 overflow-y-auto">
-          <nav className="py-2 px-2">
+          <nav className="flex flex-col h-full py-2">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.href;
               return (
@@ -71,14 +71,14 @@ const Sidebar = () => {
                   key={link.href}
                   to={link.href}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 mb-1 ${
+                    `flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${
                       isActive 
                         ? 'bg-primary/10 text-primary font-medium' 
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
                     }`
                   }
                 >
-                  <link.icon className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
+                  <link.icon className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
                   <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>{link.label}</span>
                 </NavLink>
               );
@@ -90,18 +90,18 @@ const Sidebar = () => {
           <Button 
             variant="outline"
             onClick={() => setModalOpen(true)}
-            className="w-full border-gray-200 hover:bg-gray-100 text-gray-700 justify-start gap-2 shadow-sm py-1.5"
+            className="w-full border-gray-200 hover:bg-gray-100 text-gray-700 justify-start gap-2 shadow-sm py-2.5"
           >
-            <PlusCircle className="h-4 w-4 text-primary" />
-            <span className="text-sm">Create Post</span>
+            <PlusCircle className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium">Create Post</span>
           </Button>
           
           <Button 
             onClick={signOut}
-            className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 justify-start gap-2 shadow-sm py-1.5"
+            className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 justify-start gap-2 shadow-sm py-2.5"
           >
-            <LogOut className="h-4 w-4" />
-            <span className="text-sm">Sign Out</span>
+            <LogOut className="h-5 w-5" />
+            <span className="text-sm font-medium">Sign Out</span>
           </Button>
         </div>
       </div>
