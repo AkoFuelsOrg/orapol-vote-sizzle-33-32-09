@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from './ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import CreateMarketplaceModal from './CreateMarketplaceModal';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 interface MarketplaceListProps {
   showCreateButton?: boolean;
@@ -71,6 +72,8 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({ showCreateButton = tr
   const { user } = useSupabase();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [userMarketplaceIds, setUserMarketplaceIds] = useState<Set<string>>(new Set());
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
 
   useEffect(() => {
     fetchMarketplaces();
@@ -116,7 +119,7 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({ showCreateButton = tr
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Marketplaces</h2>
-        {showCreateButton && user && (
+        {showCreateButton && user && !isMobile && (
           <Button onClick={() => setIsCreateModalOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Marketplace

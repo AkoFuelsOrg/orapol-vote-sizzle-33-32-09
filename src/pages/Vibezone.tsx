@@ -4,16 +4,20 @@ import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon } from 'lucide-react';
+import { Loader2, FilmIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
+import { useBreakpoint } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const { fetchVideos, loading } = useVibezone();
   const navigate = useNavigate();
   const { user } = useSupabase();
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -44,13 +48,14 @@ const Vibezone: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Vibezone</h1>
+    <div className="container mx-auto py-6 px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Vibezone</h1>
         <Button 
           onClick={() => navigate('/vibezone/upload')}
-          className="bg-red-500 hover:bg-red-600"
+          className="bg-red-500 hover:bg-red-600 w-full sm:w-auto"
         >
+          <Plus className="h-4 w-4 mr-2" />
           Upload Video
         </Button>
       </div>
@@ -79,7 +84,7 @@ const Vibezone: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {videos.map((video) => (
           <Card 
             key={video.id} 

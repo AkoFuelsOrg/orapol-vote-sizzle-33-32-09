@@ -6,6 +6,7 @@ import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { Button } from './ui/button';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 interface MarketplacePostInterfaceProps {
   marketplaceId: string;
@@ -17,6 +18,8 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
   const { user, profile } = useSupabase();
   const { isMarketplaceMember } = useMarketplace();
   const [isMember, setIsMember] = useState(false);
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   
   useEffect(() => {
     if (user && marketplaceId) {
@@ -51,14 +54,14 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
           </button>
         </div>
         
-        <div className="flex justify-between border-t pt-3">
+        <div className={`${isMobile ? 'grid grid-cols-3 gap-2' : 'flex justify-between'} border-t pt-3`}>
           <Button 
             onClick={() => setPostModalOpen(true)}
             variant="ghost"
             className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
           >
             <Image size={20} className="text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">Photo</span>
+            <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Photo</span>
           </Button>
           
           <Button 
@@ -67,7 +70,7 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
             className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
           >
             <BarChart size={20} className="text-purple-500" />
-            <span className="text-sm font-medium text-gray-700">Poll</span>
+            <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Poll</span>
           </Button>
           
           <Button 
@@ -76,7 +79,7 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
             className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
           >
             <PlusCircle size={20} className="text-green-500" />
-            <span className="text-sm font-medium text-gray-700">Create Post</span>
+            <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Post</span>
           </Button>
         </div>
       </div>

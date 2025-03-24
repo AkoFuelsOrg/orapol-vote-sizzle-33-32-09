@@ -9,6 +9,8 @@ import { ShoppingBag, Plus, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AddProductModal from './AddProductModal';
 import ProductCard from './ProductCard';
+import { useBreakpoint } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 interface MarketplaceProductsProps {
   marketplaceId: string;
@@ -29,7 +31,10 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { user } = useSupabase();
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
 
   const fetchMarketplaceProducts = async () => {
     try {
@@ -64,6 +69,7 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
   const handleProductAdded = () => {
     fetchMarketplaceProducts();
     setIsAddModalOpen(false);
+    setIsSheetOpen(false);
   };
 
   return (
@@ -75,14 +81,27 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
         </h3>
         
         {isAdmin && (
-          <Button 
-            onClick={() => setIsAddModalOpen(true)} 
-            size="sm"
-            className="gap-1"
-          >
-            <Plus className="h-4 w-4" />
-            Add Product
-          </Button>
+          <>
+            {/* Desktop button */}
+            <Button 
+              onClick={() => setIsAddModalOpen(true)} 
+              size="sm"
+              className="gap-1 hidden sm:flex"
+            >
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
+            
+            {/* Mobile button */}
+            <Button
+              onClick={() => setIsSheetOpen(true)}
+              size="sm"
+              className="gap-1 sm:hidden"
+            >
+              <Plus className="h-4 w-4" />
+              Add
+            </Button>
+          </>
         )}
       </div>
 
@@ -116,7 +135,7 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
             <p className="text-muted-foreground">No products or services available yet</p>
             {isAdmin && (
               <Button 
-                onClick={() => setIsAddModalOpen(true)} 
+                onClick={isMobile ? () => setIsSheetOpen(true) : () => setIsAddModalOpen(true)} 
                 variant="outline" 
                 size="sm"
                 className="mt-2"
@@ -129,6 +148,7 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
         </Card>
       )}
 
+      {/* Desktop modal */}
       {isAddModalOpen && (
         <AddProductModal
           marketplaceId={marketplaceId}
@@ -136,6 +156,26 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
           onClose={() => setIsAddModalOpen(false)}
           onProductAdded={handleProductAdded}
         />
+      )}
+      
+      {/* Mobile sheet */}
+      {isMobile && (
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Add Product</SheetTitle>
+            </SheetHeader>
+            <div className="py-4">
+              <AddProductModal
+                marketplaceId={marketplaceId}
+                isOpen={isSheetOpen}
+                onClose={() => setIsSheetOpen(false)}
+                onProductAdded={handleProductAdded}
+                asSheet={true}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );

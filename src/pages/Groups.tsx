@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/s
 import { useSupabase } from '../context/SupabaseContext';
 import { Loader2, Users, Plus, UserCircle, Lock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 const CreateGroupForm: React.FC<{
   onSuccess?: () => void;
@@ -226,6 +227,8 @@ const Groups: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [groupMemberships, setGroupMemberships] = useState<Record<string, boolean>>({});
   const [loadingMemberships, setLoadingMemberships] = useState(true);
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   
   React.useEffect(() => {
     if (user && groups.length > 0) {
@@ -309,11 +312,11 @@ const Groups: React.FC = () => {
   };
   
   return (
-    <div className="container py-6 animate-in">
+    <div className="container py-6 animate-in px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Groups</h1>
-          <p className="text-muted-foreground">Discover, join, and create groups</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Groups</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Discover, join, and create groups</p>
         </div>
         
         {user && (
@@ -326,7 +329,7 @@ const Groups: React.FC = () => {
                   Create Group
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[525px]">
+              <DialogContent className="sm:max-w-[525px] mx-4 sm:mx-auto max-w-[calc(100%-2rem)]">
                 <DialogHeader>
                   <DialogTitle>Create a New Group</DialogTitle>
                   <DialogDescription>
@@ -363,12 +366,12 @@ const Groups: React.FC = () => {
       </div>
       
       <Tabs defaultValue="discover" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="discover">Discover</TabsTrigger>
+        <TabsList className="mb-4 w-full sm:w-auto flex">
+          <TabsTrigger value="discover" className="flex-1 sm:flex-initial">Discover</TabsTrigger>
           {user && (
             <>
-              <TabsTrigger value="joined">Joined</TabsTrigger>
-              <TabsTrigger value="created">Created</TabsTrigger>
+              <TabsTrigger value="joined" className="flex-1 sm:flex-initial">Joined</TabsTrigger>
+              <TabsTrigger value="created" className="flex-1 sm:flex-initial">Created</TabsTrigger>
             </>
           )}
         </TabsList>
