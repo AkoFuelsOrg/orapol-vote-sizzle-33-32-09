@@ -44,6 +44,12 @@ const Sidebar = () => {
     { href: '/profile', icon: UserCircle, label: 'Profile' },
   ];
 
+  // Get the user's profile data
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const coverUrl = user?.user_metadata?.cover_url;
+  const username = user?.user_metadata?.username || 'User';
+  const email = user?.email || '';
+
   return (
     <>
       <div className="fixed top-0 left-0 h-[95vh] w-64 bg-white border-r border-gray-100 flex flex-col shadow-md mt-12">
@@ -51,30 +57,32 @@ const Sidebar = () => {
           <div className="border-b border-gray-100 shrink-0">
             {/* Profile Cover Image */}
             <div className="relative h-24 bg-gradient-to-r from-purple-100 to-purple-300 overflow-hidden">
-              {user.user_metadata?.cover_url && (
+              {coverUrl ? (
                 <img 
-                  src={user.user_metadata?.cover_url} 
+                  src={coverUrl} 
                   alt="Cover" 
                   className="w-full h-full object-cover"
                 />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-indigo-200 to-purple-200" />
               )}
             </div>
             
             {/* Profile Avatar - Positioned to overlap the cover image */}
             <div className="flex flex-col items-center -mt-10 pb-4">
               <Avatar className="h-20 w-20 border-4 border-white shadow-md">
-                <AvatarImage src={user.user_metadata?.avatar_url as string} />
+                <AvatarImage src={avatarUrl} alt={username} />
                 <AvatarFallback className="bg-primary/10 text-primary text-lg font-medium">
-                  {user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}
+                  {username.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               
               <div className="mt-2 text-center">
                 <h3 className="font-semibold text-base text-gray-900">
-                  {user.user_metadata?.username || 'User'}
+                  {username}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5 max-w-[90%] mx-auto truncate">
-                  {user.email}
+                  {email}
                 </p>
                 <Button 
                   variant="ghost" 
