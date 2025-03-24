@@ -48,10 +48,13 @@ const Header: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 glass-card h-[4.3rem] px-4 animate-fade-in">
       <div className="max-w-lg mx-auto h-full flex items-center justify-between">
-        <Link to="/" className="flex items-center">
-          <h1 className="text-xl font-bold text-primary">
-            TUWAYE
-          </h1>
+        <Link to="/" className="flex items-center gap-2">
+          <img 
+            src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+            alt="Tuwaye Logo" 
+            className="h-7 w-auto"
+          />
+          <span className="font-bold text-xl text-primary">TUWAYE</span>
         </Link>
         
         <nav className="flex items-center space-x-1">
@@ -78,7 +81,14 @@ const Header: React.FC = () => {
             </DrawerTrigger>
             <DrawerContent className="px-4 py-6">
               <div className="max-w-md mx-auto">
-                <h3 className="text-lg font-semibold mb-4">Menu</h3>
+                <div className="flex items-center justify-center mb-6">
+                  <img 
+                    src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+                    alt="Tuwaye Logo" 
+                    className="h-10 w-auto mr-2"
+                  />
+                  <h3 className="text-lg font-semibold">Menu</h3>
+                </div>
                 <div className="flex flex-col space-y-2">
                   {navItems.map((item) => (
                     <Link

@@ -66,8 +66,16 @@ const Sidebar = () => {
               )}
             </div>
             
-            {/* Profile Avatar - Positioned to overlap the cover image */}
-            <div className="flex flex-col items-center -mt-10 pb-4">
+            <div className="flex flex-col items-center -mt-14 pb-4">
+              <div className="bg-white rounded-full p-1">
+                <img 
+                  src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+                  alt="Tuwaye Logo" 
+                  className="h-8 w-8 mb-2"
+                />
+              </div>
+              
+              {/* Profile Avatar - Positioned to overlap the cover image */}
               <Avatar className="h-20 w-20 border-4 border-white shadow-md">
                 <AvatarImage src={avatarUrl} alt={username} />
                 <AvatarFallback className="bg-primary/10 text-primary text-lg font-medium">
