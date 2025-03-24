@@ -44,12 +44,12 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 py-6 px-3 flex flex-col shadow-sm">
-      <div className="mb-4">
-        {/* Removed the Vibezone text that was here */}
+    <div className="fixed top-0 left-0 h-full w-64 bg-gradient-to-br from-white via-gray-50 to-blue-50 border-r border-gray-200 flex flex-col shadow-md">
+      <div className="pt-6 px-4 pb-6">
+        {/* Logo or branding could go here */}
       </div>
 
-      <nav className="flex-1 space-y-1.5">
+      <nav className="flex-1 px-3 space-y-2 overflow-y-auto no-scrollbar">
         {navLinks.map((link) => {
           const isActive = location.pathname === link.href;
           return (
@@ -57,31 +57,31 @@ const Sidebar = () => {
               key={link.href}
               to={link.href}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-primary/10 text-primary font-medium shadow-sm' 
-                    : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-blue-500/15 to-indigo-500/10 text-primary font-medium shadow-sm border-l-4 border-primary' 
+                    : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 hover:border-l-4 hover:border-gray-200'
                 }`
               }
             >
               <link.icon className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
-              <span>{link.label}</span>
+              <span className="font-medium">{link.label}</span>
               {link.label === 'Notifications' && (
-                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-white">3</span>
+                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-white shadow-sm">3</span>
               )}
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="mt-6 border-t border-gray-200 pt-4">
+      <div className="mt-auto border-t border-gray-200 pt-4 px-3 pb-6">
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start px-3 py-3 rounded-lg hover:bg-gray-100 transition-all">
-                <Avatar className="mr-2 h-9 w-9 border-2 border-primary/20">
+              <Button variant="ghost" className="w-full justify-start px-3 py-3 rounded-lg hover:bg-blue-50 transition-all">
+                <Avatar className="mr-2 h-10 w-10 border-2 border-primary/20 shadow-sm">
                   <AvatarImage src={user.user_metadata?.avatar_url as string} />
-                  <AvatarFallback className="bg-primary/10 text-primary">{user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-blue-100 to-blue-200 text-primary font-semibold">{user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col text-left">
                   <span className="text-sm font-medium text-gray-900">{user.user_metadata?.username}</span>
@@ -90,23 +90,26 @@ const Sidebar = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-              <DropdownMenuItem onClick={() => navigate('/profile')} className="flex items-center gap-2">
-                <UserCircle className="h-4 w-4" />
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="flex items-center gap-2 py-2">
+                <UserCircle className="h-4 w-4 text-blue-500" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')} className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="flex items-center gap-2 py-2">
+                <Settings className="h-4 w-4 text-gray-600" />
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 text-red-500">
+              <DropdownMenuItem onClick={signOut} className="flex items-center gap-2 py-2 text-red-500 hover:text-red-600 hover:bg-red-50">
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button onClick={() => navigate('/auth')} className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
+          <Button 
+            onClick={() => navigate('/auth')} 
+            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md"
+          >
             Login
           </Button>
         )}
