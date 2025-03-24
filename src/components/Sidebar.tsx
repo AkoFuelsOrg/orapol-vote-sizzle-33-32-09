@@ -45,8 +45,8 @@ const Sidebar = () => {
 
   return (
     <div className="fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 py-6 px-3 flex flex-col shadow-sm">
-      <div className="mb-8 px-2">
-        <h1 className="text-2xl font-bold text-center bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">Vibezone</h1>
+      <div className="mb-4">
+        {/* Removed the Vibezone text that was here */}
       </div>
 
       <nav className="flex-1 space-y-1.5">
