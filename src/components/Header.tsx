@@ -1,17 +1,31 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MessageCircle, Plus, User, LogOut, MessageSquare, Search } from 'lucide-react';
+import { 
+  MessageCircle, 
+  Plus, 
+  User, 
+  LogOut, 
+  MessageSquare, 
+  Search,
+  Menu
+} from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Button } from './ui/button';
+import { 
+  Drawer,
+  DrawerContent,
+  DrawerTrigger
+} from './ui/drawer';
 
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut, loading } = useSupabase();
   const breakpoint = useBreakpoint();
+  const [isOpen, setIsOpen] = useState(false);
   
   // Don't render header on desktop
   if (breakpoint === "desktop") {
@@ -21,6 +35,15 @@ const Header: React.FC = () => {
   const handleSearchClick = () => {
     navigate('/search');
   };
+
+  const navItems = [
+    { href: '/', icon: <MessageCircle size={20} />, label: 'Home' },
+    { href: '/vibezone', icon: <MessageCircle size={20} />, label: 'Vibezone' },
+    { href: '/groups', icon: <User size={20} />, label: 'Groups' },
+    { href: '/marketplaces', icon: <MessageSquare size={20} />, label: 'Marketplaces' },
+    { href: '/messages', icon: <MessageSquare size={20} />, label: 'Messages' },
+    { href: '/favourites', icon: <MessageSquare size={20} />, label: 'Favourites' }
+  ];
   
   return (
     <header className="fixed top-0 left-0 right-0 z-40 glass-card h-[4.3rem] px-4 animate-fade-in">
@@ -43,33 +66,55 @@ const Header: React.FC = () => {
             <Search size={20} />
           </Button>
           
-          <Link 
-            to="/" 
-            className={`p-2.5 rounded-full transition-colors duration-200 ${
-              location.pathname === '/' ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
-            }`}
-          >
-            <MessageCircle size={20} />
-          </Link>
+          <Drawer open={isOpen} onOpenChange={setIsOpen}>
+            <DrawerTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="p-2.5 rounded-full text-primary/70 hover:text-primary hover:bg-secondary/70 transition-colors duration-200"
+              >
+                <Menu size={20} />
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="px-4 py-6">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-semibold mb-4">Menu</h3>
+                <div className="flex flex-col space-y-2">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                        location.pathname === item.href 
+                          ? 'bg-secondary text-primary' 
+                          : 'hover:bg-secondary/50 text-primary/80 hover:text-primary'
+                      }`}
+                    >
+                      <span className="flex-shrink-0">{item.icon}</span>
+                      <span className="font-medium">{item.label}</span>
+                    </Link>
+                  ))}
+                  
+                  {user && !loading && (
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center space-x-3 p-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors mt-2"
+                    >
+                      <LogOut size={20} />
+                      <span className="font-medium">Sign Out</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </DrawerContent>
+          </Drawer>
           
           {user && !loading ? (
             <>
-              <Link 
-                to="/messages" 
-                className={`p-2.5 rounded-full transition-colors duration-200 ${
-                  location.pathname.startsWith('/messages') ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
-                }`}
-              >
-                <MessageSquare size={20} />
-              </Link>
-              <Link 
-                to="/create" 
-                className={`p-2.5 rounded-full transition-colors duration-200 ${
-                  location.pathname === '/create' ? 'bg-secondary text-primary' : 'text-primary/70 hover:text-primary hover:bg-secondary/70'
-                }`}
-              >
-                <Plus size={20} />
-              </Link>
               <Link 
                 to="/profile" 
                 className={`p-2.5 rounded-full transition-colors duration-200 ${
@@ -90,12 +135,6 @@ const Header: React.FC = () => {
                   <User size={20} />
                 )}
               </Link>
-              <button
-                onClick={() => signOut()}
-                className="p-2.5 rounded-full text-primary/70 hover:text-primary hover:bg-secondary/70 transition-colors duration-200"
-              >
-                <LogOut size={20} />
-              </button>
             </>
           ) : (
             <Link 
