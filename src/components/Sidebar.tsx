@@ -48,15 +48,42 @@ const Sidebar = () => {
     <>
       <div className="fixed top-0 left-0 h-[95vh] w-64 bg-white border-r border-gray-100 flex flex-col shadow-md mt-12">
         {user && (
-          <div className="p-3 border-b border-gray-100 bg-gray-50 shrink-0">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-10 w-10 border-2 border-primary shadow-sm">
+          <div className="border-b border-gray-100 shrink-0">
+            {/* Profile Cover Image */}
+            <div className="relative h-24 bg-gradient-to-r from-purple-100 to-purple-300 overflow-hidden">
+              {user.user_metadata?.cover_url && (
+                <img 
+                  src={user.user_metadata?.cover_url} 
+                  alt="Cover" 
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+            
+            {/* Profile Avatar - Positioned to overlap the cover image */}
+            <div className="flex flex-col items-center -mt-10 pb-4">
+              <Avatar className="h-20 w-20 border-4 border-white shadow-md">
                 <AvatarImage src={user.user_metadata?.avatar_url as string} />
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">{user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary text-lg font-medium">
+                  {user.user_metadata?.username?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-gray-900 truncate max-w-[180px]">{user.user_metadata?.username || 'User'}</span>
-                <span className="text-xs text-gray-500 truncate max-w-[180px]">{user.email}</span>
+              
+              <div className="mt-2 text-center">
+                <h3 className="font-semibold text-base text-gray-900">
+                  {user.user_metadata?.username || 'User'}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5 max-w-[90%] mx-auto truncate">
+                  {user.email}
+                </p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="mt-2 text-primary text-xs hover:bg-primary/5"
+                  onClick={() => navigate('/profile')}
+                >
+                  View Profile
+                </Button>
               </div>
             </div>
           </div>
