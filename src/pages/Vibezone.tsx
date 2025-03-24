@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useBreakpoint } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -25,7 +26,11 @@ const Vibezone: React.FC = () => {
       try {
         setIsInitialLoading(true);
         const fetchedVideos = await fetchVideos();
+        console.log("Fetched videos:", fetchedVideos);
         setVideos(fetchedVideos);
+      } catch (error) {
+        console.error("Error loading videos:", error);
+        toast.error("Failed to load videos");
       } finally {
         setIsInitialLoading(false);
       }
@@ -147,7 +152,7 @@ const Vibezone: React.FC = () => {
                   <div className="ml-2 overflow-hidden">
                     <p className="text-xs text-gray-600 truncate">{video.author?.name || 'Unknown'}</p>
                     <p className="text-xs text-gray-500">
-                      {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
+                      {formatViews(video.views || 0)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                     </p>
                   </div>
                 </div>
