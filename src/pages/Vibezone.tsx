@@ -26,22 +26,19 @@ const Vibezone: React.FC = () => {
       try {
         setIsInitialLoading(true);
         const fetchedVideos = await fetchVideos();
-        console.log("Fetched videos:", fetchedVideos);
         
-        // Check if we actually got videos back
-        if (fetchedVideos && Array.isArray(fetchedVideos)) {
-          setVideos(fetchedVideos);
-          console.log("Videos set in state:", fetchedVideos.length);
+        // Set videos immediately and skip additional checks to improve loading speed
+        if (fetchedVideos) {
+          setVideos(Array.isArray(fetchedVideos) ? fetchedVideos : []);
         } else {
-          console.error("No videos returned or invalid format:", fetchedVideos);
           setVideos([]);
-          toast.error("No videos available");
         }
       } catch (error) {
         console.error("Error loading videos:", error);
         toast.error("Failed to load videos");
         setVideos([]);
       } finally {
+        // Ensure loading state is turned off
         setIsInitialLoading(false);
       }
     };
@@ -68,8 +65,8 @@ const Vibezone: React.FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  console.log("Current video state:", videos);
-  console.log("isInitialLoading:", isInitialLoading);
+  // Skip skeleton state if videos are already loaded
+  const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6">
@@ -84,10 +81,10 @@ const Vibezone: React.FC = () => {
         </Button>
       </div>
 
-      {isInitialLoading ? (
+      {shouldShowSkeleton ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(8)].map((_, index) => (
-            <Card key={index} className="overflow-hidden">
+            <Card key={`skeleton-${index}`} className="overflow-hidden">
               <div className="aspect-video">
                 <Skeleton className="w-full h-full" />
               </div>
@@ -122,9 +119,9 @@ const Vibezone: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {videos.map((video) => (
+          {videos.map((video, index) => (
             <Card 
-              key={video.id || `video-${Math.random()}`} 
+              key={video.id || `video-${index}`} 
               className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
               onClick={() => navigate(`/vibezone/watch/${video.id}`)}
             >
