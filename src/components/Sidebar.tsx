@@ -44,7 +44,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="fixed top-0 left-0 h-full w-64 bg-gradient-to-br from-white via-gray-50 to-blue-50 border-r border-gray-200 flex flex-col shadow-md">
+    <div className="fixed top-0 left-0 h-full w-64 bg-gradient-to-br from-white via-gray-50 to-blue-50 border-r border-gray-200 flex flex-col shadow-md mt-12">
       <div className="pt-6 px-4 pb-6">
         {/* Logo or branding could go here */}
       </div>
