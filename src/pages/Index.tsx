@@ -6,7 +6,8 @@ import PollCard from '../components/PollCard';
 import PostCard from '../components/PostCard';
 import CreatePostInterface from '../components/CreatePostInterface';
 import Header from '../components/Header';
-import { Loader2 } from 'lucide-react';
+import TopHeader from '../components/TopHeader';
+import { Loader2, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Poll, PollOption, Post } from '../lib/types';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ const Index: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [animateItems, setAnimateItems] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(5);
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
@@ -370,24 +372,29 @@ const Index: React.FC = () => {
   const allContent = [...polls, ...posts].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const loadMore = () => {
+    setVisibleCount(prev => prev + 5);
+  };
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20">
       <Header />
+      <TopHeader />
       
-      <main className={`${isDesktop ? 'pt-6' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
-        <div className="mb-4 animate-fade-in">
-          <h2 className="text-2xl font-bold">Discover</h2>
-          <p className="text-muted-foreground">See what people are sharing</p>
+      <main className={`${isDesktop ? 'pt-24' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
+        <div className="mb-6 animate-fade-in">
+          <h2 className="text-3xl font-bold text-gray-800 mb-1">Discover</h2>
+          <p className="text-muted-foreground text-base">Join the conversation and share your thoughts</p>
         </div>
         
         {!user && (
-          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 text-center animate-fade-in">
-            <h3 className="text-lg font-medium mb-2">Join TUWAYE Today</h3>
-            <p className="text-muted-foreground mb-4">Sign up to create your own posts and polls</p>
+          <div className="bg-white rounded-xl shadow-md border border-border/50 p-6 mb-8 text-center animate-fade-in hover:shadow-lg transition-all duration-300">
+            <h3 className="text-xl font-semibold mb-3 text-gray-800">Join TUWAYE Today</h3>
+            <p className="text-muted-foreground mb-5 max-w-md mx-auto">Connect with others, share your thoughts, and join the growing community</p>
             <Link 
               to="/auth" 
-              className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow font-medium"
             >
               Sign Up / Login
             </Link>
@@ -397,33 +404,34 @@ const Index: React.FC = () => {
         <CreatePostInterface />
         
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex flex-col justify-center items-center py-24">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+            <p className="text-muted-foreground">Loading content...</p>
           </div>
         ) : allContent.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-8 text-center">
-            <h3 className="text-lg font-medium mb-2">No content yet</h3>
-            <p className="text-muted-foreground mb-4">Be the first to share something!</p>
+          <div className="bg-white rounded-xl shadow-md border border-border/50 p-8 text-center">
+            <h3 className="text-xl font-semibold mb-3 text-gray-800">No content yet</h3>
+            <p className="text-muted-foreground mb-5">Be the first to share something with the community!</p>
             {user && (
               <Link 
                 to="/create" 
-                className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow font-medium"
               >
                 Create Poll
               </Link>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {allContent.map((item, index) => (
+          <div className="space-y-5">
+            {allContent.slice(0, visibleCount).map((item, index) => (
               <div 
                 key={item.id} 
-                className={`transition-opacity duration-500 ${
+                className={`transition-all duration-500 transform ${
                   animateItems 
-                    ? 'opacity-100' 
-                    : 'opacity-0'
-                }`}
-                style={{ transitionDelay: `${index * 100}ms` }}
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-4'
+                } hover:shadow-md`}
+                style={{ transitionDelay: `${index * 75}ms` }}
               >
                 {'question' in item ? (
                   <PollCard poll={item as Poll} />
@@ -432,9 +440,38 @@ const Index: React.FC = () => {
                 )}
               </div>
             ))}
+            
+            {visibleCount < allContent.length && (
+              <div className="flex justify-center pt-2">
+                <button 
+                  onClick={loadMore}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors font-medium"
+                >
+                  Load More <ChevronDown size={18} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>
+      
+      <footer className="py-6 mt-16 border-t bg-white">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <div className="flex justify-center items-center gap-2 mb-4">
+            <div className="p-1 rounded-full bg-primary/10">
+              <img 
+                src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+                alt="Tuwaye Logo" 
+                className="h-6 w-auto"
+              />
+            </div>
+            <span className="font-semibold text-gray-700">TUWAYE</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Connect, share and discover with Tuwaye
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -8,7 +8,12 @@ import {
   LogOut, 
   MessageSquare, 
   Search,
-  Menu
+  Menu,
+  Home,
+  Users,
+  ShoppingBag,
+  Heart,
+  Bell
 } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -37,16 +42,17 @@ const Header: React.FC = () => {
   };
 
   const navItems = [
-    { href: '/', icon: <MessageCircle size={20} />, label: 'Home' },
+    { href: '/', icon: <Home size={20} />, label: 'Home' },
     { href: '/vibezone', icon: <MessageCircle size={20} />, label: 'Vibezone' },
-    { href: '/groups', icon: <User size={20} />, label: 'Groups' },
-    { href: '/marketplaces', icon: <MessageSquare size={20} />, label: 'Marketplaces' },
+    { href: '/groups', icon: <Users size={20} />, label: 'Groups' },
+    { href: '/marketplaces', icon: <ShoppingBag size={20} />, label: 'Marketplaces' },
     { href: '/messages', icon: <MessageSquare size={20} />, label: 'Messages' },
-    { href: '/favourites', icon: <MessageSquare size={20} />, label: 'Favourites' }
+    { href: '/favourites', icon: <Heart size={20} />, label: 'Favourites' },
+    { href: '/notifications', icon: <Bell size={20} />, label: 'Notifications' }
   ];
   
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-primary/80 to-primary h-[4.5rem] px-4 animate-fade-in shadow-md">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-primary/90 to-primary h-[4.5rem] px-4 animate-fade-in shadow-md backdrop-blur-sm">
       <div className="max-w-lg mx-auto h-full flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
           <div className="p-1.5 rounded-full bg-white/10 backdrop-blur-sm shadow-inner">
@@ -59,7 +65,7 @@ const Header: React.FC = () => {
           <span className="font-bold text-xl text-white">TUWAYE</span>
         </Link>
         
-        <nav className="flex items-center space-x-2">
+        <nav className="flex items-center space-x-1.5">
           <Button
             onClick={handleSearchClick}
             variant="ghost"
@@ -93,7 +99,7 @@ const Header: React.FC = () => {
                   </div>
                   <h3 className="text-lg font-semibold">Menu</h3>
                 </div>
-                <div className="flex flex-col space-y-2">
+                <div className="flex flex-col space-y-1.5">
                   {navItems.map((item) => (
                     <Link
                       key={item.href}
@@ -101,7 +107,7 @@ const Header: React.FC = () => {
                       onClick={() => setIsOpen(false)}
                       className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-300 ${
                         location.pathname === item.href 
-                          ? 'bg-primary/10 text-primary font-medium' 
+                          ? 'bg-primary/10 text-primary font-medium shadow-sm' 
                           : 'hover:bg-primary/5 text-primary/80 hover:text-primary'
                       }`}
                     >
