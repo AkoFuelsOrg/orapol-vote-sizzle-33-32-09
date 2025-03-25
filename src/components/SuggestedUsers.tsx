@@ -29,7 +29,7 @@ const SuggestedUsers: React.FC = () => {
       if (!user) return [];
       
       try {
-        // First, get IDs of users you are already following
+        // First, get users you are already following
         const { data: followingData, error: followingError } = await supabase
           .from('follows')
           .select('following_id')
@@ -41,35 +41,39 @@ const SuggestedUsers: React.FC = () => {
         }
         
         const followingIds = followingData?.map(f => f.following_id) || [];
+        console.log('Following IDs:', followingIds); // Debug log
         
-        // Get a list of users you're not following (excluding yourself)
-        const { data: profiles, error } = await supabase
+        // Get a list of all users except yourself
+        const { data: allProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
           .not('id', 'eq', user.id)
           .order('created_at', { ascending: false })
           .limit(15);
           
-        if (error) {
-          console.error('Error fetching profiles:', error);
-          throw error;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
         }
+        
+        console.log('All profiles fetched:', allProfiles?.length); // Debug log
         
         // Filter out users you're already following
-        if (followingIds.length > 0) {
-          return (profiles as UserProfile[]).filter(
-            profile => !followingIds.includes(profile.id)
-          );
-        }
+        const filteredProfiles = allProfiles?.filter(profile => 
+          !followingIds.includes(profile.id)
+        );
         
-        return profiles as UserProfile[];
+        console.log('Filtered profiles:', filteredProfiles?.length); // Debug log
+        
+        return filteredProfiles as UserProfile[];
       } catch (error) {
         console.error('Error fetching suggested users:', error);
         throw error;
       }
     },
     enabled: !!user,
-    retry: 2,
+    retry: 3,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
   useEffect(() => {
@@ -100,6 +104,9 @@ const SuggestedUsers: React.FC = () => {
       await followUser(userId);
       setFollowStatus(prev => ({ ...prev, [userId]: true }));
       toast.success("Successfully followed user");
+      
+      // Optionally refetch the list after following to update suggestions
+      refetch();
     } catch (error) {
       console.error('Error following user:', error);
       toast.error("Failed to follow user");
