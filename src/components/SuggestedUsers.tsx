@@ -13,7 +13,7 @@ interface UserProfile {
   id: string;
   username: string | null;
   avatar_url: string | null;
-  bio?: string | null;
+  // Remove bio from the interface since it doesn't exist in profiles table
 }
 
 const SuggestedUsers: React.FC = () => {
@@ -38,7 +38,7 @@ const SuggestedUsers: React.FC = () => {
       // Get a list of users you're not following (excluding yourself)
       const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, bio')
+        .select('id, username, avatar_url')
         .not('id', 'in', [user.id, ...followingIds])
         .order('created_at', { ascending: false })
         .limit(15);
@@ -136,9 +136,6 @@ const SuggestedUsers: React.FC = () => {
             
             <div className="flex-1 min-w-0" onClick={() => handleViewProfile(profile.id)}>
               <h3 className="font-medium text-gray-800 truncate">{profile.username || 'User'}</h3>
-              {profile.bio && (
-                <p className="text-xs text-gray-500 truncate">{profile.bio}</p>
-              )}
             </div>
             
             <Button
