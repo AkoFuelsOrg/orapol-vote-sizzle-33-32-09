@@ -1,15 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, UserPlus, UserCheck, ExternalLink } from 'lucide-react';
+import { Loader2, UserPlus, UserCheck, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
+import { ScrollArea } from './ui/scroll-area';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "./ui/pagination";
 
 interface UserProfile {
   id: string;
@@ -22,6 +29,8 @@ const SuggestedUsers: React.FC = () => {
   const navigate = useNavigate();
   const [followStatus, setFollowStatus] = useState<Record<string, boolean>>({});
   const [followLoading, setFollowLoading] = useState<Record<string, boolean>>({});
+  const [currentPage, setCurrentPage] = useState(0);
+  const usersPerPage = 3;
 
   const { data: suggestedUsers, isLoading, error, refetch } = useQuery({
     queryKey: ['suggestedUsers', user?.id],
@@ -29,7 +38,6 @@ const SuggestedUsers: React.FC = () => {
       if (!user) return [];
       
       try {
-        // First, get users you are already following
         const { data: followingData, error: followingError } = await supabase
           .from('follows')
           .select('following_id')
@@ -43,7 +51,6 @@ const SuggestedUsers: React.FC = () => {
         const followingIds = followingData?.map(f => f.following_id) || [];
         console.log('Following IDs:', followingIds); // Debug log
         
-        // Get a list of all users except yourself
         const { data: allProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -58,7 +65,6 @@ const SuggestedUsers: React.FC = () => {
         
         console.log('All profiles fetched:', allProfiles?.length); // Debug log
         
-        // Filter out users you're already following
         const filteredProfiles = allProfiles?.filter(profile => 
           !followingIds.includes(profile.id)
         );
@@ -77,7 +83,6 @@ const SuggestedUsers: React.FC = () => {
   });
   
   useEffect(() => {
-    // Check follow status for suggested users
     const checkFollowStatus = async () => {
       if (!suggestedUsers || suggestedUsers.length === 0) return;
       
@@ -105,7 +110,6 @@ const SuggestedUsers: React.FC = () => {
       setFollowStatus(prev => ({ ...prev, [userId]: true }));
       toast.success("Successfully followed user");
       
-      // Optionally refetch the list after following to update suggestions
       refetch();
     } catch (error) {
       console.error('Error following user:', error);
@@ -159,81 +163,123 @@ const SuggestedUsers: React.FC = () => {
     );
   }
   
+  const totalPages = Math.ceil(suggestedUsers.length / usersPerPage);
+  const displayUsers = suggestedUsers.slice(
+    currentPage * usersPerPage, 
+    (currentPage + 1) * usersPerPage
+  );
+
+  const handlePrevPage = () => {
+    setCurrentPage(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
+  };
+  
   return (
     <div className="space-y-2.5 py-1">
-      {suggestedUsers.map((profile) => (
-        <Card 
-          key={profile.id} 
-          className="p-3 transition-all hover:shadow-md hover:border-primary/10 group"
-        >
-          <div className="flex items-center">
-            <Avatar 
-              className="h-10 w-10 mr-3 border border-gray-100 shadow-sm group-hover:border-primary/10 transition-all cursor-pointer"
-              onClick={() => handleViewProfile(profile.id)}
-            >
-              <AvatarImage 
-                src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
-                alt={profile.username || 'User'} 
-              />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {profile.username?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div 
-              className="flex-1 min-w-0 cursor-pointer" 
-              onClick={() => handleViewProfile(profile.id)}
+      <ScrollArea className="h-full w-full">
+        <div className="space-y-2.5">
+          {displayUsers.map((profile) => (
+            <Card 
+              key={profile.id} 
+              className="p-3 transition-all hover:shadow-md hover:border-primary/10 group"
             >
               <div className="flex items-center">
-                <h3 className="font-medium text-gray-800 truncate">
-                  {profile.username || 'User'}
-                </h3>
-                <Badge 
-                  variant="outline" 
-                  className="ml-2 text-[10px] px-1.5 py-0 border-primary/20 text-primary/80"
+                <Avatar 
+                  className="h-10 w-10 mr-3 border border-gray-100 shadow-sm group-hover:border-primary/10 transition-all cursor-pointer"
+                  onClick={() => handleViewProfile(profile.id)}
                 >
-                  Suggested
-                </Badge>
+                  <AvatarImage 
+                    src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
+                    alt={profile.username || 'User'} 
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {profile.username?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div 
+                  className="flex-1 min-w-0 cursor-pointer" 
+                  onClick={() => handleViewProfile(profile.id)}
+                >
+                  <div className="flex items-center">
+                    <h3 className="font-medium text-gray-800 truncate">
+                      {profile.username || 'User'}
+                    </h3>
+                    <Badge 
+                      variant="outline" 
+                      className="ml-2 text-[10px] px-1.5 py-0 border-primary/20 text-primary/80"
+                    >
+                      Suggested
+                    </Badge>
+                  </div>
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <ExternalLink size={12} className="mr-1" />
+                    <span>View profile</span>
+                  </div>
+                </div>
+                
+                <Button
+                  size="sm"
+                  variant={followStatus[profile.id] ? "outline" : "default"}
+                  className={`ml-2 px-3 ${
+                    followStatus[profile.id] 
+                      ? 'bg-gray-50 hover:bg-gray-100 text-gray-700' 
+                      : 'bg-primary hover:bg-primary/90'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!followStatus[profile.id]) {
+                      handleFollowUser(profile.id);
+                    }
+                  }}
+                  disabled={followLoading[profile.id] || followStatus[profile.id]}
+                >
+                  {followLoading[profile.id] ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : followStatus[profile.id] ? (
+                    <>
+                      <UserCheck className="h-3 w-3 mr-1" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="flex items-center text-xs text-muted-foreground">
-                <ExternalLink size={12} className="mr-1" />
-                <span>View profile</span>
-              </div>
-            </div>
-            
-            <Button
-              size="sm"
-              variant={followStatus[profile.id] ? "outline" : "default"}
-              className={`ml-2 px-3 ${
-                followStatus[profile.id] 
-                  ? 'bg-gray-50 hover:bg-gray-100 text-gray-700' 
-                  : 'bg-primary hover:bg-primary/90'
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!followStatus[profile.id]) {
-                  handleFollowUser(profile.id);
-                }
-              }}
-              disabled={followLoading[profile.id] || followStatus[profile.id]}
-            >
-              {followLoading[profile.id] ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : followStatus[profile.id] ? (
-                <>
-                  <UserCheck className="h-3 w-3 mr-1" />
-                  <span>Following</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-3 w-3 mr-1" />
-                  <span>Follow</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </Card>
-      ))}
+            </Card>
+          ))}
+        </div>
+      </ScrollArea>
+
+      {suggestedUsers.length > usersPerPage && (
+        <Pagination className="mt-2">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={handlePrevPage} 
+                disabled={currentPage === 0} 
+                className={currentPage === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            <span className="px-2 flex items-center text-sm text-muted-foreground">
+              {currentPage + 1} / {totalPages}
+            </span>
+            <PaginationItem>
+              <PaginationNext 
+                onClick={handleNextPage} 
+                disabled={currentPage >= totalPages - 1}
+                className={currentPage >= totalPages - 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };
