@@ -13,7 +13,8 @@ import {
   Users,
   ShoppingBag,
   Heart,
-  Bell
+  Bell,
+  PenLine
 } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -52,17 +53,20 @@ const Header: React.FC = () => {
   ];
   
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-primary/90 to-primary h-[4.5rem] px-4 animate-fade-in shadow-md backdrop-blur-sm">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-primary via-primary/95 to-primary/90 h-[4.5rem] px-4 animate-fade-in shadow-md backdrop-blur-sm">
       <div className="max-w-lg mx-auto h-full flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="p-1.5 rounded-full bg-white/10 backdrop-blur-sm shadow-inner">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm shadow-inner group-hover:bg-white/30 transition-all duration-300">
             <img 
               src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
               alt="Tuwaye Logo" 
               className="h-7 w-auto"
             />
           </div>
-          <span className="font-bold text-xl text-white">TUWAYE</span>
+          <span className="font-bold text-xl text-white relative">
+            TUWAYE
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white/40 group-hover:w-full transition-all duration-300"></span>
+          </span>
         </Link>
         
         <nav className="flex items-center space-x-1.5">
@@ -71,18 +75,27 @@ const Header: React.FC = () => {
             variant="ghost"
             size="icon"
             className={`p-2.5 rounded-full transition-all duration-300 ${
-              location.pathname === '/search' ? 'bg-white/20 text-white' : 'text-white/90 hover:text-white hover:bg-white/15'
+              location.pathname === '/search' ? 'bg-white/30 text-white' : 'text-white/90 hover:text-white hover:bg-white/20'
             }`}
           >
             <Search size={20} />
           </Button>
+          
+          <Link
+            to="/create"
+            className={`p-2.5 rounded-full transition-all duration-300 flex items-center justify-center ${
+              location.pathname === '/create' ? 'bg-white/30 text-white' : 'text-white/90 hover:text-white hover:bg-white/20'
+            }`}
+          >
+            <PenLine size={20} />
+          </Link>
           
           <Drawer open={isOpen} onOpenChange={setIsOpen}>
             <DrawerTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="p-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/15 transition-all duration-300"
+                className="p-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/20 transition-all duration-300"
               >
                 <Menu size={20} />
               </Button>
@@ -97,7 +110,7 @@ const Header: React.FC = () => {
                       className="h-10 w-auto"
                     />
                   </div>
-                  <h3 className="text-lg font-semibold">Menu</h3>
+                  <h3 className="text-lg font-semibold text-primary">Menu</h3>
                 </div>
                 <div className="flex flex-col space-y-1.5">
                   {navItems.map((item) => (
@@ -138,11 +151,11 @@ const Header: React.FC = () => {
               <Link 
                 to="/profile" 
                 className={`p-2.5 rounded-full transition-all duration-300 ${
-                  location.pathname === '/profile' ? 'bg-white/20 text-white' : 'text-white/90 hover:text-white hover:bg-white/15'
+                  location.pathname === '/profile' ? 'bg-white/30 text-white' : 'text-white/90 hover:text-white hover:bg-white/20'
                 }`}
               >
                 {profile?.avatar_url ? (
-                  <Avatar className="h-5 w-5 border border-white/20">
+                  <Avatar className="h-5 w-5 border border-white/30">
                     <AvatarImage
                       src={profile.avatar_url}
                       alt={profile.username || user.email || "Profile"}
@@ -160,7 +173,7 @@ const Header: React.FC = () => {
             <Link 
               to="/auth" 
               className={`p-2.5 rounded-full transition-all duration-300 ${
-                location.pathname === '/auth' ? 'bg-white/20 text-white' : 'text-white/90 hover:text-white hover:bg-white/15'
+                location.pathname === '/auth' ? 'bg-white/30 text-white' : 'text-white/90 hover:text-white hover:bg-white/20'
               }`}
             >
               <User size={20} />

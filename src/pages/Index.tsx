@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -7,12 +6,13 @@ import PostCard from '../components/PostCard';
 import CreatePostInterface from '../components/CreatePostInterface';
 import Header from '../components/Header';
 import TopHeader from '../components/TopHeader';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronDown, Sparkles, MessageCircle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Poll, PollOption, Post } from '../lib/types';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { Card } from '@/components/ui/card';
 
 const Index: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -378,27 +378,43 @@ const Index: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 pb-20">
       <Header />
       <TopHeader />
       
       <main className={`${isDesktop ? 'pt-24' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
         <div className="mb-6 animate-fade-in">
-          <h2 className="text-3xl font-bold text-gray-800 mb-1">Discover</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-1">Discover</h2>
+            <Sparkles className="h-5 w-5 text-primary/70 animate-pulse-slow" />
+          </div>
           <p className="text-muted-foreground text-base">Join the conversation and share your thoughts</p>
         </div>
         
         {!user && (
-          <div className="bg-white rounded-xl shadow-md border border-border/50 p-6 mb-8 text-center animate-fade-in hover:shadow-lg transition-all duration-300">
-            <h3 className="text-xl font-semibold mb-3 text-gray-800">Join TUWAYE Today</h3>
-            <p className="text-muted-foreground mb-5 max-w-md mx-auto">Connect with others, share your thoughts, and join the growing community</p>
-            <Link 
-              to="/auth" 
-              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow font-medium"
-            >
-              Sign Up / Login
-            </Link>
-          </div>
+          <Card className="overflow-hidden border-none shadow-lg mb-8 animate-fade-in hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
+            <div className="p-6 text-center relative">
+              <div className="absolute inset-0 bg-primary/5 backdrop-blur-sm rounded-xl -z-10"></div>
+              <h3 className="text-xl font-semibold mb-3 text-gray-800">Join TUWAYE Today</h3>
+              <p className="text-muted-foreground mb-5 max-w-md mx-auto">Connect with others, share your thoughts, and join the growing community</p>
+              <div className="flex gap-4 justify-center">
+                <Link 
+                  to="/auth" 
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow-md font-medium flex items-center gap-2"
+                >
+                  <Users size={18} />
+                  Sign Up
+                </Link>
+                <Link 
+                  to="/vibezone" 
+                  className="px-6 py-3 bg-white text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors shadow-sm hover:shadow-md font-medium flex items-center gap-2"
+                >
+                  <MessageCircle size={18} />
+                  Explore Vibezone
+                </Link>
+              </div>
+            </div>
+          </Card>
         )}
         
         <CreatePostInterface />
@@ -409,18 +425,18 @@ const Index: React.FC = () => {
             <p className="text-muted-foreground">Loading content...</p>
           </div>
         ) : allContent.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-md border border-border/50 p-8 text-center">
+          <Card className="overflow-hidden border-none shadow-lg p-8 text-center bg-gradient-to-br from-white to-gray-50">
             <h3 className="text-xl font-semibold mb-3 text-gray-800">No content yet</h3>
             <p className="text-muted-foreground mb-5">Be the first to share something with the community!</p>
             {user && (
               <Link 
                 to="/create" 
-                className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow font-medium"
+                className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm hover:shadow-md font-medium"
               >
                 Create Poll
               </Link>
             )}
-          </div>
+          </Card>
         ) : (
           <div className="space-y-5">
             {allContent.slice(0, visibleCount).map((item, index) => (
@@ -442,12 +458,12 @@ const Index: React.FC = () => {
             ))}
             
             {visibleCount < allContent.length && (
-              <div className="flex justify-center pt-2">
+              <div className="flex justify-center pt-4 pb-2">
                 <button 
                   onClick={loadMore}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors font-medium"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 rounded-full transition-colors font-medium border border-gray-200 shadow-sm hover:shadow"
                 >
-                  Load More <ChevronDown size={18} />
+                  Load More <ChevronDown size={18} className="text-primary" />
                 </button>
               </div>
             )}
@@ -455,21 +471,28 @@ const Index: React.FC = () => {
         )}
       </main>
       
-      <footer className="py-6 mt-16 border-t bg-white">
+      <footer className="py-8 mt-16 border-t bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
-            <div className="p-1 rounded-full bg-primary/10">
+            <div className="p-1.5 rounded-full bg-primary/10 shadow-inner">
               <img 
                 src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
                 alt="Tuwaye Logo" 
-                className="h-6 w-auto"
+                className="h-7 w-auto"
               />
             </div>
-            <span className="font-semibold text-gray-700">TUWAYE</span>
+            <span className="font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">TUWAYE</span>
           </div>
           <p className="text-sm text-muted-foreground">
             Connect, share and discover with Tuwaye
           </p>
+          <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
+            <a href="#" className="hover:text-primary transition-colors">Terms</a>
+            <span>•</span>
+            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+            <span>•</span>
+            <a href="#" className="hover:text-primary transition-colors">Help</a>
+          </div>
         </div>
       </footer>
     </div>
