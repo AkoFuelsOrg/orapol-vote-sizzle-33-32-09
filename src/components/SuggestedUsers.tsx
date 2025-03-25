@@ -9,6 +9,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from './ui/badge';
+import { toast } from 'sonner';
 
 interface UserProfile {
   id: string;
@@ -22,17 +23,22 @@ const SuggestedUsers: React.FC = () => {
   const [followStatus, setFollowStatus] = useState<Record<string, boolean>>({});
   const [followLoading, setFollowLoading] = useState<Record<string, boolean>>({});
 
-  const { data: suggestedUsers, isLoading, error } = useQuery({
+  const { data: suggestedUsers, isLoading, error, refetch } = useQuery({
     queryKey: ['suggestedUsers', user?.id],
     queryFn: async () => {
       if (!user) return [];
       
       try {
         // First, get IDs of users you are already following
-        const { data: followingData } = await supabase
+        const { data: followingData, error: followingError } = await supabase
           .from('follows')
           .select('following_id')
           .eq('follower_id', user.id);
+        
+        if (followingError) {
+          console.error('Error fetching following data:', followingError);
+          throw followingError;
+        }
         
         const followingIds = followingData?.map(f => f.following_id) || [];
         
@@ -40,11 +46,21 @@ const SuggestedUsers: React.FC = () => {
         const { data: profiles, error } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
-          .not('id', 'in', [user.id, ...(followingIds.length > 0 ? followingIds : ['0'])]) // Use a dummy ID if followingIds is empty
+          .not('id', 'eq', user.id)
           .order('created_at', { ascending: false })
           .limit(15);
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching profiles:', error);
+          throw error;
+        }
+        
+        // Filter out users you're already following
+        if (followingIds.length > 0) {
+          return (profiles as UserProfile[]).filter(
+            profile => !followingIds.includes(profile.id)
+          );
+        }
         
         return profiles as UserProfile[];
       } catch (error) {
@@ -53,6 +69,7 @@ const SuggestedUsers: React.FC = () => {
       }
     },
     enabled: !!user,
+    retry: 2,
   });
   
   useEffect(() => {
@@ -60,11 +77,15 @@ const SuggestedUsers: React.FC = () => {
     const checkFollowStatus = async () => {
       if (!suggestedUsers || suggestedUsers.length === 0) return;
       
-      const statuses: Record<string, boolean> = {};
-      for (const suggestedUser of suggestedUsers) {
-        statuses[suggestedUser.id] = await isFollowing(suggestedUser.id);
+      try {
+        const statuses: Record<string, boolean> = {};
+        for (const suggestedUser of suggestedUsers) {
+          statuses[suggestedUser.id] = await isFollowing(suggestedUser.id);
+        }
+        setFollowStatus(statuses);
+      } catch (err) {
+        console.error('Error checking follow status:', err);
       }
-      setFollowStatus(statuses);
     };
     
     checkFollowStatus();
@@ -78,8 +99,10 @@ const SuggestedUsers: React.FC = () => {
     try {
       await followUser(userId);
       setFollowStatus(prev => ({ ...prev, [userId]: true }));
+      toast.success("Successfully followed user");
     } catch (error) {
       console.error('Error following user:', error);
+      toast.error("Failed to follow user");
     } finally {
       setFollowLoading(prev => ({ ...prev, [userId]: false }));
     }
@@ -105,7 +128,7 @@ const SuggestedUsers: React.FC = () => {
           variant="outline" 
           size="sm" 
           className="mt-2"
-          onClick={() => window.location.reload()}
+          onClick={() => refetch()}
         >
           Retry
         </Button>
