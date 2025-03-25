@@ -4,8 +4,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { ScrollArea } from './ui/scroll-area';
 import ConversationList from './ConversationList';
-import { MessageSquare, MessageCircle, ChevronRight } from 'lucide-react';
+import SuggestedUsers from './SuggestedUsers';
+import { MessageSquare, MessageCircle, ChevronRight, UserPlus } from 'lucide-react';
 import { Button } from './ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 const RightChatColumn: React.FC = () => {
   const { user } = useSupabase();
@@ -44,29 +46,68 @@ const RightChatColumn: React.FC = () => {
         </Button>
         
         {collapsed ? (
-          <div className="flex flex-col items-center py-6">
-            <div className="p-2 bg-primary/10 rounded-full mb-1">
-              <MessageCircle size={20} className="text-primary" />
-            </div>
-            <span className="text-[10px] text-gray-500 font-medium">Chats</span>
-          </div>
-        ) : (
-          <>
-            <div className="p-4 border-b flex items-center space-x-3 bg-gradient-to-r from-primary/10 to-transparent">
-              <div className="p-1.5 bg-primary/15 rounded-full">
-                <MessageSquare size={18} className="text-primary" />
+          <div className="flex flex-col items-center space-y-8 py-6">
+            <div>
+              <div className="p-2 bg-primary/10 rounded-full mb-1">
+                <MessageCircle size={20} className="text-primary" />
               </div>
-              <h2 className="font-semibold text-gray-800 tracking-tight">Recent Chats</h2>
+              <span className="text-[10px] text-gray-500 font-medium">Chats</span>
             </div>
             
-            <ScrollArea className="h-[calc(100%-60px)] py-2">
-              <div className="px-2">
-                <ConversationList 
-                  onSelectConversation={handleSelectConversation}
-                />
+            <div>
+              <div className="p-2 bg-primary/10 rounded-full mb-1">
+                <UserPlus size={20} className="text-primary" />
               </div>
-            </ScrollArea>
-          </>
+              <span className="text-[10px] text-gray-500 font-medium">Follow</span>
+            </div>
+          </div>
+        ) : (
+          <Tabs defaultValue="chats" className="h-full flex flex-col">
+            <div className="border-b px-2 pt-2">
+              <TabsList className="w-full grid grid-cols-2 h-10">
+                <TabsTrigger value="chats" className="flex items-center gap-1">
+                  <MessageSquare size={14} />
+                  <span>Chats</span>
+                </TabsTrigger>
+                <TabsTrigger value="suggested" className="flex items-center gap-1">
+                  <UserPlus size={14} />
+                  <span>Suggested</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="chats" className="flex-1 overflow-hidden p-0 m-0">
+              <div className="p-3 border-b flex items-center space-x-3 bg-gradient-to-r from-primary/10 to-transparent">
+                <div className="p-1.5 bg-primary/15 rounded-full">
+                  <MessageSquare size={18} className="text-primary" />
+                </div>
+                <h2 className="font-semibold text-gray-800 tracking-tight">Recent Chats</h2>
+              </div>
+              
+              <ScrollArea className="h-[calc(100%-48px)] py-2">
+                <div className="px-2">
+                  <ConversationList 
+                    onSelectConversation={handleSelectConversation}
+                  />
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            
+            <TabsContent value="suggested" className="flex-1 overflow-hidden p-0 m-0">
+              <div className="p-3 border-b flex items-center space-x-3 bg-gradient-to-r from-primary/10 to-transparent">
+                <div className="p-1.5 bg-primary/15 rounded-full">
+                  <UserPlus size={18} className="text-primary" />
+                </div>
+                <h2 className="font-semibold text-gray-800 tracking-tight">Suggested Accounts</h2>
+              </div>
+              
+              <ScrollArea className="h-[calc(100%-48px)] py-2">
+                <div className="px-2">
+                  <SuggestedUsers />
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </div>
