@@ -27,25 +27,30 @@ const SuggestedUsers: React.FC = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      // First, get IDs of users you are already following
-      const { data: followingData } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', user.id);
-      
-      const followingIds = followingData?.map(f => f.following_id) || [];
-      
-      // Get a list of users you're not following (excluding yourself)
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url')
-        .not('id', 'in', [user.id, ...followingIds])
-        .order('created_at', { ascending: false })
-        .limit(15);
+      try {
+        // First, get IDs of users you are already following
+        const { data: followingData } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id);
         
-      if (error) throw error;
-      
-      return profiles as UserProfile[];
+        const followingIds = followingData?.map(f => f.following_id) || [];
+        
+        // Get a list of users you're not following (excluding yourself)
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .not('id', 'in', [user.id, ...(followingIds.length > 0 ? followingIds : ['0'])]) // Use a dummy ID if followingIds is empty
+          .order('created_at', { ascending: false })
+          .limit(15);
+          
+        if (error) throw error;
+        
+        return profiles as UserProfile[];
+      } catch (error) {
+        console.error('Error fetching suggested users:', error);
+        throw error;
+      }
     },
     enabled: !!user,
   });
@@ -96,6 +101,14 @@ const SuggestedUsers: React.FC = () => {
     return (
       <div className="p-4 text-center text-muted-foreground">
         <p>Something went wrong loading suggestions.</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="mt-2"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
