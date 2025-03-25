@@ -3,17 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, UserPlus, UserCheck } from 'lucide-react';
+import { Loader2, UserPlus, UserCheck, ExternalLink } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { useNavigate } from 'react-router-dom';
+import { Badge } from './ui/badge';
 
 interface UserProfile {
   id: string;
   username: string | null;
   avatar_url: string | null;
-  // Remove bio from the interface since it doesn't exist in profiles table
 }
 
 const SuggestedUsers: React.FC = () => {
@@ -117,14 +117,17 @@ const SuggestedUsers: React.FC = () => {
   }
   
   return (
-    <div className="space-y-3 py-1">
+    <div className="space-y-2.5 py-1">
       {suggestedUsers.map((profile) => (
         <Card 
           key={profile.id} 
-          className="p-3 transition-all hover:shadow-md hover:border-primary/10 cursor-pointer"
+          className="p-3 transition-all hover:shadow-md hover:border-primary/10 group"
         >
           <div className="flex items-center">
-            <Avatar className="h-10 w-10 mr-3 border border-white shadow-sm" onClick={() => handleViewProfile(profile.id)}>
+            <Avatar 
+              className="h-10 w-10 mr-3 border border-gray-100 shadow-sm group-hover:border-primary/10 transition-all cursor-pointer"
+              onClick={() => handleViewProfile(profile.id)}
+            >
               <AvatarImage 
                 src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
                 alt={profile.username || 'User'} 
@@ -134,14 +137,35 @@ const SuggestedUsers: React.FC = () => {
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1 min-w-0" onClick={() => handleViewProfile(profile.id)}>
-              <h3 className="font-medium text-gray-800 truncate">{profile.username || 'User'}</h3>
+            <div 
+              className="flex-1 min-w-0 cursor-pointer" 
+              onClick={() => handleViewProfile(profile.id)}
+            >
+              <div className="flex items-center">
+                <h3 className="font-medium text-gray-800 truncate">
+                  {profile.username || 'User'}
+                </h3>
+                <Badge 
+                  variant="outline" 
+                  className="ml-2 text-[10px] px-1.5 py-0 border-primary/20 text-primary/80"
+                >
+                  Suggested
+                </Badge>
+              </div>
+              <div className="flex items-center text-xs text-muted-foreground">
+                <ExternalLink size={12} className="mr-1" />
+                <span>View profile</span>
+              </div>
             </div>
             
             <Button
               size="sm"
               variant={followStatus[profile.id] ? "outline" : "default"}
-              className={`ml-2 px-3 ${followStatus[profile.id] ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : ''}`}
+              className={`ml-2 px-3 ${
+                followStatus[profile.id] 
+                  ? 'bg-gray-50 hover:bg-gray-100 text-gray-700' 
+                  : 'bg-primary hover:bg-primary/90'
+              }`}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!followStatus[profile.id]) {

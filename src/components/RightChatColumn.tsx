@@ -29,9 +29,9 @@ const RightChatColumn: React.FC = () => {
   
   return (
     <div 
-      className={`hidden lg:block fixed right-0 top-16 h-[96vh] transition-all duration-300 ease-in-out ${
+      className={`hidden lg:block fixed right-0 top-16 h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out ${
         collapsed ? 'w-16' : 'w-80'
-      } bg-gradient-to-br from-white via-white to-gray-50 shadow-md z-10 border-l border-gray-100`}
+      } bg-white shadow-md z-10 border-l border-gray-100`}
     >
       <div className="relative h-full flex flex-col">
         {/* Collapse Toggle Button */}
