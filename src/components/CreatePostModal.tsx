@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
@@ -14,11 +15,12 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 export interface CreatePostModalProps {
   isOpen?: boolean;
   onClose: () => void;
-  groupId?: string; // Optional group ID for creating posts in a group
-  marketplaceId?: string; // Added marketplaceId prop
+  groupId?: string; 
+  marketplaceId?: string;
+  initialContent?: string;
 }
 
-const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: CreatePostModalProps) => {
+const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId, initialContent = '' }: CreatePostModalProps) => {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -31,11 +33,20 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
   
   useEffect(() => {
     if (isOpen) {
-      setContent('');
+      setContent(initialContent);
       setImageFile(null);
       setImagePreview(null);
+      
+      // Focus and set cursor to end of content
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const length = initialContent.length;
+          textareaRef.current.setSelectionRange(length, length);
+        }
+      }, 50);
     }
-  }, [isOpen]);
+  }, [isOpen, initialContent]);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

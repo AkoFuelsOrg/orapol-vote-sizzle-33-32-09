@@ -18,6 +18,7 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const { user, profile } = useSupabase();
   const { isMarketplaceMember } = useMarketplace();
   const [isMember, setIsMember] = useState(false);
@@ -41,9 +42,8 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
   }
 
   const handleEmojiSelect = (emoji: string) => {
-    // Open post modal with the emoji pre-filled
+    setSelectedEmoji(emoji);
     setPostModalOpen(true);
-    // The emoji will be handled in CreatePostModal
   };
   
   return (
@@ -82,21 +82,34 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
             <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Poll</span>
           </Button>
           
-          <Button 
-            onClick={() => setPostModalOpen(true)}
-            variant="ghost"
-            className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
-          >
-            <Smile size={20} className="text-amber-500" />
-            <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Emoji</span>
-          </Button>
+          <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost"
+                className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
+              >
+                <Smile size={20} className="text-amber-500" />
+                <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Emoji</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <EmojiPicker 
+                onSelectEmoji={handleEmojiSelect} 
+                onClose={() => setEmojiPickerOpen(false)}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
       
       <CreatePostModal 
         isOpen={postModalOpen} 
-        onClose={() => setPostModalOpen(false)} 
+        onClose={() => {
+          setPostModalOpen(false);
+          setSelectedEmoji(null);
+        }} 
         marketplaceId={marketplaceId}
+        initialContent={selectedEmoji || ""}
       />
       
       <CreatePollModal 
