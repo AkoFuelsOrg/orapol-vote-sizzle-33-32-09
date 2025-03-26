@@ -93,31 +93,45 @@ const UserList: React.FC<UserListProps> = ({ userId, type, onCountChange }) => {
   
   if (loading) {
     return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex justify-center py-10">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+          <span className="text-sm text-muted-foreground">Loading users...</span>
+        </div>
       </div>
     );
   }
   
   if (error) {
     return (
-      <div className="text-center py-6 text-muted-foreground">
-        <p>Error loading users. Please try again.</p>
+      <div className="text-center py-8 text-muted-foreground bg-red-50/50 rounded-lg">
+        <p className="text-red-500">Error loading users. Please try again.</p>
+        <button 
+          onClick={fetchUsers}
+          className="mt-2 text-sm text-primary hover:underline"
+        >
+          Retry
+        </button>
       </div>
     );
   }
   
   if (users.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
-        <UserIcon className="h-12 w-12 mb-2 opacity-20" />
-        <p>{type === 'followers' ? 'No followers yet' : 'Not following anyone yet'}</p>
+      <div className="text-center py-10 text-muted-foreground flex flex-col items-center bg-gray-50/70 rounded-lg">
+        <UserIcon className="h-12 w-12 mb-3 opacity-20" />
+        <p className="font-medium mb-1">{type === 'followers' ? 'No followers yet' : 'Not following anyone yet'}</p>
+        <p className="text-sm px-4">
+          {type === 'followers' 
+            ? 'When people follow you, they will appear here.' 
+            : 'When you follow people, they will appear here.'}
+        </p>
       </div>
     );
   }
   
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {users.map(user => (
         <UserProfileCard
           key={user.id}

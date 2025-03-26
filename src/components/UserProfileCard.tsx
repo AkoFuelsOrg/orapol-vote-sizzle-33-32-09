@@ -6,6 +6,7 @@ import { Loader2, UserCheck, UserPlus, MessageSquare } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
 import { Button } from './ui/button';
 import UnfollowDialog from './UnfollowDialog';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 interface UserProfileCardProps {
   userId: string;
@@ -27,6 +28,8 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [canMessage, setCanMessage] = useState<boolean>(false);
   const [showUnfollowDialog, setShowUnfollowDialog] = useState<boolean>(false);
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   
   useEffect(() => {
     if (user) {
@@ -107,16 +110,21 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   }
   
   return (
-    <div className="flex flex-col p-3 border border-border/50 rounded-lg bg-white">
+    <div className="flex flex-col p-3 border border-border/50 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
       <Link to={`/user/${userId}`} className="flex items-center space-x-3 mb-3">
-        <img 
-          src={avatarUrl || `https://i.pravatar.cc/150?u=${userId}`} 
-          alt={username} 
-          className="w-10 h-10 rounded-full border-2 border-primary object-cover"
-        />
+        <div className="relative">
+          <img 
+            src={avatarUrl || `https://i.pravatar.cc/150?u=${userId}`} 
+            alt={username} 
+            className="w-11 h-11 rounded-full border-2 border-primary/80 object-cover"
+          />
+          {user && user.id === userId && (
+            <div className="absolute -top-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
+          )}
+        </div>
         <div>
-          <p className="font-medium text-primary">{username || 'Anonymous'}</p>
-          <p className="text-xs text-muted-foreground">View profile</p>
+          <p className="font-medium text-foreground">{username || 'Anonymous'}</p>
+          <p className="text-xs text-muted-foreground">View full profile</p>
         </div>
       </Link>
       
@@ -127,8 +135,8 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
               onClick={handleFollowAction}
               disabled={actionLoading}
               variant={isFollowingUser ? "secondary" : "default"}
-              size="sm"
-              className="flex-1"
+              size={isMobile ? "sm" : "default"}
+              className="flex-1 h-9"
             >
               {actionLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -150,12 +158,12 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
             <Button 
               asChild
               variant="secondary"
-              size="sm"
-              className="flex-1"
+              size={isMobile ? "sm" : "default"}
+              className="flex-1 h-9"
             >
               <Link to={`/messages/${userId}`}>
                 <MessageSquare className="h-4 w-4 mr-1" />
-                <span>Message</span>
+                <span>{isMobile ? "Message" : "Send Message"}</span>
               </Link>
             </Button>
           )}

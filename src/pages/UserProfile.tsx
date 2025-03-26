@@ -7,7 +7,7 @@ import PollCard from '../components/PollCard';
 import PostCard from '../components/PostCard';
 import UserList from '../components/UserList';
 import { useSupabase } from '../context/SupabaseContext';
-import { ArrowLeft, Loader2, UserPlus, UserCheck, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Loader2, UserPlus, UserCheck, MessageSquare, Users, LayoutGrid } from 'lucide-react';
 import { Poll, PollOption, Post } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -358,7 +358,10 @@ const UserProfile: React.FC = () => {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <main className="pt-16 px-2 max-w-full w-full mx-auto flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex flex-col items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+            <span className="text-sm text-muted-foreground">Loading profile...</span>
+          </div>
         </main>
       </div>
     );
@@ -368,13 +371,15 @@ const UserProfile: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="pt-16 px-2 max-w-full w-full mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 text-center">
-            <p className="mb-4">User not found</p>
+        <main className="pt-16 px-3 sm:px-4 max-w-full w-full mx-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-border/50 p-6 text-center mt-4">
+            <h2 className="text-xl font-semibold mb-3">User Not Found</h2>
+            <p className="mb-4 text-muted-foreground">We couldn't find the user you're looking for.</p>
             <Link 
               to="/"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors inline-flex items-center"
             >
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Go Home
             </Link>
           </div>
@@ -389,14 +394,14 @@ const UserProfile: React.FC = () => {
       
       <main className="pt-10 w-full mx-auto pb-20">
         <div className="mb-1 animate-fade-in px-4">
-          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft size={18} className="mr-1" />
+          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors py-2">
+            <ArrowLeft size={18} className="mr-1.5" />
             <span>Back</span>
           </Link>
         </div>
         
         {/* Cover Image */}
-        <div className="w-full h-36 sm:h-48 md:h-64 bg-gray-200 relative animate-fade-in overflow-hidden">
+        <div className="w-full h-32 sm:h-48 md:h-64 bg-gray-200 relative animate-fade-in overflow-hidden">
           {profile.cover_url ? (
             <img 
               src={profile.cover_url} 
@@ -408,9 +413,9 @@ const UserProfile: React.FC = () => {
           )}
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-4 sm:p-5 mb-4 animate-fade-in relative mt-[-3rem] mx-2 sm:mx-4">
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-4 sm:p-5 mb-4 animate-fade-in relative mt-[-3rem] mx-3 sm:mx-4">
           <div className="flex flex-col items-center">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white overflow-hidden bg-white mt-[-4rem]">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white overflow-hidden bg-white mt-[-4rem] shadow-sm">
               <Avatar className="w-full h-full">
                 <AvatarImage
                   src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`}
@@ -424,22 +429,27 @@ const UserProfile: React.FC = () => {
             
             <div className="mt-3 sm:mt-4 text-center">
               <h2 className="text-lg sm:text-xl font-bold">{profile.username || 'Anonymous'}</h2>
+              {user && user.id === profile.id && (
+                <div className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full mt-1">
+                  Active User
+                </div>
+              )}
             </div>
             
-            <div className="mt-4 sm:mt-6 grid grid-cols-4 gap-2 justify-center">
-              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+            <div className="mt-4 sm:mt-6 grid grid-cols-4 gap-2 w-full max-w-md">
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1 shadow-sm border border-border/10">
                 <p className="text-lg sm:text-2xl font-bold">{polls.length}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Polls</p>
               </div>
-              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1 shadow-sm border border-border/10">
                 <p className="text-lg sm:text-2xl font-bold">{posts.length}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Posts</p>
               </div>
-              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1 shadow-sm border border-border/10">
                 <p className="text-lg sm:text-2xl font-bold">{followCounts.followers}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Followers</p>
               </div>
-              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1 shadow-sm border border-border/10">
                 <p className="text-lg sm:text-2xl font-bold">{followCounts.following}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Following</p>
               </div>
@@ -451,7 +461,8 @@ const UserProfile: React.FC = () => {
                   onClick={handleFollowAction}
                   disabled={actionLoading}
                   variant={userIsFollowing ? "secondary" : "default"}
-                  className="flex-1"
+                  className="flex-1 h-9"
+                  size={isMobile ? "sm" : "default"}
                 >
                   {actionLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -472,11 +483,12 @@ const UserProfile: React.FC = () => {
                   <Button
                     asChild
                     variant="secondary"
-                    className="flex-1"
+                    className="flex-1 h-9"
+                    size={isMobile ? "sm" : "default"}
                   >
                     <Link to={`/messages/${id}`}>
                       <MessageSquare className="h-4 w-4 mr-1" />
-                      <span>Message</span>
+                      <span>{isMobile ? "Message" : "Send Message"}</span>
                     </Link>
                   </Button>
                 )}
@@ -485,7 +497,7 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
         
-        <div className="px-2 sm:px-4">
+        <div className="px-3 sm:px-4">
           <Tabs 
             defaultValue="content" 
             className="w-full animate-fade-in"
@@ -493,36 +505,42 @@ const UserProfile: React.FC = () => {
               setActiveTab(value);
             }}
           >
-            <div className="overflow-x-auto no-scrollbar pb-1">
-              <TabsList className="w-full flex mb-3 rounded-lg border border-border/30">
+            <div className="overflow-x-auto scrollbar-hide pb-1">
+              <TabsList className="w-full flex mb-3 rounded-lg border border-border/30 bg-white p-1">
                 <TabsTrigger 
                   value="content" 
-                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                  className="flex-1 text-xs sm:text-sm py-2 font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm flex items-center justify-center"
                 >
-                  Content
+                  <LayoutGrid className="h-4 w-4 mr-1.5" />
+                  <span>Content</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="followers" 
-                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                  className="flex-1 text-xs sm:text-sm py-2 font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm flex items-center justify-center"
                 >
-                  Followers
+                  <Users className="h-4 w-4 mr-1.5" />
+                  <span>Followers</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="following" 
-                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                  className="flex-1 text-xs sm:text-sm py-2 font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm flex items-center justify-center"
                 >
-                  Following
+                  <UserPlus className="h-4 w-4 mr-1.5" />
+                  <span>Following</span>
                 </TabsTrigger>
               </TabsList>
             </div>
             
-            <TabsContent value="content" className="mt-0">
+            <TabsContent value="content" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
               {isLoadingContent ? (
-                <div className="flex justify-center p-6">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex justify-center p-8">
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                    <span className="text-sm text-muted-foreground">Loading content...</span>
+                  </div>
                 </div>
               ) : allContent.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-3 animate-fade-in">
                   {allContent.map(item => (
                     <div key={item.id}>
                       {'question' in item ? (
@@ -534,13 +552,17 @@ const UserProfile: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2">
-                  <p>No content created yet.</p>
+                <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2 animate-fade-in">
+                  <div className="flex flex-col items-center">
+                    <LayoutGrid className="h-12 w-12 mb-3 opacity-20" />
+                    <p className="font-medium mb-1">No Content Yet</p>
+                    <p className="text-sm px-4">This user hasn't created any polls or posts yet.</p>
+                  </div>
                 </div>
               )}
             </TabsContent>
             
-            <TabsContent value="followers" className="mt-0">
+            <TabsContent value="followers" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
               <UserList 
                 userId={id!} 
                 type="followers" 
@@ -550,7 +572,7 @@ const UserProfile: React.FC = () => {
               />
             </TabsContent>
             
-            <TabsContent value="following" className="mt-0">
+            <TabsContent value="following" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
               <UserList 
                 userId={id!} 
                 type="following"
