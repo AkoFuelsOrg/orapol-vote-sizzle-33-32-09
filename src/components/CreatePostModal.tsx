@@ -26,7 +26,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
   const { user, profile } = useSupabase();
   
   useEffect(() => {
-    // Reset form when modal is opened
     if (isOpen) {
       setContent('');
       setImageFile(null);
@@ -38,13 +37,11 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Check file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size must be less than 5MB');
       return;
     }
     
-    // Check file type
     if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
       toast.error('Only JPEG, PNG, GIF and WEBP images are allowed');
       return;
@@ -52,7 +49,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
     
     setImageFile(file);
     
-    // Create preview
     const reader = new FileReader();
     reader.onload = (event) => {
       setImagePreview(event.target?.result as string);
@@ -82,7 +78,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
     try {
       let imageUrl = null;
       
-      // If there's an image, upload it first
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
@@ -93,7 +88,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
         
         if (uploadError) throw uploadError;
         
-        // Get the public URL
         const { data: { publicUrl } } = supabase.storage
           .from('post_images')
           .getPublicUrl(filePath);
@@ -101,7 +95,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
         imageUrl = publicUrl;
       }
       
-      // Create the post with groupId or marketplaceId if provided
       const postData = {
         content: content.trim(),
         user_id: user.id,
@@ -118,7 +111,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       
       toast.success('Post created successfully!');
       
-      // Reset form and close modal
       setContent('');
       setImageFile(null);
       setImagePreview(null);
@@ -133,8 +125,10 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
   };
 
   const handlePollModalOpen = () => {
-    onClose(); // Close the post modal
-    setPollModalOpen(true); // Open the poll modal
+    onClose();
+    setTimeout(() => {
+      setPollModalOpen(true);
+    }, 100);
   };
 
   const handlePollModalClose = () => {
