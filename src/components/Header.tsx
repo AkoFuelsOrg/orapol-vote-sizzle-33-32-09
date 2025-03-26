@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -14,7 +15,8 @@ import {
   Heart,
   Bell,
   PenLine,
-  Mic
+  Mic,
+  X
 } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -101,15 +103,25 @@ const Header: React.FC = () => {
             </DrawerTrigger>
             <DrawerContent className="px-4 py-6 bg-gradient-to-b from-primary/5 to-background border-t border-primary/10">
               <div className="max-w-md mx-auto">
-                <div className="flex items-center justify-center mb-6">
-                  <div className="p-1.5 rounded-full bg-primary/10 mr-2">
-                    <img 
-                      src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
-                      alt="Tuwaye Logo" 
-                      className="h-10 w-auto"
-                    />
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <div className="p-1.5 rounded-full bg-primary/10 mr-2">
+                      <img 
+                        src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+                        alt="Tuwaye Logo" 
+                        className="h-10 w-auto"
+                      />
+                    </div>
+                    <h3 className="text-lg font-semibold text-primary">Menu</h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-primary">Menu</h3>
+                  <Button
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-full hover:bg-primary/10 text-primary/80"
+                  >
+                    <X size={20} />
+                  </Button>
                 </div>
                 <div className="flex flex-col space-y-1.5">
                   {navItems.map((item) => (
