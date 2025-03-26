@@ -11,15 +11,14 @@ import { Link } from 'react-router-dom';
 const Followers: React.FC = () => {
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
-  const isDesktop = breakpoint === "desktop";
   const isMobile = breakpoint === "mobile";
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="pt-16 px-4 max-w-4xl mx-auto pb-20 w-full">
-        <div className="mb-4 animate-fade-in">
+      <main className="pt-16 px-2 sm:px-4 max-w-4xl mx-auto pb-20 w-full">
+        <div className="mb-3 animate-fade-in">
           <Link to="/profile" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft size={18} className="mr-1" />
             <span>Back to Profile</span>
@@ -27,12 +26,12 @@ const Followers: React.FC = () => {
         </div>
         
         <Card className="animate-fade-in shadow-sm border-border/50">
-          <CardHeader className={`${isMobile ? 'px-4 py-4' : 'px-6 py-5'}`}>
-            <CardTitle className="flex items-center text-xl">
+          <CardHeader className="px-4 py-4 sm:px-6 sm:py-5">
+            <CardTitle className="flex items-center text-lg sm:text-xl">
               People Following You
             </CardTitle>
           </CardHeader>
-          <CardContent className={`${isMobile ? 'px-4 pb-6' : 'px-6 pb-6'}`}>
+          <CardContent className="px-4 pb-6 sm:px-6">
             {user ? (
               <UserList userId={user.id} type="followers" />
             ) : (

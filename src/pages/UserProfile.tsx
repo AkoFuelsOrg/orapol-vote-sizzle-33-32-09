@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -356,7 +357,7 @@ const UserProfile: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="pt-20 px-4 max-w-full w-full mx-auto flex justify-center">
+        <main className="pt-16 px-2 max-w-full w-full mx-auto flex justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </main>
       </div>
@@ -367,7 +368,7 @@ const UserProfile: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="pt-20 px-4 max-w-full w-full mx-auto">
+        <main className="pt-16 px-2 max-w-full w-full mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 text-center">
             <p className="mb-4">User not found</p>
             <Link 
@@ -395,7 +396,7 @@ const UserProfile: React.FC = () => {
         </div>
         
         {/* Cover Image */}
-        <div className="w-full h-48 md:h-64 bg-gray-200 relative animate-fade-in overflow-hidden">
+        <div className="w-full h-36 sm:h-48 md:h-64 bg-gray-200 relative animate-fade-in overflow-hidden">
           {profile.cover_url ? (
             <img 
               src={profile.cover_url} 
@@ -407,9 +408,9 @@ const UserProfile: React.FC = () => {
           )}
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-5 mb-6 animate-fade-in relative mt-[-3rem] mx-4">
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 p-4 sm:p-5 mb-4 animate-fade-in relative mt-[-3rem] mx-2 sm:mx-4">
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white mt-[-4rem]">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white overflow-hidden bg-white mt-[-4rem]">
               <Avatar className="w-full h-full">
                 <AvatarImage
                   src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`}
@@ -421,26 +422,26 @@ const UserProfile: React.FC = () => {
               </Avatar>
             </div>
             
-            <div className="mt-4 text-center">
-              <h2 className="text-xl font-bold">{profile.username || 'Anonymous'}</h2>
+            <div className="mt-3 sm:mt-4 text-center">
+              <h2 className="text-lg sm:text-xl font-bold">{profile.username || 'Anonymous'}</h2>
             </div>
             
-            <div className="mt-6 flex space-x-6 justify-center">
-              <div className="text-center">
-                <p className="text-2xl font-bold">{polls.length}</p>
-                <p className="text-sm text-muted-foreground">Polls</p>
+            <div className="mt-4 sm:mt-6 grid grid-cols-4 gap-2 justify-center">
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{polls.length}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Polls</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{posts.length}</p>
-                <p className="text-sm text-muted-foreground">Posts</p>
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{posts.length}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Posts</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{followCounts.followers}</p>
-                <p className="text-sm text-muted-foreground">Followers</p>
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{followCounts.followers}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Followers</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{followCounts.following}</p>
-                <p className="text-sm text-muted-foreground">Following</p>
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{followCounts.following}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Following</p>
               </div>
             </div>
             
@@ -484,80 +485,82 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
         
-        <Tabs 
-          defaultValue="content" 
-          className="w-full animate-fade-in px-4"
-          onValueChange={(value) => {
-            setActiveTab(value);
-          }}
-        >
-          <div className="overflow-x-auto no-scrollbar">
-            <TabsList className={`${isMobile ? 'w-full grid-cols-3 mb-4 rounded-lg border border-border/30' : 'grid grid-cols-3 mb-4'}`}>
-              <TabsTrigger 
-                value="content" 
-                className={`${isMobile ? 'text-sm py-2.5 font-medium' : ''}`}
-              >
-                Content
-              </TabsTrigger>
-              <TabsTrigger 
-                value="followers" 
-                className={`${isMobile ? 'text-sm py-2.5 font-medium' : ''}`}
-              >
-                Followers
-              </TabsTrigger>
-              <TabsTrigger 
-                value="following" 
-                className={`${isMobile ? 'text-sm py-2.5 font-medium' : ''}`}
-              >
-                Following
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <TabsContent value="content" className="mt-0">
-            {isLoadingContent ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : allContent.length > 0 ? (
-              <div className="space-y-4">
-                {allContent.map(item => (
-                  <div key={item.id}>
-                    {'question' in item ? (
-                      <PollCard poll={item as Poll} />
-                    ) : (
-                      <PostCard post={item as Post} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p>No content created yet.</p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="followers" className="mt-0">
-            <UserList 
-              userId={id!} 
-              type="followers" 
-              onCountChange={(count) => {
-                setFollowCounts(prev => ({ ...prev, followers: count }));
-              }}
-            />
-          </TabsContent>
-          
-          <TabsContent value="following" className="mt-0">
-            <UserList 
-              userId={id!} 
-              type="following"
-              onCountChange={(count) => {
-                setFollowCounts(prev => ({ ...prev, following: count }));
-              }} 
-            />
-          </TabsContent>
-        </Tabs>
+        <div className="px-2 sm:px-4">
+          <Tabs 
+            defaultValue="content" 
+            className="w-full animate-fade-in"
+            onValueChange={(value) => {
+              setActiveTab(value);
+            }}
+          >
+            <div className="overflow-x-auto no-scrollbar pb-1">
+              <TabsList className="w-full flex mb-3 rounded-lg border border-border/30">
+                <TabsTrigger 
+                  value="content" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  Content
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="followers" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  Followers
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="following" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  Following
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="content" className="mt-0">
+              {isLoadingContent ? (
+                <div className="flex justify-center p-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : allContent.length > 0 ? (
+                <div className="space-y-3">
+                  {allContent.map(item => (
+                    <div key={item.id}>
+                      {'question' in item ? (
+                        <PollCard poll={item as Poll} />
+                      ) : (
+                        <PostCard post={item as Post} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2">
+                  <p>No content created yet.</p>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="followers" className="mt-0">
+              <UserList 
+                userId={id!} 
+                type="followers" 
+                onCountChange={(count) => {
+                  setFollowCounts(prev => ({ ...prev, followers: count }));
+                }}
+              />
+            </TabsContent>
+            
+            <TabsContent value="following" className="mt-0">
+              <UserList 
+                userId={id!} 
+                type="following"
+                onCountChange={(count) => {
+                  setFollowCounts(prev => ({ ...prev, following: count }));
+                }} 
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
       </main>
     </div>
   );

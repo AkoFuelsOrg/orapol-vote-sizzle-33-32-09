@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -358,9 +359,11 @@ const Profile: React.FC = () => {
     <div className="min-h-screen bg-gray-50 w-full">
       <Header />
       
-      <main className="pt-16 px-4 max-w-4xl mx-auto pb-20 w-full">
-        <div className="bg-white rounded-xl shadow-sm border border-border/50 mb-6 animate-fade-in w-full overflow-hidden">
-          <div className="relative w-full h-40 bg-gray-200 group">
+      <main className="pt-16 pb-20 w-full">
+        {/* Profile card */}
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 mb-4 animate-fade-in w-full overflow-hidden mx-auto px-0">
+          {/* Cover image section */}
+          <div className="relative w-full h-36 sm:h-48 bg-gray-200 group">
             {coverUrl ? (
               <img 
                 src={coverUrl} 
@@ -376,9 +379,9 @@ const Profile: React.FC = () => {
               className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               {uploadingCover ? (
-                <Loader2 className="h-10 w-10 animate-spin text-white" />
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
               ) : (
-                <Camera className="h-10 w-10 text-white" />
+                <Camera className="h-8 w-8 text-white" />
               )}
             </button>
             
@@ -391,16 +394,17 @@ const Profile: React.FC = () => {
             />
           </div>
           
-          <div className="p-5">
-            <div className="flex flex-col items-center -mt-14">
+          <div className="px-4 py-4 sm:p-5">
+            <div className="flex flex-col items-center -mt-12 sm:-mt-14">
+              {/* Profile image */}
               <div className="relative group z-10">
                 <div 
                   onClick={handleProfileImageClick}
-                  className="w-24 h-24 rounded-full border-4 border-white overflow-hidden cursor-pointer group-hover:opacity-90 transition-opacity relative bg-white"
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white overflow-hidden cursor-pointer group-hover:opacity-90 transition-opacity relative bg-white"
                 >
                   {uploading ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
                     </div>
                   ) : (
                     <>
@@ -415,7 +419,7 @@ const Profile: React.FC = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                        <Upload className="h-8 w-8 text-white" />
+                        <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                       </div>
                     </>
                   )}
@@ -429,14 +433,15 @@ const Profile: React.FC = () => {
                 />
               </div>
               
-              <div className="mt-4 text-center w-full">
+              {/* Username and email */}
+              <div className="mt-3 sm:mt-4 text-center w-full">
                 {isEditing ? (
                   <div className="space-y-2">
                     <input 
                       type="text" 
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="px-3 py-2 border border-input rounded text-center w-full focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="px-3 py-2 border border-input rounded text-center w-full max-w-xs focus:outline-none focus:ring-1 focus:ring-primary"
                       placeholder="Enter username"
                     />
                     <div className="flex space-x-2 justify-center">
@@ -464,7 +469,7 @@ const Profile: React.FC = () => {
                   </div>
                 ) : (
                   <div className="flex items-center justify-center">
-                    <h2 className="text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
+                    <h2 className="text-lg sm:text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
                     <button 
                       onClick={() => setIsEditing(true)}
                       className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
@@ -473,7 +478,7 @@ const Profile: React.FC = () => {
                     </button>
                   </div>
                 )}
-                <p className="text-muted-foreground mt-1">{user?.email}</p>
+                <p className="text-muted-foreground mt-1 text-sm">{user?.email}</p>
                 
                 {!isChangingPassword ? (
                   <Button 
@@ -486,7 +491,7 @@ const Profile: React.FC = () => {
                     Change Password
                   </Button>
                 ) : (
-                  <div className="mt-4 space-y-3 max-w-sm mx-auto">
+                  <div className="mt-4 space-y-3 max-w-sm mx-auto px-2">
                     <h3 className="font-medium text-left">Change Password</h3>
                     <div className="space-y-2">
                       <Input
@@ -538,159 +543,163 @@ const Profile: React.FC = () => {
               </div>
             </div>
             
-            <div className="mt-6 flex space-x-6 justify-center">
-              <div className="text-center">
-                <p className="text-2xl font-bold">{userPolls.length}</p>
-                <p className="text-sm text-muted-foreground">Polls</p>
+            {/* Stats */}
+            <div className="mt-4 sm:mt-6 grid grid-cols-4 gap-1 sm:gap-4 justify-center max-w-xs sm:max-w-md mx-auto text-center">
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{userPolls.length}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Polls</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{userPosts.length}</p>
-                <p className="text-sm text-muted-foreground">Posts</p>
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{userPosts.length}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Posts</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{followCounts.followers}</p>
-                <p className="text-sm text-muted-foreground">Followers</p>
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{followCounts.followers}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Followers</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold">{followCounts.following}</p>
-                <p className="text-sm text-muted-foreground">Following</p>
+              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
+                <p className="text-lg sm:text-2xl font-bold">{followCounts.following}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Following</p>
               </div>
             </div>
           </div>
         </div>
         
-        <Tabs defaultValue="all" className="w-full animate-fade-in">
-          <div className="overflow-x-auto no-scrollbar">
-            <TabsList className={`${isMobile ? 'w-full flex mb-4 rounded-lg border border-border/30' : 'grid grid-cols-5 mb-4'}`}>
-              <TabsTrigger 
-                value="all" 
-                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
-              >
-                All Content
-              </TabsTrigger>
-              <TabsTrigger 
-                value="polls" 
-                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
-              >
-                Polls
-              </TabsTrigger>
-              <TabsTrigger 
-                value="posts" 
-                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
-              >
-                Posts
-              </TabsTrigger>
-              <TabsTrigger 
-                value="followers" 
-                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
-              >
-                Followers
-              </TabsTrigger>
-              <TabsTrigger 
-                value="following" 
-                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
-              >
-                Following
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <TabsContent value="all" className="mt-0">
-            {isLoadingPolls || isLoadingPosts ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : allContent.length > 0 ? (
-              <div className="space-y-4">
-                {allContent.map(item => (
-                  <div key={item.id}>
-                    {'question' in item ? (
-                      <PollCard poll={item as Poll} />
-                    ) : (
-                      <PostCard post={item as Post} />
-                    )}
+        {/* Content tabs */}
+        <div className="px-2 sm:px-4">
+          <Tabs defaultValue="all" className="w-full animate-fade-in">
+            <div className="overflow-x-auto no-scrollbar pb-1">
+              <TabsList className="w-full flex mb-3 rounded-lg border border-border/30">
+                <TabsTrigger 
+                  value="all" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  All Content
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="polls" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  Polls
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="posts" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  Posts
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="followers" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  Followers
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="following" 
+                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
+                >
+                  Following
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="all" className="mt-0">
+              {isLoadingPolls || isLoadingPosts ? (
+                <div className="flex justify-center p-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : allContent.length > 0 ? (
+                <div className="space-y-3">
+                  {allContent.map(item => (
+                    <div key={item.id}>
+                      {'question' in item ? (
+                        <PollCard poll={item as Poll} />
+                      ) : (
+                        <PostCard post={item as Post} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2">
+                  <p className="mb-4">You haven't created any content yet.</p>
+                  <div className="inline-block">
+                    <a 
+                      href="/create" 
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      Create Your First Poll
+                    </a>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-4">You haven't created any content yet.</p>
-                <div className="inline-block">
-                  <a 
-                    href="/create" 
-                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    Create Your First Poll
-                  </a>
                 </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="polls" className="mt-0">
-            {isLoadingPolls ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : userPolls.length > 0 ? (
-              <div className="space-y-4">
-                {userPolls.map(poll => (
-                  <PollCard key={poll.id} poll={poll} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-4">You haven't created any polls yet.</p>
-                <div className="inline-block">
-                  <a 
-                    href="/create" 
-                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    Create Your First Poll
-                  </a>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="polls" className="mt-0">
+              {isLoadingPolls ? (
+                <div className="flex justify-center p-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="posts" className="mt-0">
-            {isLoadingPosts ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : userPosts.length > 0 ? (
-              <div className="space-y-4">
-                {userPosts.map(post => (
-                  <PostCard key={post.id} post={post} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-4">You haven't created any posts yet.</p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="followers" className="mt-0">
-            {user ? (
-              <UserList userId={user.id} type="followers" />
-            ) : (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="following" className="mt-0">
-            {user ? (
-              <UserList userId={user.id} type="following" />
-            ) : (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+              ) : userPolls.length > 0 ? (
+                <div className="space-y-3">
+                  {userPolls.map(poll => (
+                    <PollCard key={poll.id} poll={poll} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2">
+                  <p className="mb-4">You haven't created any polls yet.</p>
+                  <div className="inline-block">
+                    <a 
+                      href="/create" 
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      Create Your First Poll
+                    </a>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="posts" className="mt-0">
+              {isLoadingPosts ? (
+                <div className="flex justify-center p-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : userPosts.length > 0 ? (
+                <div className="space-y-3">
+                  {userPosts.map(post => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2">
+                  <p className="mb-4">You haven't created any posts yet.</p>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="followers" className="mt-0">
+              {user ? (
+                <UserList userId={user.id} type="followers" />
+              ) : (
+                <div className="text-center py-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="following" className="mt-0">
+              {user ? (
+                <UserList userId={user.id} type="following" />
+              ) : (
+                <div className="text-center py-6">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </main>
     </div>
   );
