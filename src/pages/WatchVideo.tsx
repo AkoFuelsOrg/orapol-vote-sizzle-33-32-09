@@ -4,7 +4,7 @@ import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download, FilmIcon, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
@@ -425,7 +425,7 @@ const WatchVideo: React.FC = () => {
   
   if (loading && !video) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             {renderVideoSkeleton()}
@@ -444,13 +444,16 @@ const WatchVideo: React.FC = () => {
   
   if (!video && !loading) {
     return (
-      <div className="container mx-auto py-8">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold">Video not found</h2>
-          <p className="mt-2 text-gray-600">The video you're looking for doesn't exist or has been removed.</p>
+      <div className="container mx-auto py-10 px-4 sm:px-6 animate-fade-in">
+        <div className="text-center py-16 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="bg-primary/5 p-4 rounded-full inline-flex items-center justify-center mb-5">
+            <FilmIcon className="h-12 w-12 text-primary/70" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Video not found</h2>
+          <p className="mt-2 text-gray-600 max-w-md mx-auto mb-6">The video you're looking for doesn't exist or has been removed.</p>
           <Button 
             variant="outline" 
-            className="mt-4"
+            className="shadow-sm hover:shadow-md transition-all duration-300"
             onClick={() => window.location.href = "/vibezone"}
           >
             Return to Videos
@@ -461,11 +464,11 @@ const WatchVideo: React.FC = () => {
   }
   
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
       {video && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-black rounded-lg overflow-hidden">
+            <div className="bg-black rounded-xl overflow-hidden shadow-md">
               <video
                 ref={videoRef}
                 src={video.video_url}
@@ -477,9 +480,9 @@ const WatchVideo: React.FC = () => {
               />
             </div>
             
-            <div className="mt-4">
-              <h1 className="text-2xl font-bold">{video.title}</h1>
-              <div className="flex items-center justify-between mt-2">
+            <div className="mt-5">
+              <h1 className="text-2xl font-bold text-gray-800">{video.title}</h1>
+              <div className="flex items-center justify-between mt-3">
                 <div className="text-sm text-gray-600">
                   {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                 </div>
@@ -487,7 +490,7 @@ const WatchVideo: React.FC = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="flex items-center" 
+                    className="flex items-center rounded-full hover:bg-gray-100" 
                     onClick={handleLike}
                   >
                     <ThumbsUp 
@@ -498,13 +501,13 @@ const WatchVideo: React.FC = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="flex items-center"
+                    className="flex items-center rounded-full hover:bg-gray-100"
                     onClick={handleDownload}
                   >
                     <Download className="h-5 w-5 mr-1" />
                     Download
                   </Button>
-                  <Button variant="ghost" size="sm" className="flex items-center">
+                  <Button variant="ghost" size="sm" className="flex items-center rounded-full hover:bg-gray-100">
                     <Share2 className="h-5 w-5 mr-1" />
                     Share
                   </Button>
@@ -512,11 +515,11 @@ const WatchVideo: React.FC = () => {
               </div>
             </div>
             
-            <Separator className="my-4" />
+            <Separator className="my-5" />
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
               <div className="flex items-center">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
                   <img 
                     src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
                     alt={video.author?.name || video.author?.username || 'Author'} 
@@ -525,7 +528,7 @@ const WatchVideo: React.FC = () => {
                   />
                 </Avatar>
                 <div className="ml-3">
-                  <h3 className="font-semibold">{video.author?.name || video.author?.username || 'Unknown'}</h3>
+                  <h3 className="font-semibold text-gray-800">{video.author?.name || video.author?.username || 'Unknown'}</h3>
                   <p className="text-sm text-gray-500">{subscriberCount} {subscriberCount === 1 ? 'subscriber' : 'subscribers'}</p>
                 </div>
               </div>
@@ -536,7 +539,7 @@ const WatchVideo: React.FC = () => {
                   size="sm"
                   onClick={handleSubscribe}
                   disabled={subscriptionLoading}
-                  className="flex items-center min-w-[120px] justify-center"
+                  className={`flex items-center min-w-[120px] justify-center transition-all duration-300 ${subscribed ? 'border-primary/30 text-primary' : 'bg-primary'}`}
                 >
                   {subscriptionLoading ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -551,7 +554,7 @@ const WatchVideo: React.FC = () => {
             </div>
             
             {video.description && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div className="mt-5 p-5 bg-gray-50 rounded-xl">
                 <p className="text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
               </div>
             )}
@@ -562,15 +565,19 @@ const WatchVideo: React.FC = () => {
           </div>
           
           <div className="hidden lg:block">
-            <h3 className="font-semibold mb-4">Related Videos</h3>
+            <h3 className="font-semibold mb-4 text-gray-800 flex items-center">
+              <Sparkles className="h-4 w-4 text-primary/70 mr-2" />
+              Related Videos
+            </h3>
             {loadingRelated ? (
               renderRelatedVideosSkeleton()
             ) : relatedVideos.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
               </div>
             ) : (
-              <div className="text-center py-10 text-gray-500">
+              <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
+                <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
                 <p>No related videos found</p>
               </div>
             )}

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon, Plus } from 'lucide-react';
+import { Loader2, FilmIcon, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -69,29 +69,35 @@ const Vibezone: React.FC = () => {
   const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
-    <div className="container mx-auto py-6 px-4 sm:px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold">Vibezone</h1>
-        <Button 
-          onClick={() => navigate('/vibezone/upload')}
-          className="bg-red-500 hover:bg-red-600 w-full sm:w-auto"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Upload Video
-        </Button>
+    <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
+      <div className="relative mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-2xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Vibezone</h1>
+            <Sparkles className="h-5 w-5 text-primary/70 ml-2 animate-pulse-slow" />
+          </div>
+          <Button 
+            onClick={() => navigate('/vibezone/upload')}
+            className="bg-red-500 hover:bg-red-600 transition-all duration-300 hover:shadow-md w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Upload Video
+          </Button>
+        </div>
+        <p className="text-muted-foreground mt-2 max-w-xl">Discover and share videos with the community. Express yourself through visual storytelling.</p>
       </div>
 
       {shouldShowSkeleton ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
           {[...Array(8)].map((_, index) => (
-            <Card key={`skeleton-${index}`} className="overflow-hidden">
-              <div className="aspect-video">
+            <Card key={`skeleton-${index}`} className="overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="aspect-video bg-gray-100">
                 <Skeleton className="w-full h-full" />
               </div>
-              <CardContent className="p-3">
+              <CardContent className="p-4">
                 <Skeleton className="h-5 w-3/4 mb-3" />
                 <div className="flex items-center">
-                  <Skeleton className="w-6 h-6 rounded-full mr-2" />
+                  <Skeleton className="w-8 h-8 rounded-full mr-2" />
                   <div className="space-y-2 flex-1">
                     <Skeleton className="h-3 w-1/2" />
                     <Skeleton className="h-3 w-1/3" />
@@ -102,65 +108,66 @@ const Vibezone: React.FC = () => {
           ))}
         </div>
       ) : videos.length === 0 ? (
-        <div className="text-center py-10">
-          <FilmIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">No videos yet</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Be the first to upload a video to Vibezone!
-          </p>
-          <div className="mt-6">
-            <Button 
-              onClick={() => navigate('/vibezone/upload')}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Upload Video
-            </Button>
+        <div className="text-center py-14 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="bg-primary/5 p-4 rounded-full inline-flex items-center justify-center mb-5">
+            <FilmIcon className="h-12 w-12 text-primary/70" />
           </div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No videos yet</h3>
+          <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto mb-6">
+            Be the first to upload a video to Vibezone and start sharing your creativity with others!
+          </p>
+          <Button 
+            onClick={() => navigate('/vibezone/upload')}
+            className="bg-red-500 hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Upload Video
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
           {videos.map((video, index) => (
             <Card 
               key={video.id || `video-${index}`} 
-              className="overflow-hidden cursor-pointer hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]"
+              className="overflow-hidden cursor-pointer border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 bg-white"
               onClick={() => navigate(`/vibezone/watch/${video.id}`)}
             >
-              <div className="relative aspect-video bg-black">
+              <div className="relative aspect-video bg-gray-50 overflow-hidden">
                 {video.thumbnail_url ? (
                   <img 
                     src={video.thumbnail_url} 
                     alt={video.title || 'Video'} 
-                    className="w-full h-full object-cover transition-opacity duration-200"
+                    className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                    <FilmIcon className="h-12 w-12 text-gray-400" />
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <FilmIcon className="h-12 w-12 text-gray-300" />
                   </div>
                 )}
                 <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">
                   {formatDuration(video.duration)}
                 </div>
               </div>
-              <CardContent className="p-3">
-                <h3 className="font-semibold text-sm line-clamp-2 mb-1.5">{video.title || 'Untitled Video'}</h3>
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-sm line-clamp-2 mb-2 text-gray-800 hover:text-primary transition-colors">{video.title || 'Untitled Video'}</h3>
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     {video.author?.avatar ? (
                       <img 
                         src={video.author.avatar} 
                         alt={video.author.name || ''} 
-                        className="w-6 h-6 rounded-full object-cover"
+                        className="w-8 h-8 rounded-full object-cover border border-gray-100"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
-                        <FilmIcon className="h-3 w-3 text-gray-500" />
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <FilmIcon className="h-4 w-4 text-primary/70" />
                       </div>
                     )}
                   </div>
                   <div className="ml-2 overflow-hidden">
-                    <p className="text-xs text-gray-600 truncate">{video.author?.name || 'Unknown'}</p>
+                    <p className="text-xs font-medium text-gray-700 truncate">{video.author?.name || 'Unknown'}</p>
                     <p className="text-xs text-gray-500">
                       {formatViews(video.views || 0)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                     </p>

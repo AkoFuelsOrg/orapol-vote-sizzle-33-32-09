@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -207,6 +208,82 @@
   /* Larger card for posts */
   .post-card-large {
     @apply w-full border rounded-xl shadow-md overflow-hidden;
+  }
+  
+  /* Video card */
+  .video-card {
+    @apply overflow-hidden rounded-xl border border-gray-100 shadow-sm hover:shadow-md 
+    transition-all duration-300 hover:-translate-y-1 bg-white cursor-pointer;
+  }
+  
+  /* Video thumbnail container */
+  .video-thumbnail {
+    @apply relative aspect-video bg-gray-50 overflow-hidden;
+  }
+  
+  /* Video thumbnail image */
+  .video-thumbnail-img {
+    @apply w-full h-full object-cover transition-all duration-500 hover:scale-105;
+  }
+  
+  /* Video duration badge */
+  .video-duration-badge {
+    @apply absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded;
+  }
+  
+  /* Video info container */
+  .video-info {
+    @apply p-4;
+  }
+  
+  /* Video title */
+  .video-title {
+    @apply font-semibold text-sm line-clamp-2 mb-2 text-gray-800 hover:text-primary transition-colors;
+  }
+  
+  /* Video author container */
+  .video-author {
+    @apply flex items-center;
+  }
+  
+  /* Video author avatar */
+  .video-author-avatar {
+    @apply w-8 h-8 rounded-full object-cover border border-gray-100;
+  }
+  
+  /* Video author placeholder */
+  .video-author-placeholder {
+    @apply w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center;
+  }
+  
+  /* Video metadata */
+  .video-metadata {
+    @apply ml-2 overflow-hidden;
+  }
+  
+  /* Video author name */
+  .video-author-name {
+    @apply text-xs font-medium text-gray-700 truncate;
+  }
+  
+  /* Video stats */
+  .video-stats {
+    @apply text-xs text-gray-500;
+  }
+  
+  /* Video section header */
+  .section-header {
+    @apply relative mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-2xl;
+  }
+  
+  /* Empty state container */
+  .empty-state {
+    @apply text-center py-14 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-100 shadow-sm;
+  }
+  
+  /* Empty state icon */
+  .empty-state-icon {
+    @apply bg-primary/5 p-4 rounded-full inline-flex items-center justify-center mb-5;
   }
 }
 
