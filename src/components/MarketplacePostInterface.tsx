@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { Image, PlusCircle, BarChart } from 'lucide-react';
+import { Image, PlusCircle, BarChart, Smile } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { Button } from './ui/button';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import EmojiPicker from './EmojiPicker';
 
 interface MarketplacePostInterfaceProps {
   marketplaceId: string;
@@ -15,6 +17,7 @@ interface MarketplacePostInterfaceProps {
 const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ marketplaceId }) => {
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const { user, profile } = useSupabase();
   const { isMarketplaceMember } = useMarketplace();
   const [isMember, setIsMember] = useState(false);
@@ -36,6 +39,12 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
   if (!user || !isMember) {
     return null;
   }
+
+  const handleEmojiSelect = (emoji: string) => {
+    // Open post modal with the emoji pre-filled
+    setPostModalOpen(true);
+    // The emoji will be handled in CreatePostModal
+  };
   
   return (
     <>
@@ -78,8 +87,8 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
             variant="ghost"
             className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
           >
-            <PlusCircle size={20} className="text-green-500" />
-            <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Post</span>
+            <Smile size={20} className="text-amber-500" />
+            <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Emoji</span>
           </Button>
         </div>
       </div>

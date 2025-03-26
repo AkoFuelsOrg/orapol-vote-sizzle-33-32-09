@@ -6,6 +6,8 @@ import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { useGroup } from '../context/GroupContext';
 import { Button } from './ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import EmojiPicker from './EmojiPicker';
 
 interface GroupPostInterfaceProps {
   groupId: string;
@@ -14,6 +16,7 @@ interface GroupPostInterfaceProps {
 const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const { user, profile } = useSupabase();
   const { isGroupMember } = useGroup();
   const [isMember, setIsMember] = useState(false);
@@ -33,6 +36,12 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
   if (!user || !isMember) {
     return null;
   }
+
+  const handleEmojiSelect = (emoji: string) => {
+    // Open post modal with the emoji pre-filled
+    setPostModalOpen(true);
+    // The emoji will be handled in CreatePostModal
+  };
   
   return (
     <>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
