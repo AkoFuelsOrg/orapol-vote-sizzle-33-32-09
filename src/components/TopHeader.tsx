@@ -34,7 +34,7 @@ const TopHeader: React.FC = () => {
             />
           </div>
           <div className="font-bold text-xl tracking-tight relative overflow-hidden">
-            <span className="relative z-10">TUWAYE</span>
+            <span className="relative z-10">Tuwaye</span>
             <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"></div>
           </div>
         </Link>

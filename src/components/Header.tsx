@@ -65,7 +65,7 @@ const Header: React.FC = () => {
             />
           </div>
           <span className="font-bold text-xl text-white relative">
-            TUWAYE
+            Tuwaye
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white/40 group-hover:w-full transition-all duration-300"></span>
           </span>
         </Link>
