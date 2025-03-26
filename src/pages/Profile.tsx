@@ -5,7 +5,7 @@ import PollCard from '../components/PollCard';
 import PostCard from '../components/PostCard';
 import Header from '../components/Header';
 import { useSupabase } from '../context/SupabaseContext';
-import { Pencil, Upload, Loader2, UserCircle, Users, Lock, Camera, Edit3, Sparkles, Shield, ChevronRight } from 'lucide-react';
+import { Pencil, Upload, Loader2, UserCircle, Users, Lock, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import UserList from '../components/UserList';
@@ -14,7 +14,6 @@ import { Poll, PollOption, Post } from '../lib/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
-import { Card, CardContent } from '../components/ui/card';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
@@ -361,9 +360,8 @@ const Profile: React.FC = () => {
       <Header />
       
       <main className="pt-16 px-4 max-w-4xl mx-auto pb-20 w-full">
-        <div className="animate-fade-in w-full overflow-hidden">
-          {/* Cover Image Area */}
-          <div className="relative w-full h-48 md:h-60 bg-gray-200 group rounded-t-xl shadow-sm">
+        <div className="bg-white rounded-xl shadow-sm border border-border/50 mb-6 animate-fade-in w-full overflow-hidden">
+          <div className="relative w-full h-40 bg-gray-200 group">
             {coverUrl ? (
               <img 
                 src={coverUrl} 
@@ -371,7 +369,7 @@ const Profile: React.FC = () => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100"></div>
+              <div className="w-full h-full bg-gradient-to-r from-blue-100 to-red-100"></div>
             )}
             
             <button 
@@ -394,111 +392,125 @@ const Profile: React.FC = () => {
             />
           </div>
           
-          {/* Profile Card */}
-          <Card className="relative mb-6 border-t-0 rounded-t-none rounded-b-xl shadow-md transform -mt-1">
-            <CardContent className="p-5">
-              <div className="flex flex-col items-center -mt-14">
-                {/* Profile Avatar */}
-                <div className="relative group z-10">
-                  <div 
-                    onClick={handleProfileImageClick}
-                    className="w-24 h-24 rounded-full border-4 border-white overflow-hidden cursor-pointer group-hover:opacity-90 transition-opacity relative bg-white shadow-md"
-                  >
-                    {uploading ? (
-                      <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    ) : (
-                      <>
-                        <Avatar className="w-full h-full">
-                          <AvatarImage 
-                            src={avatarUrl} 
-                            alt={profile?.username || 'User'} 
-                            className="w-full h-full object-cover"
-                          />
-                          <AvatarFallback>
-                            <UserCircle className="w-full h-full text-gray-400" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
-                          <Upload className="h-8 w-8 text-white" />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <input 
-                    type="file"
-                    ref={profileFileInputRef}
-                    onChange={handleProfileImageUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </div>
-                
-                {/* Username & Edit Section */}
-                <div className="mt-4 text-center w-full">
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <input 
-                        type="text" 
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="px-3 py-2 border border-input rounded text-center w-full focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="Enter username"
-                      />
-                      <div className="flex space-x-2 justify-center">
-                        <button 
-                          onClick={handleSaveProfile}
-                          disabled={profileLoading}
-                          className="px-4 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
-                        >
-                          {profileLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            'Save'
-                          )}
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setIsEditing(false);
-                            setUsername(profile?.username || '');
-                          }}
-                          className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded text-sm hover:bg-secondary/90 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+          <div className="p-5">
+            <div className="flex flex-col items-center -mt-14">
+              <div className="relative group z-10">
+                <div 
+                  onClick={handleProfileImageClick}
+                  className="w-24 h-24 rounded-full border-4 border-white overflow-hidden cursor-pointer group-hover:opacity-90 transition-opacity relative bg-white"
+                >
+                  {uploading ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center">
-                      <h2 className="text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
+                    <>
+                      <Avatar className="w-full h-full">
+                        <AvatarImage 
+                          src={avatarUrl} 
+                          alt={profile?.username || 'User'} 
+                          className="w-full h-full object-cover"
+                        />
+                        <AvatarFallback>
+                          <UserCircle className="w-full h-full text-gray-400" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                        <Upload className="h-8 w-8 text-white" />
+                      </div>
+                    </>
+                  )}
+                </div>
+                <input 
+                  type="file"
+                  ref={profileFileInputRef}
+                  onChange={handleProfileImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+              
+              <div className="mt-4 text-center w-full">
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <input 
+                      type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="px-3 py-2 border border-input rounded text-center w-full focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="Enter username"
+                    />
+                    <div className="flex space-x-2 justify-center">
                       <button 
-                        onClick={() => setIsEditing(true)}
-                        className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={handleSaveProfile}
+                        disabled={profileLoading}
+                        className="px-4 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
                       >
-                        <Edit3 size={16} />
+                        {profileLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Save'
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsEditing(false);
+                          setUsername(profile?.username || '');
+                        }}
+                        className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded text-sm hover:bg-secondary/90 transition-colors"
+                      >
+                        Cancel
                       </button>
                     </div>
-                  )}
-                  <p className="text-muted-foreground mt-1">{user?.email}</p>
-                  
-                  {/* Password Change Button */}
-                  {!isChangingPassword ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setIsChangingPassword(true)} 
-                      className="mt-3"
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <h2 className="text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <Lock className="w-4 h-4 mr-2" />
-                      Change Password
-                    </Button>
-                  ) : (
-                    <div className="mt-4 space-y-3 max-w-sm mx-auto">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium text-left">Change Password</h3>
+                      <Pencil size={16} />
+                    </button>
+                  </div>
+                )}
+                <p className="text-muted-foreground mt-1">{user?.email}</p>
+                
+                {!isChangingPassword ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsChangingPassword(true)} 
+                    className="mt-2"
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    Change Password
+                  </Button>
+                ) : (
+                  <div className="mt-4 space-y-3 max-w-sm mx-auto">
+                    <h3 className="font-medium text-left">Change Password</h3>
+                    <div className="space-y-2">
+                      <Input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Current Password"
+                      />
+                      <Input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="New Password"
+                      />
+                      <Input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm New Password"
+                      />
+                      <div className="flex justify-end space-x-2 pt-2">
                         <Button 
-                          variant="ghost" 
+                          variant="secondary" 
                           size="sm" 
                           onClick={() => {
                             setIsChangingPassword(false);
@@ -506,208 +518,153 @@ const Profile: React.FC = () => {
                             setNewPassword('');
                             setConfirmPassword('');
                           }}
-                          className="h-8 w-8 p-0"
                         >
-                          <X size={16} />
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={handleChangePassword}
+                          disabled={profileLoading}
+                        >
+                          {profileLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Update Password'
+                          )}
                         </Button>
                       </div>
-                      <div className="space-y-2 bg-gray-50 p-3 rounded-md border">
-                        <Input
-                          type="password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          placeholder="Current Password"
-                        />
-                        <Input
-                          type="password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="New Password"
-                        />
-                        <Input
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Confirm New Password"
-                        />
-                        <div className="flex justify-end space-x-2 pt-2">
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            onClick={() => {
-                              setIsChangingPassword(false);
-                              setCurrentPassword('');
-                              setNewPassword('');
-                              setConfirmPassword('');
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            onClick={handleChangePassword}
-                            disabled={profileLoading}
-                          >
-                            {profileLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Update Password'
-                            )}
-                          </Button>
-                        </div>
-                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-              
-              {/* Profile Stats */}
-              <div className="mt-6 grid grid-cols-4 gap-2 max-w-sm mx-auto">
-                <div className="bg-white/80 rounded-lg p-3 text-center shadow-sm border border-gray-100 hover:border-primary/20 hover:bg-primary/5 transition-colors">
-                  <p className="text-2xl font-bold text-primary">{userPolls.length}</p>
-                  <p className="text-xs text-muted-foreground">Polls</p>
-                </div>
-                <div className="bg-white/80 rounded-lg p-3 text-center shadow-sm border border-gray-100 hover:border-primary/20 hover:bg-primary/5 transition-colors">
-                  <p className="text-2xl font-bold text-primary">{userPosts.length}</p>
-                  <p className="text-xs text-muted-foreground">Posts</p>
-                </div>
-                <div className="bg-white/80 rounded-lg p-3 text-center shadow-sm border border-gray-100 hover:border-primary/20 hover:bg-primary/5 transition-colors">
-                  <p className="text-2xl font-bold text-primary">{followCounts.followers}</p>
-                  <p className="text-xs text-muted-foreground">Followers</p>
-                </div>
-                <div className="bg-white/80 rounded-lg p-3 text-center shadow-sm border border-gray-100 hover:border-primary/20 hover:bg-primary/5 transition-colors">
-                  <p className="text-2xl font-bold text-primary">{followCounts.following}</p>
-                  <p className="text-xs text-muted-foreground">Following</p>
-                </div>
+            </div>
+            
+            <div className="mt-6 flex space-x-6 justify-center">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{userPolls.length}</p>
+                <p className="text-sm text-muted-foreground">Polls</p>
               </div>
-              
-              {/* User Level Badge - Optional Enhancement */}
-              <div className="flex items-center justify-center mt-5">
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-1.5 rounded-full flex items-center space-x-2 border border-primary/20">
-                  <Sparkles size={16} className="text-primary" />
-                  <span className="text-sm font-medium text-primary">Active User</span>
-                </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{userPosts.length}</p>
+                <p className="text-sm text-muted-foreground">Posts</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.followers}</p>
+                <p className="text-sm text-muted-foreground">Followers</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">{followCounts.following}</p>
+                <p className="text-sm text-muted-foreground">Following</p>
+              </div>
+            </div>
+          </div>
         </div>
         
-        {/* Content Tabs */}
-        <Card className="animate-fade-in shadow-md overflow-hidden">
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid grid-cols-5 rounded-none border-b">
-              <TabsTrigger value="all" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">All Content</TabsTrigger>
-              <TabsTrigger value="polls" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">Polls</TabsTrigger>
-              <TabsTrigger value="posts" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">Posts</TabsTrigger>
-              <TabsTrigger value="followers" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">Followers</TabsTrigger>
-              <TabsTrigger value="following" className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary">Following</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="all" className="mt-0 p-4">
-              {isLoadingPolls || isLoadingPosts ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : allContent.length > 0 ? (
-                <div className="space-y-4">
-                  {allContent.map(item => (
-                    <div key={item.id}>
-                      {'question' in item ? (
-                        <PollCard poll={item as Poll} />
-                      ) : (
-                        <PostCard post={item as Post} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="bg-gray-50 rounded-lg p-8 max-w-sm mx-auto">
-                    <UserCircle className="h-12 w-12 mx-auto text-primary/30 mb-3" />
-                    <p className="text-muted-foreground mb-4">You haven't created any content yet.</p>
-                    <Button asChild className="shadow-sm">
-                      <a href="/create">
-                        Create Your First Poll
-                      </a>
-                    </Button>
+        <Tabs defaultValue="all" className="w-full animate-fade-in">
+          <TabsList className="grid grid-cols-5 mb-4">
+            <TabsTrigger value="all">All Content</TabsTrigger>
+            <TabsTrigger value="polls">Polls</TabsTrigger>
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="followers">Followers</TabsTrigger>
+            <TabsTrigger value="following">Following</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="all" className="mt-0">
+            {isLoadingPolls || isLoadingPosts ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : allContent.length > 0 ? (
+              <div className="space-y-4">
+                {allContent.map(item => (
+                  <div key={item.id}>
+                    {'question' in item ? (
+                      <PollCard poll={item as Poll} />
+                    ) : (
+                      <PostCard post={item as Post} />
+                    )}
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">You haven't created any content yet.</p>
+                <div className="inline-block">
+                  <a 
+                    href="/create" 
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Create Your First Poll
+                  </a>
                 </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="polls" className="mt-0 p-4">
-              {isLoadingPolls ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="polls" className="mt-0">
+            {isLoadingPolls ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : userPolls.length > 0 ? (
+              <div className="space-y-4">
+                {userPolls.map(poll => (
+                  <PollCard key={poll.id} poll={poll} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">You haven't created any polls yet.</p>
+                <div className="inline-block">
+                  <a 
+                    href="/create" 
+                    className="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Create Your First Poll
+                  </a>
                 </div>
-              ) : userPolls.length > 0 ? (
-                <div className="space-y-4">
-                  {userPolls.map(poll => (
-                    <PollCard key={poll.id} poll={poll} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="bg-gray-50 rounded-lg p-8 max-w-sm mx-auto">
-                    <UserCircle className="h-12 w-12 mx-auto text-primary/30 mb-3" />
-                    <p className="text-muted-foreground mb-4">You haven't created any polls yet.</p>
-                    <Button asChild className="shadow-sm">
-                      <a href="/create">
-                        Create Your First Poll
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="posts" className="mt-0 p-4">
-              {isLoadingPosts ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : userPosts.length > 0 ? (
-                <div className="space-y-4">
-                  {userPosts.map(post => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="bg-gray-50 rounded-lg p-8 max-w-sm mx-auto">
-                    <UserCircle className="h-12 w-12 mx-auto text-primary/30 mb-3" />
-                    <p className="text-muted-foreground mb-4">You haven't created any posts yet.</p>
-                    <Button asChild variant="outline">
-                      <a href="/">
-                        Back to Home
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="followers" className="mt-0 p-4">
-              {user ? (
-                <UserList userId={user.id} type="followers" />
-              ) : (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="following" className="mt-0 p-4">
-              {user ? (
-                <UserList userId={user.id} type="following" />
-              ) : (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </Card>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="posts" className="mt-0">
+            {isLoadingPosts ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : userPosts.length > 0 ? (
+              <div className="space-y-4">
+                {userPosts.map(post => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">You haven't created any posts yet.</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="followers" className="mt-0">
+            {user ? (
+              <UserList userId={user.id} type="followers" />
+            ) : (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="following" className="mt-0">
+            {user ? (
+              <UserList userId={user.id} type="following" />
+            ) : (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
