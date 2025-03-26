@@ -183,53 +183,55 @@ const SuggestedUsers: React.FC = () => {
   };
   
   return (
-    <div className="space-y-2.5 py-1">
+    <div className="space-y-2.5 py-1 w-full">
       <ScrollArea className="h-full w-full">
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 pr-2">
           {displayUsers.map((profile) => (
             <Card 
               key={profile.id} 
               className="p-3 transition-all hover:shadow-md hover:border-primary/10 group"
             >
-              <div className="flex items-center">
-                <Avatar 
-                  className="h-10 w-10 mr-3 border border-gray-100 shadow-sm group-hover:border-primary/10 transition-all cursor-pointer"
-                  onClick={() => handleViewProfile(profile.id)}
-                >
-                  <AvatarImage 
-                    src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
-                    alt={profile.username || 'User'} 
-                  />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {profile.username?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div 
-                  className="flex-1 min-w-0 cursor-pointer" 
-                  onClick={() => handleViewProfile(profile.id)}
-                >
-                  <div className="flex items-center">
-                    <h3 className="font-medium text-gray-800 truncate">
-                      {profile.username || 'User'}
-                    </h3>
-                    <Badge 
-                      variant="outline" 
-                      className="ml-2 text-[10px] px-1.5 py-0 border-primary/20 text-primary/80"
-                    >
-                      Suggested
-                    </Badge>
-                  </div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <ExternalLink size={12} className="mr-1" />
-                    <span>View profile</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center min-w-0 flex-1 overflow-hidden mr-2">
+                  <Avatar 
+                    className="h-10 w-10 mr-3 border border-gray-100 shadow-sm group-hover:border-primary/10 transition-all cursor-pointer flex-shrink-0"
+                    onClick={() => handleViewProfile(profile.id)}
+                  >
+                    <AvatarImage 
+                      src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} 
+                      alt={profile.username || 'User'} 
+                    />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {profile.username?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div 
+                    className="min-w-0 cursor-pointer overflow-hidden" 
+                    onClick={() => handleViewProfile(profile.id)}
+                  >
+                    <div className="flex items-center">
+                      <h3 className="font-medium text-gray-800 truncate">
+                        {profile.username || 'User'}
+                      </h3>
+                      <Badge 
+                        variant="outline" 
+                        className="ml-2 text-[10px] px-1.5 py-0 border-primary/20 text-primary/80 hidden sm:inline-flex"
+                      >
+                        Suggested
+                      </Badge>
+                    </div>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <ExternalLink size={12} className="mr-1 flex-shrink-0" />
+                      <span className="truncate">View profile</span>
+                    </div>
                   </div>
                 </div>
                 
                 <Button
                   size="sm"
                   variant={followStatus[profile.id] ? "outline" : "default"}
-                  className={`ml-2 px-3 min-w-[85px] whitespace-nowrap ${
+                  className={`flex-shrink-0 min-w-[72px] px-2 ${
                     followStatus[profile.id] 
                       ? 'bg-gray-50 hover:bg-gray-100 text-gray-700' 
                       : 'bg-primary hover:bg-primary/90'
