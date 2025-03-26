@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download, FilmIcon, Sparkles } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download, FilmIcon, Sparkles, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
@@ -335,7 +336,7 @@ const WatchVideo: React.FC = () => {
   
   const renderVideoSkeleton = () => (
     <div className="space-y-2">
-      <div className="bg-black rounded-lg overflow-hidden aspect-video">
+      <div className="bg-black rounded-lg overflow-hidden aspect-video shadow-xl">
         <Skeleton className="w-full h-full" />
       </div>
       {videoRequestProgress < 100 && (
@@ -367,29 +368,29 @@ const WatchVideo: React.FC = () => {
   const renderRelatedVideoItem = (relatedVideo: Video) => (
     <div 
       key={relatedVideo.id} 
-      className="block cursor-pointer"
+      className="block cursor-pointer video-card"
       onClick={() => handleRelatedVideoClick(relatedVideo.id)}
     >
-      <Card className="mb-4 hover:bg-gray-50 transition-colors">
+      <Card className="hover:bg-gray-50 transition-colors duration-300 border-0 shadow-md hover:shadow-lg">
         <CardContent className="p-3">
           <div className="flex">
-            <div className="flex-shrink-0 w-32 h-20 bg-gray-200 rounded overflow-hidden">
+            <div className="flex-shrink-0 w-32 h-20 bg-gray-200 rounded-lg overflow-hidden">
               {relatedVideo.thumbnail_url ? (
                 <img 
                   src={relatedVideo.thumbnail_url} 
                   alt={relatedVideo.title} 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transform transition-transform duration-500 hover:scale-110"
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
-                  No thumbnail
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500 text-xs">
+                  <FilmIcon className="h-8 w-8 text-gray-400 opacity-60" />
                 </div>
               )}
             </div>
             <div className="ml-3 flex-1 min-w-0">
-              <h4 className="text-sm font-medium line-clamp-2">{relatedVideo.title}</h4>
-              <p className="text-xs text-gray-500 mt-1">
+              <h4 className="text-sm font-medium line-clamp-2 text-gray-800 group-hover:text-primary transition-colors">{relatedVideo.title}</h4>
+              <p className="text-xs text-gray-500 mt-1 font-medium">
                 {relatedVideo.author?.name || relatedVideo.author?.username || 'Unknown'}
               </p>
               <p className="text-xs text-gray-500">
@@ -405,10 +406,10 @@ const WatchVideo: React.FC = () => {
   const renderRelatedVideosSkeleton = () => (
     <div className="space-y-4">
       {[1, 2, 3, 4].map((_, index) => (
-        <Card key={index} className="mb-4">
+        <Card key={index} className="mb-4 shadow-md border-0">
           <CardContent className="p-3">
             <div className="flex">
-              <Skeleton className="flex-shrink-0 w-32 h-20 rounded" />
+              <Skeleton className="flex-shrink-0 w-32 h-20 rounded-lg" />
               <div className="ml-3 space-y-2 flex-1">
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-3 w-3/4" />
@@ -465,10 +466,20 @@ const WatchVideo: React.FC = () => {
   
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="mb-4 hover:bg-gray-100 transition-colors flex items-center text-gray-600" 
+        onClick={() => navigate('/vibezone')}
+      >
+        <ChevronLeft className="h-4 w-4 mr-1" />
+        Back to videos
+      </Button>
+
       {video && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-black rounded-xl overflow-hidden shadow-md">
+            <div className="bg-black rounded-xl overflow-hidden shadow-xl">
               <video
                 ref={videoRef}
                 src={video.video_url}
@@ -481,16 +492,16 @@ const WatchVideo: React.FC = () => {
             </div>
             
             <div className="mt-5">
-              <h1 className="text-2xl font-bold text-gray-800">{video.title}</h1>
-              <div className="flex items-center justify-between mt-3">
+              <h1 className="text-2xl font-bold text-gray-800 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{video.title}</h1>
+              <div className="flex flex-wrap items-center justify-between mt-3">
                 <div className="text-sm text-gray-600">
                   {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-2 sm:mt-0">
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="flex items-center rounded-full hover:bg-gray-100" 
+                    className="flex items-center rounded-full hover:bg-gray-100 transition-colors" 
                     onClick={handleLike}
                   >
                     <ThumbsUp 
@@ -501,13 +512,17 @@ const WatchVideo: React.FC = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="flex items-center rounded-full hover:bg-gray-100"
+                    className="flex items-center rounded-full hover:bg-gray-100 transition-colors"
                     onClick={handleDownload}
                   >
                     <Download className="h-5 w-5 mr-1" />
                     Download
                   </Button>
-                  <Button variant="ghost" size="sm" className="flex items-center rounded-full hover:bg-gray-100">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center rounded-full hover:bg-gray-100 transition-colors"
+                  >
                     <Share2 className="h-5 w-5 mr-1" />
                     Share
                   </Button>
@@ -517,7 +532,7 @@ const WatchVideo: React.FC = () => {
             
             <Separator className="my-5" />
             
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+            <div className="flex items-center justify-between p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100 shadow-sm transition-all duration-300 hover:shadow">
               <div className="flex items-center">
                 <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
                   <img 
@@ -539,7 +554,11 @@ const WatchVideo: React.FC = () => {
                   size="sm"
                   onClick={handleSubscribe}
                   disabled={subscriptionLoading}
-                  className={`flex items-center min-w-[120px] justify-center transition-all duration-300 ${subscribed ? 'border-primary/30 text-primary' : 'bg-primary'}`}
+                  className={`flex items-center min-w-[120px] justify-center transition-all duration-300 ${
+                    subscribed 
+                      ? 'border-primary/30 text-primary hover:bg-primary/5' 
+                      : 'bg-primary hover:bg-primary/90 text-white shadow-sm hover:shadow'
+                  }`}
                 >
                   {subscriptionLoading ? (
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -554,33 +573,41 @@ const WatchVideo: React.FC = () => {
             </div>
             
             {video.description && (
-              <div className="mt-5 p-5 bg-gray-50 rounded-xl">
-                <p className="text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
+              <div className="mt-5 p-6 rounded-xl bg-white border border-gray-100 shadow-sm">
+                <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{video.description}</p>
               </div>
             )}
             
             <Separator className="my-6" />
             
-            {id && <VideoCommentSection videoId={id} />}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-semibold text-lg mb-4 text-gray-800 flex items-center">
+                <MessageSquare className="h-4 w-4 text-primary mr-2" />
+                Comments
+              </h3>
+              {id && <VideoCommentSection videoId={id} />}
+            </div>
           </div>
           
           <div className="hidden lg:block">
-            <h3 className="font-semibold mb-4 text-gray-800 flex items-center">
-              <Sparkles className="h-4 w-4 text-primary/70 mr-2" />
+            <h3 className="font-semibold mb-4 text-gray-800 flex items-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <Sparkles className="h-4 w-4 text-primary mr-2" />
               Related Videos
             </h3>
-            {loadingRelated ? (
-              renderRelatedVideosSkeleton()
-            ) : relatedVideos.length > 0 ? (
-              <div className="space-y-3">
-                {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
-              </div>
-            ) : (
-              <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
-                <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                <p>No related videos found</p>
-              </div>
-            )}
+            <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              {loadingRelated ? (
+                renderRelatedVideosSkeleton()
+              ) : relatedVideos.length > 0 ? (
+                <div className="space-y-3">
+                  {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
+                </div>
+              ) : (
+                <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
+                  <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                  <p>No related videos found</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

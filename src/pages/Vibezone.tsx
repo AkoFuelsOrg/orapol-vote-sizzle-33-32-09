@@ -70,7 +70,7 @@ const Vibezone: React.FC = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
-      <div className="relative mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-2xl">
+      <div className="section-header mb-8 bg-gradient-to-r from-primary/15 via-primary/10 to-transparent p-6 rounded-2xl">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Vibezone</h1>
@@ -108,8 +108,8 @@ const Vibezone: React.FC = () => {
           ))}
         </div>
       ) : videos.length === 0 ? (
-        <div className="text-center py-14 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="bg-primary/5 p-4 rounded-full inline-flex items-center justify-center mb-5">
+        <div className="empty-state">
+          <div className="empty-state-icon">
             <FilmIcon className="h-12 w-12 text-primary/70" />
           </div>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">No videos yet</h3>
@@ -129,7 +129,7 @@ const Vibezone: React.FC = () => {
           {videos.map((video, index) => (
             <Card 
               key={video.id || `video-${index}`} 
-              className="overflow-hidden cursor-pointer border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 bg-white"
+              className="video-card overflow-hidden cursor-pointer border border-gray-100 shadow-sm hover:shadow-md bg-white"
               onClick={() => navigate(`/vibezone/watch/${video.id}`)}
             >
               <div className="relative aspect-video bg-gray-50 overflow-hidden">
@@ -137,11 +137,11 @@ const Vibezone: React.FC = () => {
                   <img 
                     src={video.thumbnail_url} 
                     alt={video.title || 'Video'} 
-                    className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
+                    className="video-thumbnail"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
                     <FilmIcon className="h-12 w-12 text-gray-300" />
                   </div>
                 )}
