@@ -52,7 +52,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       return;
     }
     
-    // Clear any video that might be selected
     setVideoFile(null);
     setVideoPreview(null);
     if (videoInputRef.current) videoInputRef.current.value = '';
@@ -80,7 +79,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       return;
     }
     
-    // Clear any image that might be selected
     setImageFile(null);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
