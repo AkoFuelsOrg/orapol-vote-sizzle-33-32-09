@@ -112,7 +112,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 animate-fade-in overflow-y-auto">
       <div 
         className="w-full max-w-md bg-white rounded-xl shadow-xl animate-scale-in mx-auto my-auto"
         onClick={(e) => e.stopPropagation()}
