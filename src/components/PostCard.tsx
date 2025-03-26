@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
@@ -720,5 +721,19 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
         </div>
       </div>
 
-      <
+      <CreatePostModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        groupId={post.groupId}
+        marketplaceId={post.marketplace_id}
+        initialContent={post.content}
+        isEditing={true}
+        postId={post.id}
+        initialImage={post.image}
+        onPostUpdate={onPostUpdate}
+      />
+    </Card>
+  );
+};
 
+export default PostCard;
