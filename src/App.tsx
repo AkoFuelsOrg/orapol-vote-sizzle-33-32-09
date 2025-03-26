@@ -1,6 +1,5 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,40 +17,24 @@ import TopHeader from "./components/TopHeader";
 import RightChatColumn from "./components/RightChatColumn";
 import { useBreakpoint } from "./hooks/use-mobile";
 
-import Index from "./pages/Index";
-import CreatePoll from "./pages/CreatePoll";
-import PollDetail from "./pages/PollDetail";
-import Profile from "./pages/Profile";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Messages from "./pages/Messages";
-import VotedPolls from "./pages/VotedPolls";
-import Followers from "./pages/Followers";
-import Following from "./pages/Following";
-import Notifications from "./pages/Notifications";
-import SearchResults from "./pages/SearchResults";
-import Groups from "./pages/Groups";
-import GroupProfile from "./pages/GroupProfile";
-import Marketplaces from "./pages/Marketplaces";
-import MarketplaceProfile from "./pages/MarketplaceProfile";
-import Favourites from "./pages/Favourites";
-import Vibezone from "./pages/Vibezone";
-import WatchVideo from "./pages/WatchVideo";
-import UploadVideo from "./pages/UploadVideo";
-
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1
+    },
+  },
+});
 
 const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
   const location = useLocation();
   
-  // Don't render the layout for the Auth page
   if (location.pathname === '/auth') {
     return <>{children}</>;
   }
   
-  // Hide right chat on messages page and video watch pages
   const showRightChat = isDesktop && 
     !location.pathname.startsWith('/messages') && 
     !location.pathname.startsWith('/vibezone/watch/');
