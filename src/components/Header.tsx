@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -49,8 +48,7 @@ const Header: React.FC = () => {
     { href: '/groups', icon: <Users size={20} />, label: 'Groups' },
     { href: '/marketplaces', icon: <ShoppingBag size={20} />, label: 'Marketplaces' },
     { href: '/messages', icon: <MessageSquare size={20} />, label: 'Messages' },
-    { href: '/favourites', icon: <Heart size={20} />, label: 'Favourites' },
-    { href: '/notifications', icon: <Bell size={20} />, label: 'Notifications' }
+    { href: '/favourites', icon: <Heart size={20} />, label: 'Favourites' }
   ];
   
   return (
