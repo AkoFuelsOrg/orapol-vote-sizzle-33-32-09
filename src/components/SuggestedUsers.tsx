@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -230,7 +229,7 @@ const SuggestedUsers: React.FC = () => {
                 <Button
                   size="sm"
                   variant={followStatus[profile.id] ? "outline" : "default"}
-                  className={`ml-2 px-3 ${
+                  className={`ml-2 px-3 min-w-[85px] whitespace-nowrap ${
                     followStatus[profile.id] 
                       ? 'bg-gray-50 hover:bg-gray-100 text-gray-700' 
                       : 'bg-primary hover:bg-primary/90'
