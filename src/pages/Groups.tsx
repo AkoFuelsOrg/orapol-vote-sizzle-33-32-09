@@ -12,7 +12,7 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
 import { useSupabase } from '../context/SupabaseContext';
-import { Loader2, Users, Plus, UserCircle, Lock, Globe } from 'lucide-react';
+import { Loader2, Users, Plus, UserCircle, Lock, Globe, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBreakpoint } from '../hooks/use-mobile';
 
@@ -176,38 +176,45 @@ const GroupCard: React.FC<{
   };
   
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-4">
-        <Avatar className="h-12 w-12">
+    <Card className="overflow-hidden transition-all duration-300 hover:shadow-md hover:translate-y-[-2px] border-border/60 h-full">
+      <CardHeader className="flex flex-row items-center gap-4 pb-3">
+        <Avatar className="h-12 w-12 border-2 border-primary/10">
           <AvatarImage src={group.avatar_url || ''} alt={group.name} />
-          <AvatarFallback>{group.name.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarFallback className="bg-gradient-to-br from-primary/70 to-primary text-white">
+            {group.name.charAt(0).toUpperCase()}
+          </AvatarFallback>
         </Avatar>
         <div>
           <CardTitle className="text-lg leading-tight">
-            <Link to={`/group/${group.id}`} className="hover:underline">
+            <Link to={`/group/${group.id}`} className="hover:text-primary transition-colors">
               {group.name}
             </Link>
           </CardTitle>
-          <CardDescription className="line-clamp-1">
+          <CardDescription className="line-clamp-1 mt-0.5">
             {group.description || 'No description'}
           </CardDescription>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <Users className="mr-1 h-4 w-4" />
+      <CardContent className="pt-0 pb-3">
+        <div className="flex items-center text-sm text-muted-foreground gap-1">
+          <Users className="h-4 w-4 text-primary/70" />
           <span>{group.member_count} {group.member_count === 1 ? 'member' : 'members'}</span>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="bg-muted/30 p-3">
         {isMember !== undefined && (
           isMember ? (
-            <Button variant="outline" size="sm" onClick={handleLeave} disabled={loading} className="w-full">
+            <Button variant="outline" size="sm" onClick={handleLeave} disabled={loading} className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Leave Group'}
             </Button>
           ) : (
-            <Button variant="default" size="sm" onClick={handleJoin} disabled={loading} className="w-full">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Join Group'}
+            <Button variant="default" size="sm" onClick={handleJoin} disabled={loading} className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                <>
+                  <UserPlus className="mr-1.5 h-4 w-4" />
+                  Join Group
+                </>
+              )}
             </Button>
           )
         )}
@@ -276,7 +283,6 @@ const Groups: React.FC = () => {
     }
   };
   
-  // Mobile drawer for creating groups
   const [sheetOpen, setSheetOpen] = useState(false);
   
   if (loadingGroups) {
@@ -290,14 +296,17 @@ const Groups: React.FC = () => {
   const renderGroupList = (groupList: any[], emptyMessage: string) => {
     if (groupList.length === 0) {
       return (
-        <div className="text-center py-12">
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-muted/30 rounded-xl">
+          <div className="bg-background p-4 rounded-full shadow-sm mb-4">
+            <Users className="h-10 w-10 text-muted-foreground/70" />
+          </div>
           <p className="text-muted-foreground">{emptyMessage}</p>
         </div>
       );
     }
     
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {groupList.map(group => (
           <GroupCard
             key={group.id}
@@ -313,72 +322,89 @@ const Groups: React.FC = () => {
   
   return (
     <div className="container py-6 animate-in px-4 sm:px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Groups</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">Discover, join, and create groups</p>
-        </div>
-        
-        {user && (
-          <>
-            {/* Desktop dialog for creating groups */}
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="hidden sm:flex">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Group
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[525px] mx-4 sm:mx-auto max-w-[calc(100%-2rem)]">
-                <DialogHeader>
-                  <DialogTitle>Create a New Group</DialogTitle>
-                  <DialogDescription>
-                    Create a group to connect with people who share your interests.
-                  </DialogDescription>
-                </DialogHeader>
-                <CreateGroupForm
-                  onSuccess={() => setCreateDialogOpen(false)}
-                  onCancel={() => setCreateDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+      <div className="relative mb-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-blue-100 rounded-2xl opacity-60"></div>
+        <div className="relative px-6 py-8 sm:px-10 sm:py-12 rounded-2xl">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Groups</h1>
+              <p className="text-muted-foreground text-sm sm:text-base mt-2">Discover, join, and create groups to connect with people who share your interests</p>
+            </div>
             
-            {/* Mobile sheet for creating groups */}
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <Button onClick={() => setSheetOpen(true)} className="sm:hidden w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Group
-              </Button>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle>Create a New Group</SheetTitle>
-                </SheetHeader>
-                <div className="py-4">
-                  <CreateGroupForm
-                    onSuccess={() => setSheetOpen(false)}
-                    onCancel={() => setSheetOpen(false)}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </>
-        )}
+            {user && (
+              <>
+                {/* Desktop dialog for creating groups */}
+                <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="hidden sm:flex bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all shadow-sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Group
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[525px] mx-4 sm:mx-auto max-w-[calc(100%-2rem)]">
+                    <DialogHeader>
+                      <DialogTitle>Create a New Group</DialogTitle>
+                      <DialogDescription>
+                        Create a group to connect with people who share your interests.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <CreateGroupForm
+                      onSuccess={() => setCreateDialogOpen(false)}
+                      onCancel={() => setCreateDialogOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+                
+                {/* Mobile sheet for creating groups */}
+                <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                  <Button onClick={() => setSheetOpen(true)} className="sm:hidden w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all shadow-sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Group
+                  </Button>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Create a New Group</SheetTitle>
+                    </SheetHeader>
+                    <div className="py-4">
+                      <CreateGroupForm
+                        onSuccess={() => setSheetOpen(false)}
+                        onCancel={() => setSheetOpen(false)}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </>
+            )}
+          </div>
+        </div>
       </div>
       
       <Tabs defaultValue="discover" className="w-full">
-        <TabsList className="mb-4 w-full sm:w-auto flex">
-          <TabsTrigger value="discover" className="flex-1 sm:flex-initial">Discover</TabsTrigger>
+        <TabsList className="mb-6 w-full sm:w-auto flex bg-background border">
+          <TabsTrigger value="discover" className="flex-1 sm:flex-initial data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+            <Globe className="h-4 w-4 mr-1.5 sm:mr-2" />
+            Discover
+          </TabsTrigger>
           {user && (
             <>
-              <TabsTrigger value="joined" className="flex-1 sm:flex-initial">Joined</TabsTrigger>
-              <TabsTrigger value="created" className="flex-1 sm:flex-initial">Created</TabsTrigger>
+              <TabsTrigger value="joined" className="flex-1 sm:flex-initial data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <Users className="h-4 w-4 mr-1.5 sm:mr-2" />
+                Joined
+              </TabsTrigger>
+              <TabsTrigger value="created" className="flex-1 sm:flex-initial data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <UserCircle className="h-4 w-4 mr-1.5 sm:mr-2" />
+                Created
+              </TabsTrigger>
             </>
           )}
         </TabsList>
         
-        <TabsContent value="discover" className="mt-0">
+        <TabsContent value="discover" className="mt-0 animate-fade-in">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-4">Discover Groups</h2>
+            <h2 className="text-xl font-semibold mb-5 text-gray-800 flex items-center">
+              <Globe className="h-5 w-5 mr-2 text-primary" />
+              Discover Groups
+            </h2>
             {loadingMemberships ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -391,16 +417,22 @@ const Groups: React.FC = () => {
         
         {user && (
           <>
-            <TabsContent value="joined" className="mt-0">
+            <TabsContent value="joined" className="mt-0 animate-fade-in">
               <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-4">Groups You've Joined</h2>
+                <h2 className="text-xl font-semibold mb-5 text-gray-800 flex items-center">
+                  <Users className="h-5 w-5 mr-2 text-primary" />
+                  Groups You've Joined
+                </h2>
                 {renderGroupList(joinedGroups, 'You haven\'t joined any groups yet')}
               </div>
             </TabsContent>
             
-            <TabsContent value="created" className="mt-0">
+            <TabsContent value="created" className="mt-0 animate-fade-in">
               <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-4">Groups You've Created</h2>
+                <h2 className="text-xl font-semibold mb-5 text-gray-800 flex items-center">
+                  <UserCircle className="h-5 w-5 mr-2 text-primary" />
+                  Groups You've Created
+                </h2>
                 {renderGroupList(myGroups, 'You haven\'t created any groups yet')}
               </div>
             </TabsContent>
