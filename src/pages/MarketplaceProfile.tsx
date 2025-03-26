@@ -18,6 +18,7 @@ import PollCard from '@/components/PollCard';
 import { supabase } from '@/integrations/supabase/client';
 import EditMarketplaceModal from '@/components/EditMarketplaceModal';
 import MarketplaceProducts from '@/components/MarketplaceProducts';
+import { useBreakpoint } from '@/hooks/use-mobile';
 
 const MarketplaceProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,8 @@ const MarketplaceProfile = () => {
   const [isLeaving, setIsLeaving] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   
   useEffect(() => {
     if (id) {
@@ -254,15 +257,15 @@ const MarketplaceProfile = () => {
   if (isLoading) {
     return (
       <div className="space-y-4 px-4 py-6 max-w-7xl mx-auto">
-        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-52 sm:h-64 w-full rounded-xl" />
         <div className="flex items-center space-x-4">
-          <Skeleton className="h-24 w-24 rounded-full" />
+          <Skeleton className="h-16 w-16 sm:h-24 sm:w-24 rounded-full" />
           <div className="space-y-2">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-6 sm:h-8 w-32 sm:w-48" />
+            <Skeleton className="h-4 w-20 sm:w-24" />
           </div>
         </div>
-        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-24 sm:h-32 w-full rounded-lg" />
       </div>
     );
   }
@@ -279,9 +282,9 @@ const MarketplaceProfile = () => {
   }
   
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-8 animate-fade-in">
-      <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="h-80 w-full overflow-hidden relative">
+    <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6 space-y-6 sm:space-y-8 animate-fade-in">
+      <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
+        <div className="h-56 sm:h-80 w-full overflow-hidden relative">
           {marketplace.cover_url ? (
             <>
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/50 z-10"></div>
@@ -293,14 +296,14 @@ const MarketplaceProfile = () => {
             </>
           ) : (
             <div className="flex items-center justify-center h-full bg-gradient-to-r from-primary/50 to-blue-500/50 text-white">
-              <ImageOff className="h-16 w-16 opacity-30" />
+              <ImageOff className="h-12 w-12 sm:h-16 sm:w-16 opacity-30" />
             </div>
           )}
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mt-[-6rem] px-8 relative z-20">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mt-[-4rem] sm:mt-[-6rem] px-4 sm:px-8 relative z-20">
           <div className="flex items-end">
-            <Avatar className="h-32 w-32 border-4 border-white shadow-lg ring-2 ring-primary/10">
+            <Avatar className="h-20 w-20 sm:h-32 sm:w-32 border-4 border-white shadow-lg ring-2 ring-primary/10">
               <AvatarImage 
                 src={marketplace.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(marketplace.name)}&background=6366f1&color=fff`} 
                 alt={marketplace.name} 
@@ -308,12 +311,12 @@ const MarketplaceProfile = () => {
               />
               <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white text-2xl">{marketplace.name.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="ml-4 mb-2 bg-white/90 backdrop-blur-sm rounded-lg px-5 py-2 shadow-sm">
-              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">{marketplace.name}</h1>
+            <div className="ml-4 mb-2 bg-white/90 backdrop-blur-sm rounded-lg px-4 sm:px-5 py-1.5 sm:py-2 shadow-sm">
+              <h1 className="text-xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent line-clamp-2">{marketplace.name}</h1>
             </div>
           </div>
           
-          <div className="mt-4 md:mt-0 ml-36 md:ml-0 mb-2 flex gap-2">
+          <div className="mt-4 md:mt-0 ml-24 sm:ml-36 md:ml-0 mb-2 flex gap-2">
             {user ? (
               isMember ? (
                 <Button 
@@ -321,13 +324,15 @@ const MarketplaceProfile = () => {
                   onClick={handleLeaveMarketplace}
                   disabled={isLeaving}
                   className="shadow-sm border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
+                  size={isMobile ? "sm" : "default"}
                 >
                   {isLeaving ? (
                     "Leaving..."
                   ) : (
                     <>
                       <UserMinus className="mr-2 h-4 w-4" />
-                      Leave Marketplace
+                      <span className={isMobile ? "hidden" : "inline"}>Leave Marketplace</span>
+                      <span className={isMobile ? "inline" : "hidden"}>Leave</span>
                     </>
                   )}
                 </Button>
@@ -336,13 +341,15 @@ const MarketplaceProfile = () => {
                   onClick={handleJoinMarketplace}
                   disabled={isJoining}
                   className="shadow-sm bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all"
+                  size={isMobile ? "sm" : "default"}
                 >
                   {isJoining ? (
                     "Joining..."
                   ) : (
                     <>
                       <UserPlus className="mr-2 h-4 w-4" />
-                      Join Marketplace
+                      <span className={isMobile ? "hidden" : "inline"}>Join Marketplace</span>
+                      <span className={isMobile ? "inline" : "hidden"}>Join</span>
                     </>
                   )}
                 </Button>
@@ -351,6 +358,7 @@ const MarketplaceProfile = () => {
               <Button 
                 onClick={() => navigate('/auth')} 
                 className="shadow-sm bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all"
+                size={isMobile ? "sm" : "default"}
               >
                 Sign in to join
               </Button>
@@ -383,36 +391,36 @@ const MarketplaceProfile = () => {
       </div>
       
       {marketplace.description && (
-        <Card className="p-6 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100 hover:shadow-md transition-all duration-300">
+        <Card className="p-4 sm:p-6 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100 hover:shadow-md transition-all duration-300">
           <div className="flex items-start">
             <Info className="h-5 w-5 mr-3 text-primary/70 mt-0.5 flex-shrink-0" />
-            <p className="text-gray-700 leading-relaxed">{marketplace.description}</p>
+            <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{marketplace.description}</p>
           </div>
         </Card>
       )}
       
       <Tabs defaultValue="feed" value={activeTab} onValueChange={setActiveTab} className="mt-4">
-        <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100/70 p-1 rounded-xl">
-          <TabsTrigger value="feed" className="text-sm md:text-base py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Feed</TabsTrigger>
-          <TabsTrigger value="products" className="text-sm md:text-base py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <ShoppingBag className="h-4 w-4 mr-1" />
+        <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 bg-gray-100/70 p-1 rounded-xl">
+          <TabsTrigger value="feed" className="text-xs sm:text-sm md:text-base py-2 sm:py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Feed</TabsTrigger>
+          <TabsTrigger value="products" className="text-xs sm:text-sm md:text-base py-2 sm:py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
             Products
           </TabsTrigger>
-          <TabsTrigger value="members" className="text-sm md:text-base py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Members</TabsTrigger>
+          <TabsTrigger value="members" className="text-xs sm:text-sm md:text-base py-2 sm:py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Members</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="feed" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
+        <TabsContent value="feed" className="pt-2 sm:pt-4 focus-visible:outline-none focus-visible:ring-0">
           {isMember && <MarketplacePostInterface marketplaceId={marketplace.id} />}
           
           {polls.length === 0 && posts.length === 0 ? (
-            <div className="text-center py-12 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl mt-4 border border-gray-200/70">
-              <p className="text-muted-foreground text-lg">No content in this marketplace yet</p>
+            <div className="text-center py-8 sm:py-12 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl mt-4 border border-gray-200/70">
+              <p className="text-muted-foreground text-base sm:text-lg">No content in this marketplace yet</p>
               {isMember && (
                 <p className="text-sm mt-2 text-gray-500">Be the first to share something!</p>
               )}
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {polls.map(poll => (
                 <PollCard key={`poll-${poll.id}`} poll={poll} />
               ))}
@@ -424,21 +432,21 @@ const MarketplaceProfile = () => {
           )}
         </TabsContent>
         
-        <TabsContent value="products" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
+        <TabsContent value="products" className="pt-2 sm:pt-4 focus-visible:outline-none focus-visible:ring-0">
           {id && <MarketplaceProducts marketplaceId={marketplace.id} isAdmin={isAdmin} />}
         </TabsContent>
         
-        <TabsContent value="members" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
-          <div className="space-y-6">
-            <h3 className="text-xl font-medium flex items-center bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-              <Users className="h-5 w-5 mr-2 text-primary" />
+        <TabsContent value="members" className="pt-2 sm:pt-4 focus-visible:outline-none focus-visible:ring-0">
+          <div className="space-y-4 sm:space-y-6">
+            <h3 className="text-lg sm:text-xl font-medium flex items-center bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-primary" />
               Members ({membersList.length})
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {membersList.map(member => (
-                <Card key={member.id} className="p-4 flex items-center hover:shadow-md transition-all duration-300 border-gray-100 bg-white">
-                  <Avatar className="h-12 w-12 mr-4 border border-gray-200">
+                <Card key={member.id} className="p-3 sm:p-4 flex items-center hover:shadow-md transition-all duration-300 border-gray-100 bg-white">
+                  <Avatar className="h-10 w-10 sm:h-12 sm:w-12 mr-3 sm:mr-4 border border-gray-200">
                     <AvatarImage 
                       src={member.user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.user?.username || 'U')}&background=6366f1&color=fff`} 
                       alt={member.user?.username || 'User'} 
@@ -448,8 +456,8 @@ const MarketplaceProfile = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium text-gray-900">{member.user?.username || 'Unknown user'}</div>
-                    <div className="text-xs text-gray-500 flex items-center mt-1">
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">{member.user?.username || 'Unknown user'}</div>
+                    <div className="text-xs text-gray-500 flex items-center mt-0.5 sm:mt-1">
                       <span className={`inline-block w-2 h-2 rounded-full ${member.role === 'admin' ? 'bg-primary' : 'bg-green-500'} mr-1.5`}></span>
                       <span className="capitalize">{member.role}</span>
                     </div>
@@ -458,7 +466,7 @@ const MarketplaceProfile = () => {
               ))}
               
               {membersList.length === 0 && (
-                <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="col-span-full text-center py-10 sm:py-12 bg-gray-50 rounded-lg border border-gray-100">
                   <p className="text-muted-foreground">No members found</p>
                 </div>
               )}

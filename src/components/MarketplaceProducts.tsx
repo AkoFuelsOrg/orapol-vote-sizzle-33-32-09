@@ -73,10 +73,10 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-medium flex items-center bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
-          <ShoppingBag className="h-5 w-5 mr-2 text-primary" />
+        <h3 className="text-lg sm:text-xl font-medium flex items-center bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+          <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2 text-primary" />
           Products & Services
         </h3>
         
@@ -106,22 +106,22 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="overflow-hidden h-[360px]">
-              <Skeleton className="h-52 w-full" />
-              <CardContent className="p-4">
-                <Skeleton className="h-6 w-3/4 mb-3" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-1/2 mb-5" />
-                <Skeleton className="h-10 w-full rounded" />
+            <Card key={i} className="overflow-hidden h-[300px] sm:h-[360px]">
+              <Skeleton className="h-40 sm:h-52 w-full" />
+              <CardContent className="p-3 sm:p-4">
+                <Skeleton className="h-5 sm:h-6 w-3/4 mb-2 sm:mb-3" />
+                <Skeleton className="h-3 sm:h-4 w-full mb-1.5 sm:mb-2" />
+                <Skeleton className="h-3 sm:h-4 w-full mb-1.5 sm:mb-2" />
+                <Skeleton className="h-3 sm:h-4 w-1/2 mb-4 sm:mb-5" />
+                <Skeleton className="h-8 sm:h-10 w-full rounded" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {products.map(product => (
             <ProductCard 
               key={product.id} 
@@ -132,12 +132,12 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
           ))}
         </div>
       ) : (
-        <Card className="p-8 text-center bg-gradient-to-r from-gray-50 to-gray-100/70 border-gray-200/70">
+        <Card className="p-6 sm:p-8 text-center bg-gradient-to-r from-gray-50 to-gray-100/70 border-gray-200/70">
           <div className="flex flex-col items-center justify-center gap-3">
-            <div className="bg-white p-4 rounded-full shadow-sm">
-              <AlertCircle className="h-10 w-10 text-primary/60" />
+            <div className="bg-white p-3 sm:p-4 rounded-full shadow-sm">
+              <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-primary/60" />
             </div>
-            <p className="text-muted-foreground text-lg mt-2">No products or services available yet</p>
+            <p className="text-muted-foreground text-base sm:text-lg mt-2">No products or services available yet</p>
             {isAdmin && (
               <Button 
                 onClick={isMobile ? () => setIsSheetOpen(true) : () => setIsAddModalOpen(true)} 
