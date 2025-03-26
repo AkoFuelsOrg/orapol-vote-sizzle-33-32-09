@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Loader2, BarChart2, Video } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
@@ -128,7 +127,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
         const fileExt = imageFile.name.split('.').pop();
         const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
         
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('post_images')
           .upload(filePath, imageFile);
         
@@ -145,7 +144,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
         const fileExt = videoFile.name.split('.').pop();
         const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
         
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('post_videos')
           .upload(filePath, videoFile);
         
