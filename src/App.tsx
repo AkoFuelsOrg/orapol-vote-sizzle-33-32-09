@@ -1,6 +1,5 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,28 +16,6 @@ import Header from "./components/Header";
 import TopHeader from "./components/TopHeader";
 import RightChatColumn from "./components/RightChatColumn";
 import { useBreakpoint } from "./hooks/use-mobile";
-
-// Import all page components
-import Index from "./pages/Index";
-import CreatePoll from "./pages/CreatePoll";
-import PollDetail from "./pages/PollDetail";
-import Profile from "./pages/Profile";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Messages from "./pages/Messages";
-import VotedPolls from "./pages/VotedPolls";
-import Followers from "./pages/Followers";
-import Following from "./pages/Following";
-import Notifications from "./pages/Notifications";
-import SearchResults from "./pages/SearchResults";
-import Groups from "./pages/Groups";
-import GroupProfile from "./pages/GroupProfile";
-import Marketplaces from "./pages/Marketplaces";
-import MarketplaceProfile from "./pages/MarketplaceProfile";
-import Favourites from "./pages/Favourites";
-import Vibezone from "./pages/Vibezone";
-import WatchVideo from "./pages/WatchVideo";
-import UploadVideo from "./pages/UploadVideo";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,7 +78,7 @@ const App = () => (
                   <AppLoader>
                     <ResponsiveLayout>
                       <Routes>
-                        <Route path="/" element={<Index />} />
+                        <Route path="/" element={<Navigate to="/auth" replace />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/search" element={<SearchResults />} />
                         <Route
