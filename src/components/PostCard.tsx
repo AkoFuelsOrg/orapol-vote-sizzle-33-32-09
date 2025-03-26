@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, ThumbsUp } from 'lucide-react';
 import { Post } from '../lib/types';
@@ -28,7 +27,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     
     try {
       if (isLiked) {
-        // Unlike the post
         const { error } = await supabase
           .from('post_likes')
           .delete()
@@ -40,7 +38,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
         setIsLiked(false);
         setLikeCount((prev) => prev - 1);
       } else {
-        // Like the post
         const { error } = await supabase
           .from('post_likes')
           .insert({
@@ -64,7 +61,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   };
   
   const handleShare = () => {
-    // Implement share functionality
     navigator.clipboard.writeText(window.location.origin + '/post/' + post.id)
       .then(() => {
         toast.success('Post link copied to clipboard');
@@ -72,6 +68,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
       .catch(() => {
         toast.error('Failed to copy link');
       });
+  };
+  
+  const updateCommentCount = (count: number) => {
+    if (onPostUpdate) {
+      onPostUpdate();
+    }
   };
   
   return (
@@ -151,7 +153,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
       </div>
       
       {showComments && (
-        <PostCommentSection postId={post.id} onUpdate={onPostUpdate} />
+        <PostCommentSection 
+          postId={post.id} 
+          updateCommentCount={updateCommentCount}
+          showCommentForm={true}
+        />
       )}
     </div>
   );
