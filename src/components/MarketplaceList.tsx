@@ -30,7 +30,7 @@ const MarketplaceCard: React.FC<{ marketplace: Marketplace; isUserMember: boolea
   onJoin
 }) => {
   return (
-    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg border border-purple-100">
+    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg border border-primary/10">
       <div className="relative">
         {marketplace.cover_url && (
           <div className="h-40 w-full overflow-hidden">
@@ -42,18 +42,18 @@ const MarketplaceCard: React.FC<{ marketplace: Marketplace; isUserMember: boolea
           </div>
         )}
         {!marketplace.cover_url && (
-          <div className="h-40 w-full bg-gradient-to-r from-purple-200 to-indigo-200 flex items-center justify-center">
-            <Store className="h-12 w-12 text-purple-500 opacity-70" />
+          <div className="h-40 w-full bg-gradient-to-r from-primary/20 to-blue-100 flex items-center justify-center">
+            <Store className="h-12 w-12 text-primary opacity-70" />
           </div>
         )}
       </div>
       <CardHeader className="relative pb-2">
         <Avatar className="h-16 w-16 absolute -top-8 left-4 border-4 border-white shadow-md">
           <AvatarImage 
-            src={marketplace.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(marketplace.name)}&background=7C3AED&color=fff`} 
+            src={marketplace.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(marketplace.name)}&background=3498db&color=fff`} 
             alt={marketplace.name}
           />
-          <AvatarFallback className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white">{marketplace.name.charAt(0)}</AvatarFallback>
+          <AvatarFallback className="bg-gradient-to-r from-primary to-blue-500 text-white">{marketplace.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className={marketplace.avatar_url ? "ml-20" : ""}>
           <CardTitle className="text-xl font-bold">{marketplace.name}</CardTitle>
@@ -70,13 +70,13 @@ const MarketplaceCard: React.FC<{ marketplace: Marketplace; isUserMember: boolea
       </CardContent>
       <CardFooter className="flex justify-between pt-2">
         {isUserMember ? (
-          <Button asChild variant="outline" className="w-full border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-all">
+          <Button asChild variant="outline" className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-all">
             <Link to={`/marketplace/${marketplace.id}`}>
               Visit <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>
         ) : (
-          <Button onClick={onJoin} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all">
+          <Button onClick={onJoin} className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all">
             <UserPlus className="mr-1 h-4 w-4" /> Join
           </Button>
         )}
@@ -146,9 +146,9 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({ showCreateButton = tr
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Discover Marketplaces</h2>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">Discover Marketplaces</h2>
         {showCreateButton && user && !isMobile && (
-          <Button onClick={() => setIsCreateModalOpen(true)} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all">
+          <Button onClick={() => setIsCreateModalOpen(true)} className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Marketplace
           </Button>
@@ -157,7 +157,7 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({ showCreateButton = tr
 
       {user && userMarketplaces.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-purple-700">Your Marketplaces</h3>
+          <h3 className="text-xl font-semibold text-primary">Your Marketplaces</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {userMarketplaces.map((marketplace) => (
               <MarketplaceCard
@@ -172,20 +172,20 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({ showCreateButton = tr
       )}
 
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold text-purple-700">Browse All Marketplaces</h3>
+        <h3 className="text-xl font-semibold text-primary">Browse All Marketplaces</h3>
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {renderSkeletons()}
           </div>
         ) : marketplaces.length === 0 ? (
-          <div className="text-center py-12 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
-            <Store className="h-16 w-16 mx-auto text-purple-400 mb-4" />
+          <div className="text-center py-12 bg-gradient-to-r from-primary/5 to-blue-50 rounded-xl">
+            <Store className="h-16 w-16 mx-auto text-primary mb-4" />
             <p className="text-muted-foreground text-lg mb-3">No marketplaces available yet</p>
             {user && (
               <Button 
                 variant="outline" 
                 onClick={() => setIsCreateModalOpen(true)}
-                className="mt-2 border-purple-200 hover:bg-purple-50 hover:text-purple-700 transition-all"
+                className="mt-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
               >
                 Create the first marketplace
               </Button>
