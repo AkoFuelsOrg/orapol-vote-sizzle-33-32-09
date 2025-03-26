@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image, Loader2, BarChart2, Video } from 'lucide-react';
+import { X, Image, Loader2, BarChart2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -20,12 +20,9 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
   const { user, profile } = useSupabase();
   
   useEffect(() => {
@@ -33,8 +30,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       setContent('');
       setImageFile(null);
       setImagePreview(null);
-      setVideoFile(null);
-      setVideoPreview(null);
     }
   }, [isOpen]);
   
@@ -52,42 +47,11 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       return;
     }
     
-    setVideoFile(null);
-    setVideoPreview(null);
-    if (videoInputRef.current) videoInputRef.current.value = '';
-    
     setImageFile(file);
     
     const reader = new FileReader();
     reader.onload = (event) => {
       setImagePreview(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-  
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error('Video size must be less than 50MB');
-      return;
-    }
-    
-    if (!['video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)) {
-      toast.error('Only MP4, WebM, and QuickTime videos are allowed');
-      return;
-    }
-    
-    setImageFile(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    
-    setVideoFile(file);
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setVideoPreview(event.target?.result as string);
     };
     reader.readAsDataURL(file);
   };
@@ -98,20 +62,14 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
   
-  const removeVideo = () => {
-    setVideoFile(null);
-    setVideoPreview(null);
-    if (videoInputRef.current) videoInputRef.current.value = '';
-  };
-  
   const handleSubmit = async () => {
     if (!user) {
       toast.error('You must be logged in to create a post');
       return;
     }
     
-    if (!content.trim() && !imageFile && !videoFile) {
-      toast.error('Please add some content, an image, or a video to your post');
+    if (!content.trim() && !imageFile) {
+      toast.error('Please add some content or an image to your post');
       return;
     }
     
@@ -119,13 +77,12 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
     
     try {
       let imageUrl = null;
-      let videoUrl = null;
       
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError, data } = await supabase.storage
           .from('post_images')
           .upload(filePath, imageFile);
         
@@ -138,28 +95,10 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
         imageUrl = publicUrl;
       }
       
-      if (videoFile) {
-        const fileExt = videoFile.name.split('.').pop();
-        const filePath = `${user.id}/${uuidv4()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('post_videos')
-          .upload(filePath, videoFile);
-        
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('post_videos')
-          .getPublicUrl(filePath);
-        
-        videoUrl = publicUrl;
-      }
-      
       const postData = {
         content: content.trim(),
         user_id: user.id,
         image: imageUrl,
-        video: videoUrl,
         ...(groupId ? { group_id: groupId } : {}),
         ...(marketplaceId ? { marketplace_id: marketplaceId } : {})
       };
@@ -175,8 +114,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       setContent('');
       setImageFile(null);
       setImagePreview(null);
-      setVideoFile(null);
-      setVideoPreview(null);
       onClose();
       
     } catch (error: any) {
@@ -241,23 +178,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
                   </button>
                 </div>
               )}
-              
-              {videoPreview && (
-                <div className="relative mt-3 rounded-lg overflow-hidden">
-                  <video 
-                    src={videoPreview} 
-                    controls
-                    className="w-full h-auto max-h-[300px] bg-gray-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeVideo}
-                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
             </div>
           </div>
           
@@ -281,21 +201,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
                   <Image size={18} className="text-blue-500" />
                 </label>
 
-                <input
-                  type="file"
-                  ref={videoInputRef}
-                  accept="video/*"
-                  onChange={handleVideoUpload}
-                  className="hidden"
-                  id="post-video-upload"
-                />
-                <label 
-                  htmlFor="post-video-upload" 
-                  className="cursor-pointer p-2 rounded-full hover:bg-gray-100 inline-flex items-center justify-center transition-colors"
-                >
-                  <Video size={18} className="text-purple-500" />
-                </label>
-
                 <button
                   type="button"
                   onClick={handlePollModalOpen}
@@ -313,7 +218,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
             </Button>
             <Button 
               onClick={handleSubmit}
-              disabled={isSubmitting || (!content.trim() && !imageFile && !videoFile)}
+              disabled={isSubmitting || (!content.trim() && !imageFile)}
               className="bg-red-500 hover:bg-red-600 text-white"
             >
               {isSubmitting ? (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -85,7 +86,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           content: post.content,
           createdAt: post.created_at,
           image: post.image,
-          video: post.video,
           commentCount: post.comment_count || 0,
           likeCount: likeCount || 0,
           userLiked,
@@ -98,9 +98,65 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         };
       }));
       
-      // Process polls with Promise.all to resolve all promises before setting state
-      const pollPromises = (pollsData || []).map(formatPoll);
-      const formattedPolls = await Promise.all(pollPromises);
+      // Format polls
+      const formattedPolls = await Promise.all((pollsData || []).map(async (poll) => {
+        // Get profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .eq('id', poll.user_id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        }
+        
+        // Check if current user has voted on this poll
+        let userVoted = null;
+        if (user) {
+          const { data: voteData, error: voteError } = await supabase
+            .from('poll_votes')
+            .select('option_id')
+            .eq('poll_id', poll.id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (voteError) throw voteError;
+          
+          if (voteData) {
+            userVoted = voteData.option_id;
+          }
+        }
+        
+        // Convert the raw options from the database to the PollOption type
+        const typedOptions: PollOption[] = Array.isArray(poll.options) 
+          ? poll.options.map((option: any) => ({
+              id: option.id || '',
+              text: option.text || '',
+              votes: option.votes || 0,
+              imageUrl: option.imageUrl || null,
+              poll_id: option.poll_id || poll.id
+            }))
+          : [];
+        
+        // Format the poll object to match the PollCard expectations
+        return {
+          id: poll.id,
+          question: poll.question,
+          options: typedOptions,
+          createdAt: poll.created_at,
+          image: poll.image,
+          commentCount: poll.comment_count || 0,
+          totalVotes: poll.total_votes || 0,
+          userVoted,
+          author: {
+            id: profileData?.id || 'unknown',
+            name: profileData?.username || 'Anonymous',
+            avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${poll.user_id}`,
+          },
+          groupId: poll.group_id,
+        };
+      }));
       
       setPosts(formattedPosts);
       setPolls(formattedPolls);
@@ -110,65 +166,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatPoll = async (poll: any): Promise<Poll> => {
-    // Get profile data
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, username, avatar_url')
-      .eq('id', poll.user_id)
-      .single();
-      
-    if (profileError) {
-      console.error('Error fetching profile:', profileError);
-    }
-    
-    // Check if current user has voted on this poll
-    let userVoted = null;
-    if (user) {
-      const { data: voteData, error: voteError } = await supabase
-        .from('poll_votes')
-        .select('option_id')
-        .eq('poll_id', poll.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (voteError) throw voteError;
-      
-      if (voteData) {
-        userVoted = voteData.option_id;
-      }
-    }
-    
-    // Convert the raw options from the database to the PollOption type
-    const typedOptions: PollOption[] = Array.isArray(poll.options) 
-      ? poll.options.map((option: any) => ({
-          id: option.id || '',
-          text: option.text || '',
-          votes: option.votes || 0,
-          imageUrl: option.imageUrl || null,
-          poll_id: option.poll_id || poll.id
-        }))
-      : [];
-    
-    // Format the poll object to match the PollCard expectations
-    return {
-      id: poll.id,
-      question: poll.question,
-      options: typedOptions,
-      createdAt: poll.created_at,
-      image: poll.image,
-      commentCount: poll.comment_count || 0,
-      totalVotes: poll.total_votes || 0,
-      userVoted,
-      author: {
-        id: profileData?.id || 'unknown',
-        name: profileData?.username || 'Anonymous',
-        avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${poll.user_id}`,
-      },
-      groupId: poll.group_id,
-    };
   };
   
   if (loading) {

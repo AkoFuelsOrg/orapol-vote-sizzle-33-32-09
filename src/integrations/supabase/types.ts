@@ -673,7 +673,6 @@ export type Database = {
           marketplace_id: string | null
           updated_at: string | null
           user_id: string
-          video: string | null
         }
         Insert: {
           comment_count?: number | null
@@ -685,7 +684,6 @@ export type Database = {
           marketplace_id?: string | null
           updated_at?: string | null
           user_id: string
-          video?: string | null
         }
         Update: {
           comment_count?: number | null
@@ -697,7 +695,6 @@ export type Database = {
           marketplace_id?: string | null
           updated_at?: string | null
           user_id?: string
-          video?: string | null
         }
         Relationships: [
           {
