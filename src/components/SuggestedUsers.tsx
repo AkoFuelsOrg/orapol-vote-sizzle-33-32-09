@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -14,6 +15,7 @@ import {
   Pagination, 
   PaginationContent, 
   PaginationItem, 
+  PaginationLink,
   PaginationNext, 
   PaginationPrevious 
 } from "./ui/pagination";
@@ -170,11 +172,15 @@ const SuggestedUsers: React.FC = () => {
   );
 
   const handlePrevPage = () => {
-    setCurrentPage(prev => Math.max(0, prev - 1));
+    if (currentPage > 0) {
+      setCurrentPage(prev => prev - 1);
+    }
   };
 
   const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(prev => prev + 1);
+    }
   };
   
   return (
@@ -261,21 +267,31 @@ const SuggestedUsers: React.FC = () => {
         <Pagination className="mt-2">
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious 
-                onClick={handlePrevPage} 
-                disabled={currentPage === 0} 
-                className={currentPage === 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`${currentPage === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={handlePrevPage}
+                disabled={currentPage === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous</span>
+              </Button>
             </PaginationItem>
             <span className="px-2 flex items-center text-sm text-muted-foreground">
               {currentPage + 1} / {totalPages}
             </span>
             <PaginationItem>
-              <PaginationNext 
-                onClick={handleNextPage} 
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`${currentPage >= totalPages - 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={handleNextPage}
                 disabled={currentPage >= totalPages - 1}
-                className={currentPage >= totalPages - 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-              />
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Next</span>
+              </Button>
             </PaginationItem>
           </PaginationContent>
         </Pagination>
