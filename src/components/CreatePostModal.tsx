@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Loader2, BarChart2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
@@ -12,26 +13,42 @@ import CreatePollModal from './CreatePollModal';
 export interface CreatePostModalProps {
   isOpen?: boolean;
   onClose: () => void;
-  groupId?: string; // Optional group ID for creating posts in a group
-  marketplaceId?: string; // Added marketplaceId prop
+  groupId?: string;
+  marketplaceId?: string;
+  initialContent?: string; // For editing mode
+  isEditing?: boolean; // Flag to indicate editing mode
+  postId?: string; // Post ID for editing
+  initialImage?: string; // Initial image URL for editing
+  onPostUpdate?: () => void; // Callback after post update
 }
 
-const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: CreatePostModalProps) => {
-  const [content, setContent] = useState('');
+const CreatePostModal = ({ 
+  isOpen = false, 
+  onClose, 
+  groupId, 
+  marketplaceId, 
+  initialContent = '', 
+  isEditing = false,
+  postId = '',
+  initialImage = '',
+  onPostUpdate
+}: CreatePostModalProps) => {
+  const [content, setContent] = useState(initialContent);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(initialImage || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
+  const [keepExistingImage, setKeepExistingImage] = useState(!!initialImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, profile } = useSupabase();
   
   useEffect(() => {
     if (isOpen) {
-      setContent('');
-      setImageFile(null);
-      setImagePreview(null);
+      setContent(initialContent);
+      setImagePreview(initialImage || null);
+      setKeepExistingImage(!!initialImage);
     }
-  }, [isOpen]);
+  }, [isOpen, initialContent, initialImage]);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,6 +65,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
     }
     
     setImageFile(file);
+    setKeepExistingImage(false);
     
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -59,6 +77,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setKeepExistingImage(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
   
@@ -68,7 +87,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       return;
     }
     
-    if (!content.trim() && !imageFile) {
+    if (!content.trim() && !imageFile && !keepExistingImage) {
       toast.error('Please add some content or an image to your post');
       return;
     }
@@ -76,7 +95,7 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
     setIsSubmitting(true);
     
     try {
-      let imageUrl = null;
+      let imageUrl = keepExistingImage ? initialImage : null;
       
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
@@ -94,31 +113,56 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
         
         imageUrl = publicUrl;
       }
-      
-      const postData = {
-        content: content.trim(),
-        user_id: user.id,
-        image: imageUrl,
-        ...(groupId ? { group_id: groupId } : {}),
-        ...(marketplaceId ? { marketplace_id: marketplaceId } : {})
-      };
-      
-      const { error: postError } = await supabase
-        .from('posts')
-        .insert(postData);
-      
-      if (postError) throw postError;
-      
-      toast.success('Post created successfully!');
+
+      if (isEditing && postId) {
+        // Update existing post
+        const postData = {
+          content: content.trim(),
+          image: imageUrl,
+          updated_at: new Date().toISOString()
+        };
+        
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update(postData)
+          .eq('id', postId)
+          .eq('user_id', user.id); // Ensure the user owns the post
+        
+        if (updateError) throw updateError;
+        
+        toast.success('Post updated successfully!');
+      } else {
+        // Create new post
+        const postData = {
+          content: content.trim(),
+          user_id: user.id,
+          image: imageUrl,
+          ...(groupId ? { group_id: groupId } : {}),
+          ...(marketplaceId ? { marketplace_id: marketplaceId } : {})
+        };
+        
+        const { error: postError } = await supabase
+          .from('posts')
+          .insert(postData);
+        
+        if (postError) throw postError;
+        
+        toast.success('Post created successfully!');
+      }
       
       setContent('');
       setImageFile(null);
       setImagePreview(null);
       onClose();
       
+      // Call the onPostUpdate callback if provided
+      if (onPostUpdate) {
+        onPostUpdate();
+      }
+      
     } catch (error: any) {
-      console.error('Error creating post:', error);
-      toast.error(error.message || 'Failed to create post');
+      console.error(isEditing ? 'Error updating post:' : 'Error creating post:', error);
+      toast.error(error.message || (isEditing ? 'Failed to update post' : 'Failed to create post'));
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +186,14 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
       }}>
         <DialogContent className="max-w-lg">
           <DialogTitle className="text-center font-bold text-lg">
-            {marketplaceId ? 'Create Marketplace Post' : groupId ? 'Create Group Post' : 'Create Post'}
+            {isEditing 
+              ? 'Edit Post' 
+              : marketplaceId 
+                ? 'Create Marketplace Post' 
+                : groupId 
+                  ? 'Create Group Post' 
+                  : 'Create Post'
+            }
           </DialogTitle>
           
           <div className="flex items-start gap-3 mt-4">
@@ -201,13 +252,15 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
                   <Image size={18} className="text-blue-500" />
                 </label>
 
-                <button
-                  type="button"
-                  onClick={handlePollModalOpen}
-                  className="cursor-pointer p-2 rounded-full hover:bg-gray-100 inline-flex items-center justify-center transition-colors"
-                >
-                  <BarChart2 size={18} className="text-green-500" />
-                </button>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={handlePollModalOpen}
+                    className="cursor-pointer p-2 rounded-full hover:bg-gray-100 inline-flex items-center justify-center transition-colors"
+                  >
+                    <BarChart2 size={18} className="text-green-500" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -218,26 +271,28 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: Cr
             </Button>
             <Button 
               onClick={handleSubmit}
-              disabled={isSubmitting || (!content.trim() && !imageFile)}
+              disabled={isSubmitting || (!content.trim() && !imageFile && !keepExistingImage)}
               className="bg-red-500 hover:bg-red-600 text-white"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 size={16} className="mr-2 animate-spin" />
-                  Posting...
+                  {isEditing ? 'Updating...' : 'Posting...'}
                 </>
-              ) : 'Post'}
+              ) : isEditing ? 'Update' : 'Post'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <CreatePollModal 
-        isOpen={pollModalOpen} 
-        onClose={handlePollModalClose}
-        groupId={groupId}
-        marketplaceId={marketplaceId}
-      />
+      {!isEditing && (
+        <CreatePollModal 
+          isOpen={pollModalOpen} 
+          onClose={handlePollModalClose}
+          groupId={groupId}
+          marketplaceId={marketplaceId}
+        />
+      )}
     </>
   );
 };

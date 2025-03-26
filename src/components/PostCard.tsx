@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Heart, Share2, X, Maximize, Bookmark } from 'lucide-react';
+import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
 import { Post } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
@@ -22,6 +22,13 @@ import {
   DrawerTrigger 
 } from './ui/drawer';
 import { Button } from './ui/button';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from './ui/dropdown-menu';
+import CreatePostModal from './CreatePostModal';
 
 interface PostCardProps {
   post: Post;
@@ -32,12 +39,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
   const { user } = useSupabase();
   const isMobile = useIsMobile();
   const breakpoint = useBreakpoint();
-  const [isImageExpanded, setIsImageExpanded] = React.useState(false);
-  const [hasLiked, setHasLiked] = React.useState(post.userLiked || false);
-  const [likeCount, setLikeCount] = React.useState(post.likeCount);
-  const [commentCount, setCommentCount] = React.useState(post.commentCount);
-  const [showCommentForm, setShowCommentForm] = React.useState(false);
-  const [isShareOpen, setIsShareOpen] = React.useState(false);
+  const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [hasLiked, setHasLiked] = useState(post.userLiked || false);
+  const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [commentCount, setCommentCount] = useState(post.commentCount);
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const isPostOwner = user && post.author.id === user.id;
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -186,6 +195,82 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!user || !isPostOwner) {
+      toast.error("You don't have permission to delete this post");
+      return;
+    }
+
+    try {
+      const { error: commentsError } = await supabase
+        .from('post_comments')
+        .delete()
+        .eq('post_id', post.id);
+
+      if (commentsError) throw commentsError;
+
+      const { error: likesError } = await supabase
+        .from('post_likes')
+        .delete()
+        .eq('post_id', post.id);
+
+      if (likesError) throw likesError;
+
+      const { error: sharesError } = await supabase
+        .from('post_shares')
+        .delete()
+        .eq('post_id', post.id);
+
+      if (sharesError) throw sharesError;
+
+      const { error: postError } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id);
+
+      if (postError) throw postError;
+
+      toast.success("Post deleted successfully");
+      
+      if (onPostUpdate) {
+        onPostUpdate();
+      }
+    } catch (error: any) {
+      console.error('Error deleting post:', error);
+      toast.error(error.message || "Failed to delete post");
+    }
+  };
+
+  const PostOptionsDropdown = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+            <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+            <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+          </svg>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40 bg-white">
+        <DropdownMenuItem 
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => setIsEditModalOpen(true)}
+        >
+          <Edit size={16} className="text-blue-500" />
+          <span>Edit Post</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          className="flex items-center gap-2 text-red-500 cursor-pointer focus:text-red-500 focus:bg-red-50"
+          onClick={handleDelete}
+        >
+          <Trash2 size={16} className="text-red-500" />
+          <span>Delete Post</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const ShareOptions = () => (
     <div className="grid grid-cols-2 gap-4 w-full px-1 py-3">
       <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-gray-50 transition-all border-gray-100 hover:border-primary/20" onClick={(e) => handleShare(e, 'copy')}>
@@ -257,13 +342,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
               <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
             </div>
           </Link>
-          <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
-              <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
-              <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
-            </svg>
-          </button>
+          {isPostOwner ? (
+            <PostOptionsDropdown />
+          ) : (
+            <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+                <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+                <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+              </svg>
+            </button>
+          )}
         </div>
         
         <div className="px-4 py-3">
@@ -384,6 +473,18 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             />
           </div>
         )}
+        
+        <CreatePostModal 
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          groupId={post.groupId}
+          marketplaceId={post.marketplace_id}
+          initialContent={post.content}
+          isEditing={true}
+          postId={post.id}
+          initialImage={post.image}
+          onPostUpdate={onPostUpdate}
+        />
       </Card>
     );
   }
@@ -478,13 +579,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
                   <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
                 </div>
               </Link>
-              <button className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
-                  <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
-                  <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
-                </svg>
-              </button>
+              {isPostOwner ? (
+                <PostOptionsDropdown />
+              ) : (
+                <button className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+                    <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+                    <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+                  </svg>
+                </button>
+              )}
             </div>
           )}
           
@@ -496,13 +601,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
                   <span className="mx-2 text-gray-300">•</span>
                   <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
                 </div>
-                <button className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
-                    <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
-                    <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
-                  </svg>
-                </button>
+                {isPostOwner ? (
+                  <PostOptionsDropdown />
+                ) : (
+                  <button className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+                      <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+                      <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -610,8 +719,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
           </CardFooter>
         </div>
       </div>
-    </Card>
-  );
-};
 
-export default PostCard;
+      <
+

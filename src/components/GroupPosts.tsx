@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -95,6 +94,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
             avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
           },
           groupId: post.group_id,
+          marketplace_id: post.marketplace_id,
         };
       }));
       
