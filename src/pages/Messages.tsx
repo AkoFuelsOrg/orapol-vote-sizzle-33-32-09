@@ -50,22 +50,22 @@ const Messages: React.FC = () => {
   
   if (isDesktop) {
     return (
-      <div className="flex flex-col min-h-screen pb-20">
+      <div className="flex flex-col h-screen overflow-hidden">
         <Header />
-        <div className="container max-w-7xl mx-auto px-4 pt-8 flex-1 flex flex-col">
-          <h1 className="text-2xl font-bold mb-6 animate-fade-in">Messages</h1>
+        <div className="container max-w-7xl mx-auto px-4 pt-5 flex-1 flex flex-col overflow-hidden">
+          <h1 className="text-2xl font-bold mb-4 animate-fade-in">Messages</h1>
           
           <div className="flex-1 rounded-lg overflow-hidden desktop-messages-container">
             <ResizablePanelGroup 
               direction="horizontal" 
-              className="max-h-[80vh] rounded-lg border shadow-md bg-gradient-to-br from-white to-gray-50"
+              className="h-[calc(100vh-140px)] rounded-lg border shadow-md bg-gradient-to-br from-white to-gray-50"
             >
               <ResizablePanel defaultSize={30} minSize={20} className="border-r">
-                <div className="h-full flex flex-col">
-                  <div className="p-4 border-b bg-gray-50/80">
+                <div className="h-full flex flex-col overflow-hidden">
+                  <div className="p-4 border-b bg-gray-50/80 sticky top-0 z-10">
                     <h2 className="font-semibold text-gray-800">Conversations</h2>
                   </div>
-                  <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                  <div className="flex-1 overflow-y-auto">
                     <ConversationList 
                       onSelectConversation={handleSelectConversation} 
                     />
@@ -74,7 +74,7 @@ const Messages: React.FC = () => {
               </ResizablePanel>
               <ResizableHandle withHandle className="bg-gray-100 hover:bg-gray-200 transition-colors" />
               <ResizablePanel defaultSize={70}>
-                <div className="h-full flex flex-col">
+                <div className="h-full flex flex-col overflow-hidden">
                   {selectedUserId ? (
                     <ChatInterface 
                       userId={selectedUserId} 
