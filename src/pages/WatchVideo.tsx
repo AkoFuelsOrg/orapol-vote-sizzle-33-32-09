@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -15,6 +14,7 @@ import { toast } from 'sonner';
 import VideoCommentSection from '@/components/VideoCommentSection';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useBreakpoint } from '@/hooks/use-mobile';
 
 const WatchVideo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -48,7 +48,9 @@ const WatchVideo: React.FC = () => {
   const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
   const mountedRef = useRef(true);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
+
   useEffect(() => {
     if (video) {
       console.log("Video author ID:", video?.author?.id);
@@ -56,7 +58,7 @@ const WatchVideo: React.FC = () => {
       console.log("Show channel actions:", Boolean(video?.author?.id) && Boolean(user?.id) && video.author.id !== user?.id);
     }
   }, [video, user]);
-  
+
   useEffect(() => {
     if (loading) {
       const interval = setInterval(() => {
@@ -71,7 +73,7 @@ const WatchVideo: React.FC = () => {
       setVideoRequestProgress(100);
     }
   }, [loading]);
-  
+
   useEffect(() => {
     mountedRef.current = true;
     let retryCount = 0;
@@ -147,7 +149,7 @@ const WatchVideo: React.FC = () => {
       }
     };
   }, [id, fetchVideo, hasLikedVideo, hasSubscribedToChannel, getSubscriberCount, user]);
-  
+
   useEffect(() => {
     const loadRelatedVideos = async () => {
       if (!id) return;
@@ -181,7 +183,7 @@ const WatchVideo: React.FC = () => {
     
     loadRelatedVideos();
   }, [id, fetchVideos]);
-  
+
   const handleVideoPlay = useCallback(async () => {
     if (!id || viewRecorded.current) return;
     
@@ -200,7 +202,7 @@ const WatchVideo: React.FC = () => {
       console.error('Error recording view:', error);
     }
   }, [id, viewVideo, video]);
-  
+
   const handleLike = useCallback(async () => {
     if (!user) {
       toast.error('You must be logged in to like videos');
@@ -236,7 +238,7 @@ const WatchVideo: React.FC = () => {
       toast.error('Failed to update like');
     }
   }, [user, id, liked, likesCount, unlikeVideo, likeVideo]);
-  
+
   const handleSubscribe = useCallback(async () => {
     if (!user) {
       toast.error('You must be logged in to subscribe');
@@ -248,7 +250,6 @@ const WatchVideo: React.FC = () => {
       return;
     }
     
-    // Prevent multiple clicks
     if (subscriptionLoading) return;
     
     try {
@@ -257,7 +258,6 @@ const WatchVideo: React.FC = () => {
       const previousSubscribed = subscribed;
       const previousCount = subscriberCount;
       
-      // Optimistically update UI immediately
       setSubscribed(!subscribed);
       setSubscriberCount(prev => prev + (subscribed ? -1 : 1));
       
@@ -271,7 +271,6 @@ const WatchVideo: React.FC = () => {
       }
       
       if (!success && mountedRef.current) {
-        // Revert to previous state if operation failed
         setSubscribed(previousSubscribed);
         setSubscriberCount(previousCount);
         toast.error(`Failed to ${previousSubscribed ? 'unsubscribe from' : 'subscribe to'} channel`);
@@ -285,7 +284,7 @@ const WatchVideo: React.FC = () => {
       }
     }
   }, [user, video, subscribed, subscriberCount, unsubscribeFromChannel, subscribeToChannel, subscriptionLoading]);
-  
+
   const handleDownload = useCallback(async () => {
     if (!video) return;
     
@@ -324,7 +323,7 @@ const WatchVideo: React.FC = () => {
       return `${views} ${views === 1 ? 'view' : 'views'}`;
     }
   };
-  
+
   const handleRelatedVideoClick = (videoId: string) => {
     navigate(`/vibezone/watch/${videoId}`);
     viewRecorded.current = false;
@@ -333,7 +332,7 @@ const WatchVideo: React.FC = () => {
       videoRef.current.currentTime = 0;
     }
   };
-  
+
   const renderVideoSkeleton = () => (
     <div className="space-y-2">
       <div className="bg-black rounded-lg overflow-hidden aspect-video shadow-xl">
@@ -344,7 +343,7 @@ const WatchVideo: React.FC = () => {
       )}
     </div>
   );
-  
+
   const renderVideoInfoSkeleton = () => (
     <div className="mt-4 space-y-2">
       <Skeleton className="h-8 w-4/5" />
@@ -357,7 +356,7 @@ const WatchVideo: React.FC = () => {
       </div>
     </div>
   );
-  
+
   const renderUserSkeleton = () => (
     <div className="flex items-center">
       <Skeleton className="h-10 w-10 rounded-full" />
@@ -402,7 +401,7 @@ const WatchVideo: React.FC = () => {
       </Card>
     </div>
   );
-  
+
   const renderRelatedVideosSkeleton = () => (
     <div className="space-y-4">
       {[1, 2, 3, 4].map((_, index) => (
@@ -421,9 +420,9 @@ const WatchVideo: React.FC = () => {
       ))}
     </div>
   );
-  
+
   const canShowSubscribeButton = Boolean(video?.author?.id) && Boolean(user?.id) && video?.author?.id !== user?.id;
-  
+
   if (loading && !video) {
     return (
       <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
@@ -434,7 +433,7 @@ const WatchVideo: React.FC = () => {
             <Separator className="my-4" />
             {renderUserSkeleton()}
           </div>
-          <div className="hidden lg:block">
+          <div className="lg:block">
             <Skeleton className="h-6 w-32 mb-4" />
             {renderRelatedVideosSkeleton()}
           </div>
@@ -442,7 +441,7 @@ const WatchVideo: React.FC = () => {
       </div>
     );
   }
-  
+
   if (!video && !loading) {
     return (
       <div className="container mx-auto py-10 px-4 sm:px-6 animate-fade-in">
@@ -463,7 +462,7 @@ const WatchVideo: React.FC = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
       <Button 
@@ -577,6 +576,27 @@ const WatchVideo: React.FC = () => {
                 <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{video.description}</p>
               </div>
             )}
+            
+            <div className="mt-5 block lg:hidden">
+              <h3 className="font-semibold mb-4 text-gray-800 flex items-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                <Sparkles className="h-4 w-4 text-primary mr-2" />
+                Related Videos
+              </h3>
+              <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                {loadingRelated ? (
+                  renderRelatedVideosSkeleton()
+                ) : relatedVideos.length > 0 ? (
+                  <div className="space-y-3">
+                    {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
+                    <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                    <p>No related videos found</p>
+                  </div>
+                )}
+              </div>
+            </div>
             
             <Separator className="my-6" />
             
