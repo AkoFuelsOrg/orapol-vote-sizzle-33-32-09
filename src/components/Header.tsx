@@ -143,14 +143,13 @@ const Header: React.FC = () => {
                     </button>
                   )}
                   
-                  {/* Lets Talk Button */}
+                  {/* Lets Talk - simple text without styling */}
                   <Link
                     to="/lets-talk"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center space-x-3 p-3 rounded-lg bg-gradient-to-r from-purple-500 to-primary text-white transition-all duration-300 mt-2 hover:shadow-md active:scale-[0.98] font-medium"
+                    className="p-3 mt-2 text-primary"
                   >
-                    <Mic size={20} className="animate-pulse" />
-                    <span>Lets Talk</span>
+                    Lets Talk
                   </Link>
                 </div>
               </div>
