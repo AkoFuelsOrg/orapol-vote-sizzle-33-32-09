@@ -28,6 +28,7 @@ import {
   DrawerContent,
   DrawerTrigger
 } from './ui/drawer';
+import CreatePostModal from './CreatePostModal';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -37,6 +38,7 @@ const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [postModalOpen, setPostModalOpen] = useState(false);
   
   if (breakpoint === "desktop") {
     return null;
@@ -141,14 +143,14 @@ const Header: React.FC = () => {
           
           {!showSearch && (
             <>
-              <Link
-                to="/create"
-                className={`p-2.5 rounded-full transition-all duration-300 flex items-center justify-center ${
-                  location.pathname === '/create' ? 'bg-white/30 text-white' : 'text-white/90 hover:text-white hover:bg-white/20'
-                }`}
+              <Button
+                onClick={() => setPostModalOpen(true)}
+                variant="ghost"
+                size="icon"
+                className={`p-2.5 rounded-full transition-all duration-300 text-white/90 hover:text-white hover:bg-white/20`}
               >
                 <PenLine size={20} />
-              </Link>
+              </Button>
               
               <Drawer open={isOpen} onOpenChange={setIsOpen}>
                 <DrawerTrigger asChild>
@@ -264,6 +266,11 @@ const Header: React.FC = () => {
           )}
         </nav>
       </div>
+      
+      <CreatePostModal 
+        isOpen={postModalOpen} 
+        onClose={() => setPostModalOpen(false)} 
+      />
     </header>
   );
 };
