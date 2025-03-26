@@ -4,7 +4,7 @@ import { useVibezone } from '@/context/VibezoneContext';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Video, VideoComment } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download, FilmIcon, Sparkles, ChevronLeft } from 'lucide-react';
+import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download, FilmIcon, Sparkles, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
@@ -15,6 +15,7 @@ import VideoCommentSection from '@/components/VideoCommentSection';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useBreakpoint } from '@/hooks/use-mobile';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const WatchVideo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +44,7 @@ const WatchVideo: React.FC = () => {
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [videoRequestProgress, setVideoRequestProgress] = useState(0);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewRecorded = useRef(false);
   const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
@@ -577,36 +579,68 @@ const WatchVideo: React.FC = () => {
               </div>
             )}
             
-            <div className="mt-5 block lg:hidden">
-              <h3 className="font-semibold mb-4 text-gray-800 flex items-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                <Sparkles className="h-4 w-4 text-primary mr-2" />
-                Related Videos
-              </h3>
-              <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                {loadingRelated ? (
-                  renderRelatedVideosSkeleton()
-                ) : relatedVideos.length > 0 ? (
-                  <div className="space-y-3">
-                    {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
+            {isMobile && (
+              <div className="mt-6">
+                <Collapsible
+                  open={commentsOpen}
+                  onOpenChange={setCommentsOpen}
+                  className="rounded-xl border border-gray-100 shadow-sm bg-white mb-6"
+                >
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-5 text-left">
+                    <h3 className="font-semibold text-lg text-gray-800 flex items-center">
+                      <MessageSquare className="h-4 w-4 text-primary mr-2" />
+                      Comments
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      {commentsOpen ? (
+                        <ChevronUp className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      )}
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-5 pb-5">
+                      {id && <VideoCommentSection videoId={id} />}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-4 text-gray-800 flex items-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                    <Sparkles className="h-4 w-4 text-primary mr-2" />
+                    Related Videos
+                  </h3>
+                  <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                    {loadingRelated ? (
+                      renderRelatedVideosSkeleton()
+                    ) : relatedVideos.length > 0 ? (
+                      <div className="space-y-3">
+                        {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
+                        <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                        <p>No related videos found</p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
-                    <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                    <p>No related videos found</p>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
             
-            <Separator className="my-6" />
-            
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h3 className="font-semibold text-lg mb-4 text-gray-800 flex items-center">
-                <MessageSquare className="h-4 w-4 text-primary mr-2" />
-                Comments
-              </h3>
-              {id && <VideoCommentSection videoId={id} />}
-            </div>
+            {!isMobile && (
+              <div>
+                <Separator className="my-6" />
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                  <h3 className="font-semibold text-lg mb-4 text-gray-800 flex items-center">
+                    <MessageSquare className="h-4 w-4 text-primary mr-2" />
+                    Comments
+                  </h3>
+                  {id && <VideoCommentSection videoId={id} />}
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="hidden lg:block">
