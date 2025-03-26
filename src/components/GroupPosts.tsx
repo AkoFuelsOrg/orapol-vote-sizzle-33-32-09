@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -20,6 +21,42 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   useEffect(() => {
     if (groupId) {
       fetchGroupPosts();
+      
+      // Set up real-time subscription for posts and polls
+      const postsChannel = supabase
+        .channel('group_posts_changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'posts',
+            filter: `group_id=eq.${groupId}`
+          }, 
+          () => {
+            fetchGroupPosts();
+          }
+        )
+        .subscribe();
+        
+      const pollsChannel = supabase
+        .channel('group_polls_changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'polls',
+            filter: `group_id=eq.${groupId}`
+          }, 
+          () => {
+            fetchGroupPosts();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(postsChannel);
+        supabase.removeChannel(pollsChannel);
+      };
     }
   }, [groupId]);
   
@@ -168,6 +205,11 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
     }
   };
   
+  // Handle post deletion locally without requiring a refresh
+  const handlePostDeleted = (postId: string) => {
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+  };
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -196,7 +238,12 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         'question' in item ? (
           <PollCard key={item.id} poll={item} />
         ) : (
-          <PostCard key={item.id} post={item} onPostUpdate={fetchGroupPosts} />
+          <PostCard 
+            key={item.id} 
+            post={item} 
+            onPostUpdate={fetchGroupPosts} 
+            onPostDeleted={handlePostDeleted}
+          />
         )
       ))}
     </div>

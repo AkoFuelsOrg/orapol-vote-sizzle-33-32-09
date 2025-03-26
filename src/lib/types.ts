@@ -90,6 +90,7 @@ export interface Post {
   userLiked: boolean;
   groupId?: string;
   marketplace_id?: string;
+  isDeleted?: boolean; // New field to track deletion status
 }
 
 export interface Comment {

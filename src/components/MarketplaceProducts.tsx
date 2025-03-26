@@ -64,6 +64,26 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
     if (marketplaceId) {
       fetchMarketplaceProducts();
     }
+    
+    // Set up a real-time subscription for product changes
+    const productsChannel = supabase
+      .channel('marketplace_products_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'marketplace_products',
+          filter: `marketplace_id=eq.${marketplaceId}`
+        }, 
+        () => {
+          fetchMarketplaceProducts();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(productsChannel);
+    };
   }, [marketplaceId]);
 
   const handleProductAdded = () => {

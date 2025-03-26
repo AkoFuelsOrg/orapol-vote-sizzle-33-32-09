@@ -11,6 +11,7 @@ import { useSupabase } from '@/context/SupabaseContext';
 import { useBreakpoint } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -44,6 +45,25 @@ const Vibezone: React.FC = () => {
     };
     
     loadVideos();
+    
+    // Set up real-time subscription for video changes
+    const videosChannel = supabase
+      .channel('vibezone_videos_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'videos'
+        }, 
+        () => {
+          loadVideos();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(videosChannel);
+    };
   }, [fetchVideos]);
 
   const formatViews = (views: number): string => {

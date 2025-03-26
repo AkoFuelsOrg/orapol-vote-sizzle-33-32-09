@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -31,9 +32,15 @@ const Index: React.FC = () => {
       .channel('public:polls')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'polls' },
+        { event: '*', schema: 'public', table: 'polls' },
         (payload) => {
-          fetchPollWithDetails(payload.new.id);
+          if (payload.eventType === 'INSERT') {
+            fetchPollWithDetails(payload.new.id);
+          } else if (payload.eventType === 'DELETE') {
+            setPolls(prevPolls => prevPolls.filter(poll => poll.id !== payload.old.id));
+          } else if (payload.eventType === 'UPDATE') {
+            fetchPollWithDetails(payload.new.id);
+          }
         }
       )
       .subscribe();
@@ -42,9 +49,15 @@ const Index: React.FC = () => {
       .channel('public:posts')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'posts' },
+        { event: '*', schema: 'public', table: 'posts' },
         (payload: any) => {
-          fetchPostWithDetails(payload.new.id);
+          if (payload.eventType === 'INSERT') {
+            fetchPostWithDetails(payload.new.id);
+          } else if (payload.eventType === 'DELETE') {
+            setPosts(prevPosts => prevPosts.filter(post => post.id !== payload.old.id));
+          } else if (payload.eventType === 'UPDATE') {
+            fetchPostWithDetails(payload.new.id);
+          }
         }
       )
       .subscribe();
