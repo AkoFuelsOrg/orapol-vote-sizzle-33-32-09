@@ -102,53 +102,55 @@ const ProductCard = ({ product, isAdmin, onProductUpdated }: ProductCardProps) =
 
   return (
     <>
-      <Card className="overflow-hidden h-full flex flex-col">
-        <div className="relative h-48 bg-gray-100">
+      <Card className="overflow-hidden h-full flex flex-col group hover:shadow-lg transition-all duration-300 border-gray-200/80">
+        <div className="relative h-52 bg-gray-100 overflow-hidden">
           {product.image_url ? (
             <img 
               src={product.image_url} 
               alt={product.name} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-              <ImageOff className="h-10 w-10 text-gray-400" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+              <ImageOff className="h-12 w-12 text-gray-400" />
             </div>
           )}
           {!product.is_available && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+            <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-3 py-1 rounded-full font-medium">
               Unavailable
             </div>
           )}
         </div>
         
-        <CardContent className="pt-4 flex-grow">
-          <h3 className="font-semibold text-lg mb-1">{product.name}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-3 mb-2">
+        <CardContent className="pt-5 flex-grow">
+          <h3 className="font-semibold text-lg mb-2 text-gray-900">{product.name}</h3>
+          <p className="text-sm text-muted-foreground line-clamp-3 mb-3 leading-relaxed">
             {product.description || 'No description provided'}
           </p>
-          <p className="font-medium text-primary">
+          <p className="font-medium text-lg bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
             {formatPrice(product.price)}
           </p>
         </CardContent>
         
-        <CardFooter className="pt-0 pb-4 px-6 gap-2 justify-between">
+        <CardFooter className="pt-0 pb-5 px-6 gap-2 justify-between">
           {isAdmin ? (
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setIsEditModalOpen(true)}
+                className="flex-1 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
               >
-                <Pencil className="h-4 w-4 mr-1" />
+                <Pencil className="h-4 w-4 mr-1.5" />
                 Edit
               </Button>
               <Button 
                 variant="destructive" 
                 size="sm"
                 onClick={() => setIsDeleteConfirmOpen(true)}
+                className="flex-1"
               >
-                <Trash2 className="h-4 w-4 mr-1" />
+                <Trash2 className="h-4 w-4 mr-1.5" />
                 Delete
               </Button>
             </div>
@@ -156,9 +158,9 @@ const ProductCard = ({ product, isAdmin, onProductUpdated }: ProductCardProps) =
             <Button
               onClick={handleContactSeller}
               size="sm"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all"
             >
-              <MessageSquare className="h-4 w-4 mr-1" />
+              <MessageSquare className="h-4 w-4 mr-1.5" />
               Contact Seller
             </Button>
           )}
@@ -167,7 +169,7 @@ const ProductCard = ({ product, isAdmin, onProductUpdated }: ProductCardProps) =
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete Product</DialogTitle>
             <DialogDescription>
@@ -179,6 +181,7 @@ const ProductCard = ({ product, isAdmin, onProductUpdated }: ProductCardProps) =
               variant="outline"
               onClick={() => setIsDeleteConfirmOpen(false)}
               disabled={isDeleting}
+              className="border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
             >
               Cancel
             </Button>

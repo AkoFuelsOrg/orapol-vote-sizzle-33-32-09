@@ -73,10 +73,10 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium flex items-center">
-          <ShoppingBag className="h-5 w-5 mr-2 text-primary/70" />
+        <h3 className="text-xl font-medium flex items-center bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+          <ShoppingBag className="h-5 w-5 mr-2 text-primary" />
           Products & Services
         </h3>
         
@@ -86,7 +86,7 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
             <Button 
               onClick={() => setIsAddModalOpen(true)} 
               size="sm"
-              className="gap-1 hidden sm:flex"
+              className="gap-1.5 hidden sm:flex bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all"
             >
               <Plus className="h-4 w-4" />
               Add Product
@@ -96,7 +96,7 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
             <Button
               onClick={() => setIsSheetOpen(true)}
               size="sm"
-              className="gap-1 sm:hidden"
+              className="gap-1.5 sm:hidden bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all"
             >
               <Plus className="h-4 w-4" />
               Add
@@ -106,19 +106,22 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="h-48 w-full" />
+            <Card key={i} className="overflow-hidden h-[360px]">
+              <Skeleton className="h-52 w-full" />
               <CardContent className="p-4">
-                <Skeleton className="h-4 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-6 w-3/4 mb-3" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-1/2 mb-5" />
+                <Skeleton className="h-10 w-full rounded" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map(product => (
             <ProductCard 
               key={product.id} 
@@ -129,18 +132,20 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
           ))}
         </div>
       ) : (
-        <Card className="p-6 text-center">
-          <div className="flex flex-col items-center justify-center gap-2">
-            <AlertCircle className="h-10 w-10 text-muted-foreground/60" />
-            <p className="text-muted-foreground">No products or services available yet</p>
+        <Card className="p-8 text-center bg-gradient-to-r from-gray-50 to-gray-100/70 border-gray-200/70">
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="bg-white p-4 rounded-full shadow-sm">
+              <AlertCircle className="h-10 w-10 text-primary/60" />
+            </div>
+            <p className="text-muted-foreground text-lg mt-2">No products or services available yet</p>
             {isAdmin && (
               <Button 
                 onClick={isMobile ? () => setIsSheetOpen(true) : () => setIsAddModalOpen(true)} 
                 variant="outline" 
                 size="sm"
-                className="mt-2"
+                className="mt-3 border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 mr-1.5" />
                 Add Your First Product
               </Button>
             )}

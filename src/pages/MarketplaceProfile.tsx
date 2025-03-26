@@ -253,25 +253,25 @@ const MarketplaceProfile = () => {
   
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-48 w-full rounded-lg" />
+      <div className="space-y-4 px-4 py-6 max-w-7xl mx-auto">
+        <Skeleton className="h-64 w-full rounded-xl" />
         <div className="flex items-center space-x-4">
-          <Skeleton className="h-16 w-16 rounded-full" />
+          <Skeleton className="h-24 w-24 rounded-full" />
           <div className="space-y-2">
-            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-24" />
           </div>
         </div>
-        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full rounded-lg" />
       </div>
     );
   }
   
   if (!marketplace) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-16 bg-gray-50/50 rounded-xl max-w-3xl mx-auto mt-8 border border-gray-100">
         <p className="text-xl font-medium text-gray-500">Marketplace not found</p>
-        <Button className="mt-4" onClick={() => navigate('/marketplaces')}>
+        <Button className="mt-6 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700" onClick={() => navigate('/marketplaces')}>
           Browse Marketplaces
         </Button>
       </div>
@@ -279,48 +279,48 @@ const MarketplaceProfile = () => {
   }
   
   return (
-    <div className="space-y-6">
-      <div className="relative">
-        <div className="h-64 w-full rounded-xl overflow-hidden relative">
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-8 animate-fade-in">
+      <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="h-80 w-full overflow-hidden relative">
           {marketplace.cover_url ? (
             <>
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 z-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-black/50 z-10"></div>
               <img 
                 src={marketplace.cover_url} 
                 alt={`${marketplace.name} cover`}
-                className="w-full h-full object-cover transition-transform hover:scale-105 duration-700"
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
               />
             </>
           ) : (
-            <div className="flex items-center justify-center h-full bg-gradient-to-r from-purple-500/80 to-blue-500/80 text-white">
-              <ImageOff className="h-12 w-12 opacity-30" />
+            <div className="flex items-center justify-center h-full bg-gradient-to-r from-primary/50 to-blue-500/50 text-white">
+              <ImageOff className="h-16 w-16 opacity-30" />
             </div>
           )}
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between mt-[-4rem] px-6 relative z-20">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mt-[-6rem] px-8 relative z-20">
           <div className="flex items-end">
-            <Avatar className="h-28 w-28 border-4 border-white shadow-lg ring-2 ring-primary/10">
+            <Avatar className="h-32 w-32 border-4 border-white shadow-lg ring-2 ring-primary/10">
               <AvatarImage 
                 src={marketplace.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(marketplace.name)}&background=6366f1&color=fff`} 
                 alt={marketplace.name} 
                 className="object-cover"
               />
-              <AvatarFallback className="bg-primary/60 text-white text-2xl">{marketplace.name.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white text-2xl">{marketplace.name.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="ml-4 mb-2 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 shadow-sm">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{marketplace.name}</h1>
+            <div className="ml-4 mb-2 bg-white/90 backdrop-blur-sm rounded-lg px-5 py-2 shadow-sm">
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">{marketplace.name}</h1>
             </div>
           </div>
           
-          <div className="mt-4 md:mt-0 ml-32 md:ml-0 mb-2 flex gap-2">
+          <div className="mt-4 md:mt-0 ml-36 md:ml-0 mb-2 flex gap-2">
             {user ? (
               isMember ? (
                 <Button 
                   variant="outline" 
                   onClick={handleLeaveMarketplace}
                   disabled={isLeaving}
-                  className="shadow-sm"
+                  className="shadow-sm border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
                 >
                   {isLeaving ? (
                     "Leaving..."
@@ -335,7 +335,7 @@ const MarketplaceProfile = () => {
                 <Button 
                   onClick={handleJoinMarketplace}
                   disabled={isJoining}
-                  className="shadow-sm"
+                  className="shadow-sm bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all"
                 >
                   {isJoining ? (
                     "Joining..."
@@ -348,7 +348,10 @@ const MarketplaceProfile = () => {
                 </Button>
               )
             ) : (
-              <Button onClick={() => navigate('/auth')} className="shadow-sm">
+              <Button 
+                onClick={() => navigate('/auth')} 
+                className="shadow-sm bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 transition-all"
+              >
                 Sign in to join
               </Button>
             )}
@@ -356,12 +359,12 @@ const MarketplaceProfile = () => {
         </div>
       </div>
       
-      <div className="flex items-center gap-2 px-6 mt-[-10px] flex-wrap">
-        <Badge variant="secondary" className="px-3 py-1 text-sm flex items-center gap-1.5">
+      <div className="flex items-center gap-2 px-2 flex-wrap">
+        <Badge variant="secondary" className="px-3 py-1.5 text-sm flex items-center gap-1.5 rounded-full">
           <Users className="h-3.5 w-3.5" />
           <span>{membersList.length || 0} {membersList.length === 1 ? 'member' : 'members'}</span>
         </Badge>
-        <Badge variant="outline" className="px-3 py-1 text-sm flex items-center gap-1.5">
+        <Badge variant="outline" className="px-3 py-1.5 text-sm flex items-center gap-1.5 rounded-full">
           <Calendar className="h-3.5 w-3.5" />
           <span>Created {marketplace.created_at ? formatDistanceToNow(new Date(marketplace.created_at), { addSuffix: false }) + ' ago' : ''}</span>
         </Badge>
@@ -371,7 +374,7 @@ const MarketplaceProfile = () => {
             variant="outline" 
             size="sm"
             onClick={() => setIsEditModalOpen(true)}
-            className="ml-1 h-7 shadow-sm"
+            className="ml-1 h-8 shadow-sm border-primary/20 hover:bg-primary/5 hover:text-primary transition-all"
           >
             <Pencil className="mr-1 h-3.5 w-3.5" />
             Edit
@@ -380,36 +383,36 @@ const MarketplaceProfile = () => {
       </div>
       
       {marketplace.description && (
-        <Card className="p-5 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100 mx-6">
+        <Card className="p-6 bg-white/95 backdrop-blur-sm shadow-sm border-gray-100 hover:shadow-md transition-all duration-300">
           <div className="flex items-start">
-            <Info className="h-5 w-5 mr-2 text-primary/70 mt-0.5 flex-shrink-0" />
-            <p className="text-gray-700">{marketplace.description}</p>
+            <Info className="h-5 w-5 mr-3 text-primary/70 mt-0.5 flex-shrink-0" />
+            <p className="text-gray-700 leading-relaxed">{marketplace.description}</p>
           </div>
         </Card>
       )}
       
       <Tabs defaultValue="feed" value={activeTab} onValueChange={setActiveTab} className="mt-4">
-        <TabsList className="grid w-full grid-cols-3 mb-2">
-          <TabsTrigger value="feed" className="text-sm md:text-base py-2">Feed</TabsTrigger>
-          <TabsTrigger value="products" className="text-sm md:text-base py-2">
+        <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100/70 p-1 rounded-xl">
+          <TabsTrigger value="feed" className="text-sm md:text-base py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Feed</TabsTrigger>
+          <TabsTrigger value="products" className="text-sm md:text-base py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
             <ShoppingBag className="h-4 w-4 mr-1" />
             Products
           </TabsTrigger>
-          <TabsTrigger value="members" className="text-sm md:text-base py-2">Members</TabsTrigger>
+          <TabsTrigger value="members" className="text-sm md:text-base py-2.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Members</TabsTrigger>
         </TabsList>
         
         <TabsContent value="feed" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
           {isMember && <MarketplacePostInterface marketplaceId={marketplace.id} />}
           
           {polls.length === 0 && posts.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-xl mt-4 border border-gray-100">
-              <p className="text-muted-foreground">No content in this marketplace yet</p>
+            <div className="text-center py-12 bg-gradient-to-r from-gray-50 to-gray-100/70 rounded-xl mt-4 border border-gray-200/70">
+              <p className="text-muted-foreground text-lg">No content in this marketplace yet</p>
               {isMember && (
-                <p className="text-sm mt-2">Be the first to share something!</p>
+                <p className="text-sm mt-2 text-gray-500">Be the first to share something!</p>
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {polls.map(poll => (
                 <PollCard key={`poll-${poll.id}`} poll={poll} />
               ))}
@@ -426,28 +429,28 @@ const MarketplaceProfile = () => {
         </TabsContent>
         
         <TabsContent value="members" className="pt-4 focus-visible:outline-none focus-visible:ring-0">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium flex items-center">
-              <Users className="h-4 w-4 mr-2 text-primary/70" />
+          <div className="space-y-6">
+            <h3 className="text-xl font-medium flex items-center bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              <Users className="h-5 w-5 mr-2 text-primary" />
               Members ({membersList.length})
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {membersList.map(member => (
-                <Card key={member.id} className="p-4 flex items-center hover:shadow-md transition-shadow border-gray-100 bg-white/95">
-                  <Avatar className="h-10 w-10 mr-3">
+                <Card key={member.id} className="p-4 flex items-center hover:shadow-md transition-all duration-300 border-gray-100 bg-white">
+                  <Avatar className="h-12 w-12 mr-4 border border-gray-200">
                     <AvatarImage 
                       src={member.user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.user?.username || 'U')}&background=6366f1&color=fff`} 
                       alt={member.user?.username || 'User'} 
                     />
-                    <AvatarFallback className="bg-primary/60 text-white">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-blue-600 text-white">
                       {member.user?.username ? member.user.username[0].toUpperCase() : 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">{member.user?.username || 'Unknown user'}</div>
-                    <div className="text-xs text-gray-500 flex items-center">
-                      <span className={`inline-block w-2 h-2 rounded-full ${member.role === 'admin' ? 'bg-purple-500' : 'bg-green-500'} mr-1`}></span>
+                    <div className="font-medium text-gray-900">{member.user?.username || 'Unknown user'}</div>
+                    <div className="text-xs text-gray-500 flex items-center mt-1">
+                      <span className={`inline-block w-2 h-2 rounded-full ${member.role === 'admin' ? 'bg-primary' : 'bg-green-500'} mr-1.5`}></span>
                       <span className="capitalize">{member.role}</span>
                     </div>
                   </div>
@@ -455,7 +458,7 @@ const MarketplaceProfile = () => {
               ))}
               
               {membersList.length === 0 && (
-                <div className="col-span-full text-center py-8 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
                   <p className="text-muted-foreground">No members found</p>
                 </div>
               )}
