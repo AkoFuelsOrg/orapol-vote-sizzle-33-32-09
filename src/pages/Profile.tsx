@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -577,12 +576,6 @@ const Profile: React.FC = () => {
                   All Content
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="polls" 
-                  className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
-                >
-                  Polls
-                </TabsTrigger>
-                <TabsTrigger 
                   value="posts" 
                   className="flex-1 text-xs sm:text-sm py-2.5 font-medium whitespace-nowrap"
                 >
@@ -635,42 +628,25 @@ const Profile: React.FC = () => {
               )}
             </TabsContent>
             
-            <TabsContent value="polls" className="mt-0">
-              {isLoadingPolls ? (
-                <div className="flex justify-center p-6">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : userPolls.length > 0 ? (
-                <div className="space-y-3">
-                  {userPolls.map(poll => (
-                    <PollCard key={poll.id} poll={poll} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2">
-                  <p className="mb-4">You haven't created any polls yet.</p>
-                  <div className="inline-block">
-                    <a 
-                      href="/create" 
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      Create Your First Poll
-                    </a>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-            
             <TabsContent value="posts" className="mt-0">
-              {isLoadingPosts ? (
+              {isLoadingPolls || isLoadingPosts ? (
                 <div className="flex justify-center p-6">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : userPosts.length > 0 ? (
+              ) : (userPosts.length > 0 || userPolls.length > 0) ? (
                 <div className="space-y-3">
-                  {userPosts.map(post => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
+                  {[...userPolls, ...userPosts]
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    .map(item => (
+                      <div key={item.id}>
+                        {'question' in item ? (
+                          <PollCard poll={item as Poll} />
+                        ) : (
+                          <PostCard post={item as Post} />
+                        )}
+                      </div>
+                    ))
+                  }
                 </div>
               ) : (
                 <div className="text-center py-10 text-muted-foreground bg-white rounded-lg shadow-sm border border-border/30 mt-2">
