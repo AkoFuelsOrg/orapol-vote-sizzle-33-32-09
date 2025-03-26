@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -88,9 +89,11 @@ const RightChatColumn: React.FC = () => {
                 <h2 className="font-semibold text-gray-800 tracking-tight">Suggested Accounts</h2>
               </div>
               
-              <div className="flex-1 px-2 py-2 overflow-hidden">
-                <SuggestedUsers />
-              </div>
+              <ScrollArea className="flex-1 overflow-hidden">
+                <div className="px-2 py-2">
+                  <SuggestedUsers />
+                </div>
+              </ScrollArea>
             </div>
           </>
         )}
