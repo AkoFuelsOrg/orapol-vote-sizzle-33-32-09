@@ -14,7 +14,8 @@ import {
   ShoppingBag,
   Heart,
   Bell,
-  PenLine
+  PenLine,
+  Mic
 } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -141,6 +142,16 @@ const Header: React.FC = () => {
                       <span className="font-medium">Sign Out</span>
                     </button>
                   )}
+                  
+                  {/* Lets Talk Button */}
+                  <Link
+                    to="/lets-talk"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center space-x-3 p-3 rounded-lg bg-gradient-to-r from-purple-500 to-primary text-white transition-all duration-300 mt-2 hover:shadow-md active:scale-[0.98] font-medium"
+                  >
+                    <Mic size={20} className="animate-pulse" />
+                    <span>Lets Talk</span>
+                  </Link>
                 </div>
               </div>
             </DrawerContent>
