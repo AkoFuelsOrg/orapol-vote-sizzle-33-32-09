@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +28,8 @@ const UserProfile: React.FC = () => {
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [canSendMessage, setCanSendMessage] = useState(false);
   const [activeTab, setActiveTab] = useState("content");
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   
   useEffect(() => {
     if (id) {
@@ -488,11 +491,28 @@ const UserProfile: React.FC = () => {
             setActiveTab(value);
           }}
         >
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="followers">Followers</TabsTrigger>
-            <TabsTrigger value="following">Following</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto no-scrollbar">
+            <TabsList className={`${isMobile ? 'w-full grid-cols-3 mb-4 rounded-lg border border-border/30' : 'grid grid-cols-3 mb-4'}`}>
+              <TabsTrigger 
+                value="content" 
+                className={`${isMobile ? 'text-sm py-2.5 font-medium' : ''}`}
+              >
+                Content
+              </TabsTrigger>
+              <TabsTrigger 
+                value="followers" 
+                className={`${isMobile ? 'text-sm py-2.5 font-medium' : ''}`}
+              >
+                Followers
+              </TabsTrigger>
+              <TabsTrigger 
+                value="following" 
+                className={`${isMobile ? 'text-sm py-2.5 font-medium' : ''}`}
+              >
+                Following
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           <TabsContent value="content" className="mt-0">
             {isLoadingContent ? (

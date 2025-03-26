@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -14,10 +13,13 @@ import { Poll, PollOption, Post } from '../lib/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
   const { user, profile, updateProfile, loading: profileLoading, getFollowCounts, updatePassword } = useSupabase();
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -187,7 +189,6 @@ const Profile: React.FC = () => {
     }
   };
   
-  // Function to convert JSON options to PollOption objects
   const convertJsonToPollOptions = (optionsJson: any): PollOption[] => {
     if (!optionsJson) return [];
     
@@ -316,7 +317,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Handle password change
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error('Please fill in all password fields');
@@ -345,7 +345,6 @@ const Profile: React.FC = () => {
     }
   };
   
-  // Combine polls and posts for "All Content" tab
   const allContent = [...userPolls, ...userPosts].sort((a, b) => {
     const dateA = new Date(a.createdAt).getTime();
     const dateB = new Date(b.createdAt).getTime();
@@ -561,13 +560,40 @@ const Profile: React.FC = () => {
         </div>
         
         <Tabs defaultValue="all" className="w-full animate-fade-in">
-          <TabsList className="grid grid-cols-5 mb-4">
-            <TabsTrigger value="all">All Content</TabsTrigger>
-            <TabsTrigger value="polls">Polls</TabsTrigger>
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="followers">Followers</TabsTrigger>
-            <TabsTrigger value="following">Following</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto no-scrollbar">
+            <TabsList className={`${isMobile ? 'w-full flex mb-4 rounded-lg border border-border/30' : 'grid grid-cols-5 mb-4'}`}>
+              <TabsTrigger 
+                value="all" 
+                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
+              >
+                All Content
+              </TabsTrigger>
+              <TabsTrigger 
+                value="polls" 
+                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
+              >
+                Polls
+              </TabsTrigger>
+              <TabsTrigger 
+                value="posts" 
+                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
+              >
+                Posts
+              </TabsTrigger>
+              <TabsTrigger 
+                value="followers" 
+                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
+              >
+                Followers
+              </TabsTrigger>
+              <TabsTrigger 
+                value="following" 
+                className={`${isMobile ? 'flex-1 text-sm py-2.5 font-medium' : ''}`}
+              >
+                Following
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           <TabsContent value="all" className="mt-0">
             {isLoadingPolls || isLoadingPosts ? (
