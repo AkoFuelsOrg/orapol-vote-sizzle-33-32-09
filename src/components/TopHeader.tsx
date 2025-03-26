@@ -158,14 +158,6 @@ const TopHeader: React.FC = () => {
               Login
             </Button>
           )}
-          
-          <div className="p-1 rounded-full bg-white/20 backdrop-blur-sm shadow-inner transition-all duration-300 hover:bg-white/30">
-            <img 
-              src="/lovable-uploads/a9a6666f-a21a-4a74-b484-3fb5f3184fdc.png" 
-              alt="Let's Talk" 
-              className="h-8 w-auto"
-            />
-          </div>
         </div>
       </div>
     </div>
