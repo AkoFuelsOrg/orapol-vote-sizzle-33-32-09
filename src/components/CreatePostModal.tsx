@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
+import { X, Image, Loader2, BarChart2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -9,44 +8,30 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import CreatePollModal from './CreatePollModal';
-import EmojiPicker from './EmojiPicker';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 export interface CreatePostModalProps {
   isOpen?: boolean;
   onClose: () => void;
-  groupId?: string; 
-  marketplaceId?: string;
-  initialContent?: string;
+  groupId?: string; // Optional group ID for creating posts in a group
+  marketplaceId?: string; // Added marketplaceId prop
 }
 
-const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId, initialContent = '' }: CreatePostModalProps) => {
+const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId }: CreatePostModalProps) => {
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
-  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user, profile } = useSupabase();
   
   useEffect(() => {
     if (isOpen) {
-      setContent(initialContent);
+      setContent('');
       setImageFile(null);
       setImagePreview(null);
-      
-      // Focus and set cursor to end of content
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-          const length = initialContent.length;
-          textareaRef.current.setSelectionRange(length, length);
-        }
-      }, 50);
     }
-  }, [isOpen, initialContent]);
+  }, [isOpen]);
   
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,28 +135,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId, init
     setPollModalOpen(false);
   };
 
-  const handleEmojiSelect = (emoji: string) => {
-    if (textareaRef.current) {
-      const start = textareaRef.current.selectionStart || 0;
-      const end = textareaRef.current.selectionEnd || 0;
-      
-      const newContent = content.substring(0, start) + emoji + content.substring(end);
-      setContent(newContent);
-      
-      // Set cursor position after the inserted emoji
-      setTimeout(() => {
-        if (textareaRef.current) {
-          const newCursorPos = start + emoji.length;
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-        }
-      }, 10);
-    } else {
-      setContent(content + emoji);
-    }
-    setEmojiPickerOpen(false);
-  };
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => {
@@ -193,7 +156,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId, init
             
             <div className="flex-1">
               <Textarea
-                ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder={marketplaceId ? "Share something with the marketplace..." : groupId ? "Share something with the group..." : "What's on your mind?"}
@@ -238,23 +200,6 @@ const CreatePostModal = ({ isOpen = false, onClose, groupId, marketplaceId, init
                 >
                   <Image size={18} className="text-blue-500" />
                 </label>
-
-                <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="cursor-pointer p-2 rounded-full hover:bg-gray-100 inline-flex items-center justify-center transition-colors"
-                    >
-                      <Smile size={18} className="text-amber-500" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <EmojiPicker 
-                      onSelectEmoji={handleEmojiSelect} 
-                      onClose={() => setEmojiPickerOpen(false)}
-                    />
-                  </PopoverContent>
-                </Popover>
 
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,25 +19,26 @@ import RightChatColumn from "./components/RightChatColumn";
 import { useBreakpoint } from "./hooks/use-mobile";
 
 // Import all page components
-import Auth from "./pages/Auth";
-import SearchResults from "./pages/SearchResults";
+import Index from "./pages/Index";
 import CreatePoll from "./pages/CreatePoll";
 import PollDetail from "./pages/PollDetail";
 import Profile from "./pages/Profile";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
 import VotedPolls from "./pages/VotedPolls";
 import Followers from "./pages/Followers";
 import Following from "./pages/Following";
 import Notifications from "./pages/Notifications";
-import Favourites from "./pages/Favourites";
+import SearchResults from "./pages/SearchResults";
 import Groups from "./pages/Groups";
 import GroupProfile from "./pages/GroupProfile";
 import Marketplaces from "./pages/Marketplaces";
 import MarketplaceProfile from "./pages/MarketplaceProfile";
+import Favourites from "./pages/Favourites";
 import Vibezone from "./pages/Vibezone";
 import WatchVideo from "./pages/WatchVideo";
 import UploadVideo from "./pages/UploadVideo";
-import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -100,7 +101,7 @@ const App = () => (
                   <AppLoader>
                     <ResponsiveLayout>
                       <Routes>
-                        <Route path="/" element={<Navigate to="/auth" replace />} />
+                        <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/search" element={<SearchResults />} />
                         <Route

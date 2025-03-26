@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -35,10 +35,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelectEmoji, onClose }) => 
         {commonEmojis.map((emoji, index) => (
           <button
             key={index}
-            onClick={() => {
-              onSelectEmoji(emoji);
-              onClose();
-            }}
+            onClick={() => onSelectEmoji(emoji)}
             className="text-xl p-1 hover:bg-secondary rounded cursor-pointer"
           >
             {emoji}

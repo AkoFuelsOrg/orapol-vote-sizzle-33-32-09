@@ -1,14 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Image, PlusCircle, BarChart, Smile } from 'lucide-react';
+import { Image, PlusCircle, BarChart } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { Button } from './ui/button';
 import { useBreakpoint } from '../hooks/use-mobile';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import EmojiPicker from './EmojiPicker';
 
 interface MarketplacePostInterfaceProps {
   marketplaceId: string;
@@ -17,8 +15,6 @@ interface MarketplacePostInterfaceProps {
 const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ marketplaceId }) => {
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
-  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const { user, profile } = useSupabase();
   const { isMarketplaceMember } = useMarketplace();
   const [isMember, setIsMember] = useState(false);
@@ -40,11 +36,6 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
   if (!user || !isMember) {
     return null;
   }
-
-  const handleEmojiSelect = (emoji: string) => {
-    setSelectedEmoji(emoji);
-    setPostModalOpen(true);
-  };
   
   return (
     <>
@@ -82,34 +73,21 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
             <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Poll</span>
           </Button>
           
-          <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="ghost"
-                className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
-              >
-                <Smile size={20} className="text-amber-500" />
-                <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Emoji</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <EmojiPicker 
-                onSelectEmoji={handleEmojiSelect} 
-                onClose={() => setEmojiPickerOpen(false)}
-              />
-            </PopoverContent>
-          </Popover>
+          <Button 
+            onClick={() => setPostModalOpen(true)}
+            variant="ghost"
+            className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
+          >
+            <PlusCircle size={20} className="text-green-500" />
+            <span className={`text-sm font-medium text-gray-700 ${isMobile ? 'hidden sm:inline' : ''}`}>Post</span>
+          </Button>
         </div>
       </div>
       
       <CreatePostModal 
         isOpen={postModalOpen} 
-        onClose={() => {
-          setPostModalOpen(false);
-          setSelectedEmoji(null);
-        }} 
+        onClose={() => setPostModalOpen(false)} 
         marketplaceId={marketplaceId}
-        initialContent={selectedEmoji || ""}
       />
       
       <CreatePollModal 
