@@ -5,6 +5,7 @@ import { Post } from '../lib/types';
 import PostCard from '../components/PostCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 const Favourites = () => {
   const { user } = useSupabase();
@@ -13,6 +14,8 @@ const Favourites = () => {
   const [sharedPosts, setSharedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('liked');
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
 
   useEffect(() => {
     const fetchFavouritePosts = async () => {
@@ -193,9 +196,9 @@ const Favourites = () => {
       
       <Tabs defaultValue="liked" onValueChange={(value) => setActiveTab(value as 'liked' | 'commented' | 'shared')}>
         <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="liked">Liked Posts</TabsTrigger>
-          <TabsTrigger value="commented">Commented Posts</TabsTrigger>
-          <TabsTrigger value="shared">Shared Posts</TabsTrigger>
+          <TabsTrigger value="liked">{isMobile ? 'Liked' : 'Liked Posts'}</TabsTrigger>
+          <TabsTrigger value="commented">{isMobile ? 'Commented' : 'Commented Posts'}</TabsTrigger>
+          <TabsTrigger value="shared">{isMobile ? 'Shared' : 'Shared Posts'}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="liked">
