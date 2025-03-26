@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
@@ -436,11 +435,7 @@ const UserProfile: React.FC = () => {
               )}
             </div>
             
-            <div className="mt-4 sm:mt-6 grid grid-cols-4 gap-2 w-full max-w-md">
-              <div className="text-center bg-gray-50 rounded-lg py-2 px-1 shadow-sm border border-border/10">
-                <p className="text-lg sm:text-2xl font-bold">{polls.length}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">Polls</p>
-              </div>
+            <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-2 w-full max-w-md">
               <div className="text-center bg-gray-50 rounded-lg py-2 px-1 shadow-sm border border-border/10">
                 <p className="text-lg sm:text-2xl font-bold">{posts.length}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Posts</p>
