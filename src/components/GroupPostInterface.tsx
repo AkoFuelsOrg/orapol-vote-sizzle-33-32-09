@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Image, PlusCircle, BarChart } from 'lucide-react';
+import { Image, PlusCircle, BarChart, Smile } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
@@ -75,8 +75,8 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
             variant="ghost"
             className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
           >
-            <PlusCircle size={20} className="text-green-500" />
-            <span className="text-sm font-medium text-gray-700">Create Post</span>
+            <Smile size={20} className="text-amber-500" />
+            <span className="text-sm font-medium text-gray-700">Emoji</span>
           </Button>
         </div>
       </div>
