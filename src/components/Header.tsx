@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -34,7 +33,6 @@ const Header: React.FC = () => {
   const breakpoint = useBreakpoint();
   const [isOpen, setIsOpen] = useState(false);
   
-  // Don't render header on desktop
   if (breakpoint === "desktop") {
     return null;
   }
@@ -143,14 +141,16 @@ const Header: React.FC = () => {
                     </button>
                   )}
                   
-                  {/* Lets Talk - simple text without styling */}
-                  <Link
-                    to="/lets-talk"
-                    onClick={() => setIsOpen(false)}
-                    className="p-3 mt-2 text-primary"
-                  >
-                    Lets Talk
-                  </Link>
+                  <div className="mt-6 pt-3 border-t border-primary/10">
+                    <Link
+                      to="/lets-talk"
+                      onClick={() => setIsOpen(false)}
+                      className="block text-center"
+                    >
+                      <span className="font-semibold tracking-wide text-primary/90 text-lg">LETS TALK</span>
+                      <div className="text-xs text-primary/60 mt-1">Connect. Share. Grow.</div>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </DrawerContent>
