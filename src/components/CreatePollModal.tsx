@@ -112,12 +112,13 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in overflow-y-auto">
       <div 
-        className="w-full max-w-md bg-white rounded-xl shadow-xl animate-scale-in"
+        className="w-full max-w-md bg-white rounded-xl shadow-xl animate-scale-in mx-auto my-auto"
         onClick={(e) => e.stopPropagation()}
+        style={{ maxHeight: '90vh', overflowY: 'auto' }}
       >
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
           <h2 className="text-lg font-semibold">
             {marketplaceId ? "Create Marketplace Poll" : groupId ? "Create Group Poll" : "Create New Poll"}
           </h2>
