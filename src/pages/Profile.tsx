@@ -543,11 +543,7 @@ const Profile: React.FC = () => {
             </div>
             
             {/* Stats */}
-            <div className="mt-4 sm:mt-6 grid grid-cols-4 gap-1 sm:gap-4 justify-center max-w-xs sm:max-w-md mx-auto text-center">
-              <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
-                <p className="text-lg sm:text-2xl font-bold">{userPolls.length}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">Polls</p>
-              </div>
+            <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-1 sm:gap-4 justify-center max-w-xs sm:max-w-md mx-auto text-center">
               <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
                 <p className="text-lg sm:text-2xl font-bold">{userPosts.length}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">Posts</p>
