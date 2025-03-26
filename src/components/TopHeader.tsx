@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '../hooks/use-mobile';
-import { Search, MessageSquare, Bell, User, Heart } from 'lucide-react';
+import { Search, MessageSquare, Bell, User, Heart, X } from 'lucide-react';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
@@ -12,6 +13,8 @@ const TopHeader: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile } = useSupabase();
   const isDesktop = breakpoint === "desktop";
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Don't render on mobile
   if (!isDesktop) {
@@ -19,7 +22,33 @@ const TopHeader: React.FC = () => {
   }
 
   const handleSearchClick = () => {
-    navigate('/search');
+    if (showSearch) {
+      // If search box is already visible, handle search submission
+      if (searchQuery.trim()) {
+        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchQuery('');
+        setShowSearch(false);
+      }
+    } else {
+      // If search box is not visible, show it
+      setShowSearch(true);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setShowSearch(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setShowSearch(false);
+      setSearchQuery('');
+    }
   };
   
   return (
@@ -40,15 +69,42 @@ const TopHeader: React.FC = () => {
         </Link>
         
         <div className="flex items-center gap-3">
-          <Button 
-            onClick={handleSearchClick}
-            variant="ghost" 
-            className="flex items-center gap-2 text-white hover:bg-white/20 transition-all duration-300 rounded-full px-4"
-            size="sm"
-          >
-            <Search size={18} />
-            <span>Search</span>
-          </Button>
+          {showSearch ? (
+            <form onSubmit={handleSearchSubmit} className="relative w-64">
+              <Input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                autoFocus
+                className="pl-9 pr-8 py-2 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full focus-visible:ring-white/30"
+              />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-white/70 hover:text-white hover:bg-transparent p-0"
+                onClick={() => {
+                  setShowSearch(false);
+                  setSearchQuery('');
+                }}
+              >
+                <X size={14} />
+              </Button>
+            </form>
+          ) : (
+            <Button 
+              onClick={handleSearchClick}
+              variant="ghost" 
+              className="flex items-center gap-2 text-white hover:bg-white/20 transition-all duration-300 rounded-full px-4"
+              size="sm"
+            >
+              <Search size={18} />
+              <span>Search</span>
+            </Button>
+          )}
           
           <Button 
             variant="ghost" 
