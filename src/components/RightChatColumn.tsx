@@ -86,7 +86,7 @@ const RightChatColumn: React.FC = () => {
                 <div className="p-1.5 bg-primary/15 rounded-full">
                   <UserPlus size={18} className="text-primary" />
                 </div>
-                <h2 className="font-semibold text-gray-800 tracking-tight">Suggested Accounts</h2>
+                <h2 className="font-semibold text-gray-800 tracking-tight" style={{ display: 'none' }}>Suggested Accounts</h2>
               </div>
               
               <ScrollArea className="flex-1 overflow-hidden">

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -215,7 +216,8 @@ const SuggestedUsers: React.FC = () => {
                     </h3>
                     <Badge 
                       variant="outline" 
-                      className="ml-2 text-[10px] px-1.5 py-0 border-primary/20 text-primary/80 hidden sm:inline-flex"
+                      className="ml-2 text-[10px] px-1.5 py-0 border-primary/20 text-primary/80 hidden"
+                      style={{ display: 'none' }}
                     >
                       Suggested
                     </Badge>
