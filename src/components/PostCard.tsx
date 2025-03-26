@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, MoreHorizontal, ThumbsUp } from 'lucide-react';
 import { Post } from '../lib/types';
@@ -119,8 +120,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
             <video 
               src={post.video} 
               controls
-              className="w-full h-auto max-h-[500px] bg-black"
-            />
+              className="w-full h-auto max-h-[500px] object-contain bg-black"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
         )}
         
