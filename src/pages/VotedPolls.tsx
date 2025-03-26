@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSupabase } from '../context/SupabaseContext';
@@ -62,7 +61,7 @@ const VotedPolls: React.FC = () => {
   };
 
   return (
-    <div className={`w-full ${isDesktop ? 'max-w-full' : ''} mx-auto py-8`}>
+    <div className={`w-full ${isDesktop ? 'pt-5 max-w-full' : ''} mx-auto py-8`}>
       <h1 className="text-2xl font-bold mb-6">Your Voted Polls</h1>
       <Card>
         <CardHeader>

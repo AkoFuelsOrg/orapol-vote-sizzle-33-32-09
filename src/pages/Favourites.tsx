@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -189,7 +188,7 @@ const Favourites = () => {
   }
 
   return (
-    <div className="container mx-auto pt-24 px-4 md:px-8 max-w-5xl">
+    <div className="container mx-auto pt-5 px-4 md:px-8 max-w-5xl">
       <h1 className="text-2xl font-bold mb-6">Favourites</h1>
       
       <Tabs defaultValue="liked" onValueChange={(value) => setActiveTab(value as 'liked' | 'commented' | 'shared')}>
