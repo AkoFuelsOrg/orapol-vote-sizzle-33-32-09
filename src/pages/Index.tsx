@@ -382,7 +382,7 @@ const Index: React.FC = () => {
       <Header />
       <TopHeader />
       
-      <main className={`${isDesktop ? 'pt-8' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
+      <main className={`${isDesktop ? 'pt-5' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
         <div className="mb-6 animate-fade-in">
           <div className="flex items-center gap-2">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-1">Discover</h2>
