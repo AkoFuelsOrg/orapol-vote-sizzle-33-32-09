@@ -5,15 +5,24 @@ import { usePollContext } from '../context/PollContext';
 import { toast } from "sonner";
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
 
 interface CreatePollModalProps {
   isOpen?: boolean;
   onClose: () => void;
   groupId?: string;
-  marketplaceId?: string; // Added marketplaceId prop
+  marketplaceId?: string;
+  asSheet?: boolean;
 }
 
-const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, groupId, marketplaceId }) => {
+const CreatePollModal: React.FC<CreatePollModalProps> = ({ 
+  isOpen = false, 
+  onClose, 
+  groupId, 
+  marketplaceId,
+  asSheet = false
+}) => {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
   const [loading, setLoading] = useState(false);
@@ -109,28 +118,11 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
     }
   };
 
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50 animate-fade-in overflow-y-auto" style={{ position: 'fixed', zIndex: 99999 }}>
-      <div 
-        className="w-full max-w-md bg-white rounded-xl shadow-xl animate-scale-in mx-auto my-auto"
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxHeight: '90vh', overflowY: 'auto', position: 'relative', zIndex: 100000 }}
-      >
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-semibold">
-            {marketplaceId ? "Create Marketplace Poll" : groupId ? "Create Group Poll" : "Create New Poll"}
-          </h2>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-secondary transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+  // If using as a sheet content rather than a standalone modal
+  if (asSheet) {
+    return (
+      <div className="p-2">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="question" className="block text-sm font-medium mb-1">
               Question
@@ -191,25 +183,116 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, grou
           </div>
           
           <div className="pt-2 flex gap-3 justify-end">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors"
               disabled={loading}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors btn-animate"
               disabled={loading}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {loading ? "Creating..." : "Create Poll"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
+      <DialogContent className="max-w-lg">
+        <DialogTitle className="text-center font-bold text-lg">
+          {marketplaceId ? "Create Marketplace Poll" : groupId ? "Create Group Poll" : "Create New Poll"}
+        </DialogTitle>
+        
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <label htmlFor="question" className="block text-sm font-medium mb-1">
+              Question
+            </label>
+            <input
+              id="question"
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="What would you like to ask?"
+              className="w-full p-2.5 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+              maxLength={100}
+              disabled={loading}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Options
+            </label>
+            <div className="space-y-2">
+              {options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                    className="flex-1 p-2.5 border border-input rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                    maxLength={50}
+                    disabled={loading}
+                  />
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(index)}
+                      className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      disabled={loading}
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              
+              {options.length < 6 && (
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="w-full p-2 flex items-center justify-center border border-dashed border-primary/30 rounded-lg text-primary/70 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all"
+                  disabled={loading}
+                >
+                  <Plus size={18} className="mr-1" />
+                  <span>Add Option</span>
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="pt-2 flex gap-3 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {loading ? "Creating..." : "Create Poll"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
