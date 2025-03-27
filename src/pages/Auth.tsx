@@ -83,11 +83,11 @@ const Auth: React.FC = () => {
       className="h-screen flex flex-col items-center justify-between relative bg-cover bg-center overflow-auto"
       style={{ 
         backgroundImage: `url('/lovable-uploads/3c9147ee-68a9-469d-a3c0-84763e903fd5.png')`,
-        backgroundColor: '#9b87f5',
+        backgroundColor: '#3eb0ff',
         backgroundBlendMode: 'multiply'
       }}
     >
-      <div className="absolute inset-0 bg-[#9b87f5] bg-opacity-70"></div>
+      <div className="absolute inset-0 bg-[#3eb0ff] bg-opacity-70"></div>
       
       <div className="flex-1 flex items-center justify-center w-full py-4">
         <div className="flex flex-col items-center justify-center relative z-10 max-w-md w-full gap-4 py-4">
@@ -181,7 +181,7 @@ const Auth: React.FC = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-[#9b87f5] hover:bg-[#8a75e6] text-white transition-all duration-300 hover:shadow-lg h-9"
+                  className="w-full bg-[#3eb0ff] hover:bg-[#2ea0ee] text-white transition-all duration-300 hover:shadow-lg h-9"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -204,7 +204,7 @@ const Auth: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-[#9b87f5] hover:underline text-sm"
+                className="text-[#3eb0ff] hover:underline text-sm"
               >
                 {isSignUp 
                   ? 'Already have an account? Sign In' 
