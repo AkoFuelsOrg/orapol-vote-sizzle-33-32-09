@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
@@ -34,10 +33,14 @@ import CreatePostModal from './CreatePostModal';
 interface PostCardProps {
   post: Post;
   onPostUpdate?: () => void;
-  onPostDeleted?: (postId: string) => void; // Added this prop to fix the TypeScript error
+  onPostDeleted?: (postId: string) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
+const PostCard: React.FC<PostCardProps> = ({ 
+  post, 
+  onPostUpdate, 
+  onPostDeleted 
+}) => {
   const { user } = useSupabase();
   const isMobile = useIsMobile();
   const breakpoint = useBreakpoint();
