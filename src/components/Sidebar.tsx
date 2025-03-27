@@ -9,6 +9,7 @@ import {
   Film,
   Bookmark,
   LogOut,
+  LogIn,
   PlusCircle,
   ChevronLeft,
   ChevronRight,
@@ -22,14 +23,15 @@ import { ScrollArea } from './ui/scroll-area';
 import CreatePostModal from './CreatePostModal';
 
 const Sidebar = () => {
-  const { user, profile, signOut } = useSupabase();
+  const { user, profile, signOut, signIn } = useSupabase();
   const location = useLocation();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   
-  const navLinks = [
+  // Different navLinks based on authentication state
+  const authenticatedNavLinks = [
     { href: '/', icon: Home, label: 'Home' },
     { href: '/vibezone', icon: Film, label: 'Vibezone' },
     { href: '/groups', icon: Users, label: 'Groups' },
@@ -37,6 +39,13 @@ const Sidebar = () => {
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
     { href: '/favourites', icon: Bookmark, label: 'Favourites' },
   ];
+  
+  const unauthenticatedNavLinks = [
+    { href: '/', icon: Home, label: 'Home' },
+  ];
+  
+  // Choose the appropriate navLinks based on authentication state
+  const navLinks = user ? authenticatedNavLinks : unauthenticatedNavLinks;
 
   // Get the user's profile data directly from the profile object
   // This is coming from useSupabase hook which already fetches the profile
@@ -142,6 +151,19 @@ const Sidebar = () => {
           </div>
         )}
 
+        {/* Show app logo for unauthenticated users */}
+        {!user && (
+          <div className="shrink-0 mt-8 flex justify-center">
+            <div className="bg-white rounded-full p-1 shadow-sm mb-4 border border-primary/10">
+              <img 
+                src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+                alt="Tuwaye Logo" 
+                className={collapsed ? "h-12 w-12" : "h-16 w-16"}
+              />
+            </div>
+          </div>
+        )}
+
         <ScrollArea className="flex-1 overflow-y-auto px-2">
           <nav className="flex flex-col py-4 space-y-1">
             {navLinks.map((link) => {
@@ -189,56 +211,81 @@ const Sidebar = () => {
         <div className={`p-3 space-y-2 bg-gradient-to-b from-transparent via-gray-50/80 to-gray-100/50 border-t border-gray-100 shrink-0 ${
           collapsed ? 'flex flex-col items-center' : ''
         }`}>
-          {collapsed ? (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => setModalOpen(true)}
-                className="w-10 h-10 p-0 rounded-full shadow-md hover:shadow-lg border-primary/20 transition-all hover:scale-105 active:scale-95"
-                title="Create Post"
-              >
-                <PlusCircle className="h-5 w-5 text-primary" />
-              </Button>
-              
-              <Button 
-                onClick={signOut}
-                className="w-10 h-10 p-0 rounded-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95"
-                title="Sign Out"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </>
+          {user ? (
+            collapsed ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setModalOpen(true)}
+                  className="w-10 h-10 p-0 rounded-full shadow-md hover:shadow-lg border-primary/20 transition-all hover:scale-105 active:scale-95"
+                  title="Create Post"
+                >
+                  <PlusCircle className="h-5 w-5 text-primary" />
+                </Button>
+                
+                <Button 
+                  onClick={signOut}
+                  className="w-10 h-10 p-0 rounded-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95"
+                  title="Sign Out"
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => setModalOpen(true)}
+                  className="w-full border-gray-200 bg-white/80 backdrop-blur-sm hover:bg-primary/5 text-gray-700 justify-start gap-2 shadow-md py-2.5 hover:shadow-lg transition-all border-primary/20 hover:scale-[1.01] active:scale-[0.99]"
+                >
+                  <div className="p-1 rounded-full bg-primary/10">
+                    <PlusCircle className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium">Create Post</span>
+                </Button>
+                
+                <Button 
+                  onClick={signOut}
+                  className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 justify-start gap-2 shadow-md py-2.5 hover:shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
+                >
+                  <div className="p-1 rounded-full bg-red-100">
+                    <LogOut className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-medium">Sign Out</span>
+                </Button>
+              </>
+            )
           ) : (
-            <>
+            // Login button for unauthenticated users
+            collapsed ? (
               <Button 
-                variant="outline"
-                onClick={() => setModalOpen(true)}
-                className="w-full border-gray-200 bg-white/80 backdrop-blur-sm hover:bg-primary/5 text-gray-700 justify-start gap-2 shadow-md py-2.5 hover:shadow-lg transition-all border-primary/20 hover:scale-[1.01] active:scale-[0.99]"
+                onClick={() => navigate('/auth')}
+                className="w-10 h-10 p-0 rounded-full bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95"
+                title="Sign In"
               >
-                <div className="p-1 rounded-full bg-primary/10">
-                  <PlusCircle className="h-4 w-4 text-primary" />
-                </div>
-                <span className="text-sm font-medium">Create Post</span>
+                <LogIn className="h-5 w-5" />
               </Button>
-              
+            ) : (
               <Button 
-                onClick={signOut}
-                className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 justify-start gap-2 shadow-md py-2.5 hover:shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
+                onClick={() => navigate('/auth')}
+                className="w-full bg-primary hover:bg-primary/90 text-white justify-start gap-2 shadow-md py-2.5 hover:shadow-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
               >
-                <div className="p-1 rounded-full bg-red-100">
-                  <LogOut className="h-4 w-4" />
+                <div className="p-1 rounded-full bg-primary/20">
+                  <LogIn className="h-4 w-4" />
                 </div>
-                <span className="text-sm font-medium">Sign Out</span>
+                <span className="text-sm font-medium">Sign In</span>
               </Button>
-            </>
+            )
           )}
         </div>
       </div>
       
-      <CreatePostModal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
-      />
+      {user && (
+        <CreatePostModal 
+          isOpen={modalOpen} 
+          onClose={() => setModalOpen(false)} 
+        />
+      )}
     </>
   );
 };
