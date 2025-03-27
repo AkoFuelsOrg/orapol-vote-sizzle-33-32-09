@@ -10,16 +10,16 @@ const AppLoader: React.FC<AppLoaderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate app loading
+    // Simulate app loading with a slightly longer delay to appreciate the splash screen
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 2500);
 
     return () => clearTimeout(timer);
   }, []);
 
   if (isLoading) {
-    return <SplashScreen message="Loading application..." />;
+    return <SplashScreen message="Loading your experience..." />;
   }
 
   return <>{children}</>;

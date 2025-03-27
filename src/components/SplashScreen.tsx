@@ -8,33 +8,57 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ message }) => {
   return (
-    <div className="fixed inset-0 bg-gradient-to-r from-[#3eb0ff]/80 to-[#3eb0ff] flex flex-col items-center justify-center z-50 animate-fade-in">
-      <div className="text-center">
-        <div className="flex flex-col items-center mb-2">
-          <img 
-            src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
-            alt="Tuwaye Logo" 
-            className="w-20 h-20 mb-2 drop-shadow-lg"
-          />
-          <h1 className="text-5xl font-bold text-white drop-shadow-md tracking-tight">
-            TUWAYE
-          </h1>
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-500 to-blue-700 flex flex-col items-center justify-center z-50">
+      <div className="max-w-md w-full mx-auto p-6 text-center">
+        <div className="relative mb-6">
+          {/* Logo container with glow effect */}
+          <div className="absolute inset-0 bg-blue-400 blur-xl opacity-30 rounded-full transform scale-110 animate-pulse-slow"></div>
+          <div className="relative flex flex-col items-center">
+            <div className="bg-white/20 backdrop-blur-md p-6 rounded-full border-2 border-white/40 shadow-[0_0_40px_rgba(59,130,246,0.5)] mb-4">
+              <img 
+                src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+                alt="Tuwaye Logo" 
+                className="w-28 h-28 object-contain animate-float"
+              />
+            </div>
+            
+            <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg tracking-tight">
+              TUWAYE
+            </h1>
+            
+            <div className="relative mb-2">
+              <img 
+                src="/lovable-uploads/a9a6666f-a21a-4a74-b484-3fb5f3184fdc.png" 
+                alt="Let's Talk" 
+                className="w-44 h-auto drop-shadow-lg animate-pulse-slow"
+              />
+            </div>
+          </div>
         </div>
         
-        <div className="mb-6 relative">
-          <img 
-            src="/lovable-uploads/a9a6666f-a21a-4a74-b484-3fb5f3184fdc.png" 
-            alt="Let's Talk" 
-            className="w-40 h-auto mx-auto drop-shadow-lg"
-          />
-        </div>
-        
-        <div className="bg-white/20 backdrop-blur-sm p-4 rounded-lg inline-flex items-center gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-white" />
-          {message && (
-            <p className="text-white text-sm font-medium">{message}</p>
-          )}
-        </div>
+        {message && (
+          <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-xl border border-white/20 inline-flex items-center gap-3 shadow-lg transition-all duration-500 animate-fade-in">
+            <div className="p-2 bg-white/20 rounded-full">
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            </div>
+            <p className="text-white text-base font-medium tracking-wide">
+              {message}
+            </p>
+          </div>
+        )}
+      </div>
+      
+      <div className="absolute bottom-8 w-full text-center">
+        <p className="text-white/70 text-sm animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          Connect, share, and engage with your community
+        </p>
+      </div>
+      
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[10%] left-[15%] w-64 h-64 bg-blue-300/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }}></div>
+        <div className="absolute top-[40%] right-[20%] w-48 h-48 bg-blue-200/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
       </div>
     </div>
   );
