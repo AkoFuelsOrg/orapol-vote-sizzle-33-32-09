@@ -34,6 +34,7 @@ import CreatePostModal from './CreatePostModal';
 interface PostCardProps {
   post: Post;
   onPostUpdate?: () => void;
+  onPostDeleted?: (postId: string) => void; // Added this prop to fix the TypeScript error
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
@@ -232,6 +233,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate }) => {
       if (postError) throw postError;
 
       toast.success("Post deleted successfully");
+      
+      // Call the onPostDeleted callback if provided
+      if (onPostDeleted) {
+        onPostDeleted(post.id);
+      }
       
       if (onPostUpdate) {
         onPostUpdate();
