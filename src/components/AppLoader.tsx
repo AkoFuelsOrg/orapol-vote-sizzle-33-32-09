@@ -13,13 +13,13 @@ const AppLoader: React.FC<AppLoaderProps> = ({ children }) => {
     // Simulate app loading with a slightly longer delay to appreciate the splash screen
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2800);
+    }, 3200);
 
     return () => clearTimeout(timer);
   }, []);
 
   if (isLoading) {
-    return <SplashScreen message="Loading your experience..." />;
+    return <SplashScreen message="Connecting to your social world..." />;
   }
 
   return <>{children}</>;
