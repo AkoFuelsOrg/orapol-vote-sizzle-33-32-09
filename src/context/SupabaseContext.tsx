@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { User as UserIcon } from 'lucide-react';
 
 interface ProfileUpdateData {
   username?: string;
@@ -96,7 +96,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       let avatarUrl = profile?.avatar_url;
       let coverUrl = profile?.cover_url;
       
-      // Upload profile image if provided
       if (data.profileFile) {
         const fileExt = data.profileFile.name.split('.').pop();
         const filePath = `${user.id}/profile-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -114,7 +113,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         avatarUrl = urlData.publicUrl;
       }
       
-      // Upload cover image if provided
       if (data.coverFile) {
         const fileExt = data.coverFile.name.split('.').pop();
         const filePath = `${user.id}/cover-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -164,7 +162,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     setLoading(true);
     try {
-      // First verify the current password by attempting to sign in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email!,
         password: currentPassword,
@@ -174,7 +171,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         throw new Error('Current password is incorrect');
       }
       
-      // Then update to the new password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -294,14 +290,44 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const createDefaultProfile = async (userId: string) => {
+    try {
+      const defaultAvatarUrl = 'https://api.dicebear.com/7.x/initials/svg?seed=' + Math.random().toString(36).substring(2);
+      
+      const profileData = {
+        id: userId,
+        username: `user_${Math.floor(Math.random() * 10000)}`,
+        avatar_url: defaultAvatarUrl,
+        created_at: new Date().toISOString(),
+      };
+      
+      const { error } = await supabase
+        .from('profiles')
+        .insert(profileData);
+        
+      if (error) throw error;
+      
+      return profileData;
+    } catch (error: any) {
+      console.error('Error creating default profile:', error.message);
+      throw error;
+    }
+  };
+
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
+      
       if (error) throw error;
+      
+      if (data.user) {
+        await createDefaultProfile(data.user.id);
+      }
+      
       toast.success('Sign up successful. Check your email for confirmation.');
       navigate('/auth', { state: { message: 'Please check your email for a confirmation link.' } });
     } catch (error: any) {
