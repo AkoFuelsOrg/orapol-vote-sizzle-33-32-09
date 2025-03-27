@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image, Loader2, BarChart2 } from 'lucide-react';
+import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import CreatePollModal from './CreatePollModal';
+import EmojiPicker from './EmojiPicker';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 export interface CreatePostModalProps {
   isOpen?: boolean;
@@ -39,7 +41,9 @@ const CreatePostModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const [keepExistingImage, setKeepExistingImage] = useState(!!initialImage);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user, profile } = useSupabase();
   
   useEffect(() => {
@@ -79,6 +83,14 @@ const CreatePostModal = ({
     setImagePreview(null);
     setKeepExistingImage(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleInsertEmoji = (emoji: string) => {
+    setContent(prev => prev + emoji);
+    setIsEmojiPickerOpen(false);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   };
   
   const handleSubmit = async () => {
@@ -206,12 +218,33 @@ const CreatePostModal = ({
             )}
             
             <div className="flex-1">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder={marketplaceId ? "Share something with the marketplace..." : groupId ? "Share something with the group..." : "What's on your mind?"}
-                className="resize-none border-0 p-0 focus-visible:ring-0 text-base h-32"
-              />
+              <div className="relative">
+                <Textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder={marketplaceId ? "Share something with the marketplace..." : groupId ? "Share something with the group..." : "What's on your mind?"}
+                  className="resize-none border-0 p-0 focus-visible:ring-0 text-base h-32"
+                />
+                <div className="absolute bottom-2 right-2">
+                  <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button 
+                        type="button" 
+                        className="text-gray-500 hover:text-gray-700 focus:outline-none p-1 rounded-full hover:bg-gray-100"
+                      >
+                        <Smile className="h-5 w-5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 border-none shadow-lg" align="end">
+                      <EmojiPicker 
+                        onSelectEmoji={handleInsertEmoji} 
+                        onClose={() => setIsEmojiPickerOpen(false)} 
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
               
               {imagePreview && (
                 <div className="relative mt-3 rounded-lg overflow-hidden">
