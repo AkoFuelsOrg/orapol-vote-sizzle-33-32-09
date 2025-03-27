@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -46,14 +45,12 @@ const Header: React.FC = () => {
 
   const handleSearchClick = () => {
     if (showSearch) {
-      // If search box is already visible, handle search submission
       if (searchQuery.trim()) {
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
         setShowSearch(false);
       }
     } else {
-      // If search box is not visible, show it
       setShowSearch(true);
     }
   };
@@ -255,11 +252,9 @@ const Header: React.FC = () => {
               ) : (
                 <Link 
                   to="/auth" 
-                  className={`p-2.5 rounded-full transition-all duration-300 ${
-                    location.pathname === '/auth' ? 'bg-white/30 text-white' : 'text-white/90 hover:text-white hover:bg-white/20'
-                  }`}
+                  className="text-white bg-primary hover:bg-primary/90 px-4 py-2 rounded-full text-sm font-medium transition-colors"
                 >
-                  <User size={20} />
+                  Login
                 </Link>
               )}
             </>

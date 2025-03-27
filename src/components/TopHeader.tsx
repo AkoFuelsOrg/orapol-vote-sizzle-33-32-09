@@ -150,8 +150,8 @@ const TopHeader: React.FC = () => {
             </Link>
           ) : (
             <Button 
-              variant="outline" 
-              className="border-white/30 text-white hover:bg-white/20 hover:text-white hover:border-white/20 rounded-full"
+              variant="default" 
+              className="rounded-full"
               size="sm"
               onClick={() => navigate('/auth')}
             >
