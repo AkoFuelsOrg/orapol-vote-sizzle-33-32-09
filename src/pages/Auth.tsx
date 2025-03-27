@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -64,102 +65,135 @@ const Auth: React.FC = () => {
     >
       <div className="absolute inset-0 bg-blue-500 bg-opacity-70"></div>
       
-      <Card className="w-full max-w-md relative z-10 shadow-2xl border-none bg-white/90 backdrop-blur-md rounded-2xl overflow-hidden">
-        <CardContent className="p-8 space-y-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
-            </h1>
-            <p className="text-gray-600 mb-6">
-              {isSignUp 
-                ? 'Sign up to start your journey' 
-                : 'Sign in to continue to Tuwaye'}
-            </p>
+      <div className="flex flex-col items-center justify-center relative z-10 max-w-md w-full gap-6">
+        {/* Logo and Slogan */}
+        <div className="flex flex-col items-center mb-2 text-center">
+          <div className="bg-white/90 backdrop-blur-sm p-4 rounded-full shadow-xl border-2 border-white/50 mb-3">
+            <img 
+              src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+              alt="Tuwaye Logo" 
+              className="h-16 w-16 object-contain animate-pulse-slow"
+            />
           </div>
-
-          {formProgress > 0 && (
-            <Progress value={formProgress} className="h-1 mb-4 bg-blue-100" />
-          )}
-
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            setIsLoading(true);
-            isSignUp ? signUp(email, password) : signIn(email, password);
-          }} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-                className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-              />
+          <h1 className="text-3xl font-bold text-white mb-1 tracking-wide text-shadow">
+            Tuwaye
+          </h1>
+          <div className="relative">
+            <p className="text-lg font-medium text-white italic tracking-wider shadow-text">
+              Let's Talk
+            </p>
+            <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent"></div>
+          </div>
+        </div>
+      
+        <Card className="w-full shadow-2xl border-none bg-white/90 backdrop-blur-md rounded-2xl overflow-hidden">
+          <CardContent className="p-8 space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                {isSignUp ? 'Create Account' : 'Welcome Back'}
+              </h2>
+              <p className="text-gray-600 mb-6">
+                {isSignUp 
+                  ? 'Sign up to start your journey' 
+                  : 'Sign in to continue to Tuwaye'}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700">
-                Password {!isSignUp && (
-                  <span 
-                    onClick={() => {/* TODO: Implement forgot password */}}
-                    className="text-xs text-blue-600 float-right cursor-pointer hover:underline"
-                  >
-                    Forgot Password?
-                  </span>
+            {formProgress > 0 && (
+              <Progress value={formProgress} className="h-1 mb-4 bg-blue-100" />
+            )}
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setIsLoading(true);
+              isSignUp ? signUp(email, password) : signIn(email, password);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-gray-700">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                    className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-gray-700">
+                  Password {!isSignUp && (
+                    <span 
+                      onClick={() => {/* TODO: Implement forgot password */}}
+                      className="text-xs text-blue-600 float-right cursor-pointer hover:underline"
+                    >
+                      Forgot Password?
+                    </span>
+                  )}
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                    minLength={6}
+                    className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                {isSignUp && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Password must be at least 6 characters long
+                  </p>
                 )}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                minLength={6}
-                className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-              />
-              {isSignUp && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Password must be at least 6 characters long
-                </p>
-              )}
-            </div>
+              </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={isLoading}
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 hover:shadow-lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : isSignUp ? (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" /> Create Account
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" /> Sign In
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+          
+          <CardFooter className="p-6 pt-0 text-center">
+            <div className="w-full border-t border-gray-200 my-4"></div>
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-blue-600 hover:underline text-sm"
             >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : isSignUp ? (
-                <>
-                  <UserPlus className="mr-2 h-4 w-4" /> Create Account
-                </>
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-4 w-4" /> Sign In
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
+              {isSignUp 
+                ? 'Already have an account? Sign In' 
+                : "Don't have an account? Sign Up"}
+            </button>
+          </CardFooter>
+        </Card>
         
-        <CardFooter className="p-6 pt-0 text-center">
-          <div className="w-full border-t border-gray-200 my-4"></div>
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-blue-600 hover:underline text-sm"
-          >
-            {isSignUp 
-              ? 'Already have an account? Sign In' 
-              : "Don't have an account? Sign Up"}
-          </button>
-        </CardFooter>
-      </Card>
+        {/* Footer note */}
+        <p className="text-white/70 text-sm text-center mt-2">
+          Connect with friends and community
+        </p>
+      </div>
     </div>
   );
 };
