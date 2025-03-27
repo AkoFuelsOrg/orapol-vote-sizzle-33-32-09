@@ -10,13 +10,11 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message }) => {
   return (
     <div className="fixed inset-0 bg-primary flex flex-col items-center justify-center z-50">
       <div className="text-center">
-        <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full shadow-lg border border-white/30 mb-4 flex items-center justify-center">
-          <img 
-            src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
-            alt="Tuwaye Logo" 
-            className="h-16 w-16 object-contain"
-          />
-        </div>
+        <img 
+          src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+          alt="Tuwaye Logo" 
+          className="h-16 w-16 object-contain mb-4"
+        />
         
         <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
           Tuwaye
