@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -49,12 +48,10 @@ const Auth: React.FC = () => {
   const isDesktop = breakpoint === "desktop";
 
   useEffect(() => {
-    // Redirect to home if user is already logged in
     if (user && !loading) {
       navigate('/');
     }
 
-    // Hide sidebar and header when on auth page for desktop
     if (isDesktop) {
       const sidebar = document.querySelector('.w-64.h-screen');
       const topHeader = document.querySelector('.w-full.bg-gradient-to-r');
@@ -63,7 +60,6 @@ const Auth: React.FC = () => {
       if (topHeader) topHeader.classList.add('hidden');
       
       return () => {
-        // Show them again when leaving the page
         if (sidebar) sidebar.classList.remove('hidden');
         if (topHeader) topHeader.classList.remove('hidden');
       };
@@ -71,7 +67,6 @@ const Auth: React.FC = () => {
   }, [user, loading, navigate, isDesktop]);
 
   useEffect(() => {
-    // Calculate form completion progress
     let progress = 0;
     if (email.length > 0) progress += 50;
     if (password.length > 5) progress += 50;
@@ -80,13 +75,12 @@ const Auth: React.FC = () => {
 
   const changeLanguage = (value: string) => {
     setLanguage(value);
-    // In a real app, this would update the app's language context
     console.log(`Language changed to: ${value}`);
   };
 
   return (
     <div 
-      className="min-h-screen flex flex-col items-center justify-between relative bg-cover bg-center"
+      className="h-[98vh] flex flex-col items-center justify-between relative bg-cover bg-center overflow-auto"
       style={{ 
         backgroundImage: `url('/lovable-uploads/3c9147ee-68a9-469d-a3c0-84763e903fd5.png')`,
         backgroundColor: 'rgba(33, 150, 243, 0.7)',
@@ -95,18 +89,17 @@ const Auth: React.FC = () => {
     >
       <div className="absolute inset-0 bg-blue-500 bg-opacity-70"></div>
       
-      <div className="flex-1 flex items-center justify-center w-full">
-        <div className="flex flex-col items-center justify-center relative z-10 max-w-md w-full gap-6 py-10">
-          {/* Logo and Slogan */}
-          <div className="flex flex-col items-center mb-2 text-center">
-            <div className="bg-white/90 backdrop-blur-sm p-4 rounded-full shadow-xl border-2 border-white/50 mb-3">
+      <div className="flex-1 flex items-center justify-center w-full py-4">
+        <div className="flex flex-col items-center justify-center relative z-10 max-w-md w-full gap-4 py-4">
+          <div className="flex flex-col items-center mb-1 text-center">
+            <div className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-xl border-2 border-white/50 mb-2">
               <img 
                 src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
                 alt="Tuwaye Logo" 
-                className="h-16 w-16 object-contain animate-pulse-slow"
+                className="h-14 w-14 object-contain animate-pulse-slow"
               />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-1 tracking-wide text-shadow">
+            <h1 className="text-2xl font-bold text-white mb-1 tracking-wide text-shadow">
               Tuwaye
             </h1>
             <div className="relative">
@@ -118,12 +111,12 @@ const Auth: React.FC = () => {
           </div>
         
           <Card className="w-full shadow-2xl border-none bg-white/90 backdrop-blur-md rounded-2xl overflow-hidden">
-            <CardContent className="p-8 space-y-6">
+            <CardContent className="p-6 space-y-4">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                <h2 className="text-xl font-bold text-gray-800 mb-1">
                   {isSignUp ? 'Create Account' : 'Welcome Back'}
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-4 text-sm">
                   {isSignUp 
                     ? 'Sign up to start your journey' 
                     : 'Sign in to continue to Tuwaye'}
@@ -131,18 +124,18 @@ const Auth: React.FC = () => {
               </div>
 
               {formProgress > 0 && (
-                <Progress value={formProgress} className="h-1 mb-4 bg-blue-100" />
+                <Progress value={formProgress} className="h-1 mb-3 bg-blue-100" />
               )}
 
               <form onSubmit={(e) => {
                 e.preventDefault();
                 setIsLoading(true);
                 isSignUp ? signUp(email, password) : signIn(email, password);
-              }} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700">Email Address</Label>
+              }} className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="text-gray-700 text-sm">Email Address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                     <Input
                       id="email"
                       type="email"
@@ -150,13 +143,13 @@ const Auth: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email"
                       required
-                      className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500 h-9"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-gray-700">
+                <div className="space-y-1">
+                  <Label htmlFor="password" className="text-gray-700 text-sm">
                     Password {!isSignUp && (
                       <span 
                         onClick={() => {/* TODO: Implement forgot password */}}
@@ -167,7 +160,7 @@ const Auth: React.FC = () => {
                     )}
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                     <Input
                       id="password"
                       type="password"
@@ -176,7 +169,7 @@ const Auth: React.FC = () => {
                       placeholder="Enter your password"
                       required
                       minLength={6}
-                      className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500 h-9"
                     />
                   </div>
                   {isSignUp && (
@@ -188,7 +181,7 @@ const Auth: React.FC = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 hover:shadow-lg"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 hover:shadow-lg h-9"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -206,8 +199,8 @@ const Auth: React.FC = () => {
               </form>
             </CardContent>
             
-            <CardFooter className="p-6 pt-0 text-center">
-              <div className="w-full border-t border-gray-200 my-4"></div>
+            <CardFooter className="p-4 pt-0 text-center">
+              <div className="w-full border-t border-gray-200 my-3"></div>
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
@@ -219,28 +212,21 @@ const Auth: React.FC = () => {
               </button>
             </CardFooter>
           </Card>
-          
-          {/* Footer note */}
-          <p className="text-white/70 text-sm text-center mt-2">
-            Connect with friends and community
-          </p>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 w-full bg-white/10 backdrop-blur-md border-t border-white/20 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row justify-between gap-6">
-            {/* Language Selector */}
+      <footer className="relative z-10 w-full bg-white/10 backdrop-blur-md border-t border-white/20 py-2">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-sm">
             <div className="flex items-center space-x-2">
-              <GlobeIcon className="h-5 w-5 text-white/80" />
+              <GlobeIcon className="h-4 w-4 text-white/80" />
               <Select value={language} onValueChange={changeLanguage}>
-                <SelectTrigger className="w-[180px] bg-white/20 text-white border-white/30 focus:ring-white/50">
+                <SelectTrigger className="w-[150px] bg-white/20 text-white border-white/30 focus:ring-white/50 h-8 text-xs">
                   <SelectValue placeholder="Select language" />
                 </SelectTrigger>
                 <SelectContent>
                   {languages.map((lang) => (
-                    <SelectItem key={lang.code} value={lang.code}>
+                    <SelectItem key={lang.code} value={lang.code} className="text-xs">
                       {lang.name}
                     </SelectItem>
                   ))}
@@ -248,18 +234,15 @@ const Auth: React.FC = () => {
               </Select>
             </div>
 
-            {/* Footer Links */}
-            <div className="flex flex-wrap gap-6 text-white/80 text-sm">
-              <a href="#" className="hover:text-white hover:underline transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-white hover:underline transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white hover:underline transition-colors">Cookie Policy</a>
-              <a href="#" className="hover:text-white hover:underline transition-colors">Help Center</a>
-              <a href="#" className="hover:text-white hover:underline transition-colors">About Us</a>
+            <div className="flex flex-wrap gap-4 text-white/80 text-xs">
+              <a href="#" className="hover:text-white hover:underline transition-colors">Terms</a>
+              <a href="#" className="hover:text-white hover:underline transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white hover:underline transition-colors">Cookies</a>
+              <a href="#" className="hover:text-white hover:underline transition-colors">Help</a>
             </div>
 
-            {/* Copyright */}
-            <div className="text-white/70 text-sm">
-              © {new Date().getFullYear()} Tuwaye. All rights reserved.
+            <div className="text-white/70 text-xs">
+              © {new Date().getFullYear()} Tuwaye
             </div>
           </div>
         </div>
