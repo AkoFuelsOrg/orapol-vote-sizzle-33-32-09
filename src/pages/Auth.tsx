@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -84,11 +83,11 @@ const Auth: React.FC = () => {
       className="h-screen flex flex-col items-center justify-between relative bg-cover bg-center overflow-auto"
       style={{ 
         backgroundImage: `url('/lovable-uploads/3c9147ee-68a9-469d-a3c0-84763e903fd5.png')`,
-        backgroundColor: 'rgba(33, 150, 243, 0.7)',
+        backgroundColor: '#9b87f5',
         backgroundBlendMode: 'multiply'
       }}
     >
-      <div className="absolute inset-0 bg-blue-500 bg-opacity-70"></div>
+      <div className="absolute inset-0 bg-[#9b87f5] bg-opacity-70"></div>
       
       <div className="flex-1 flex items-center justify-center w-full py-4">
         <div className="flex flex-col items-center justify-center relative z-10 max-w-md w-full gap-4 py-4">
@@ -182,7 +181,7 @@ const Auth: React.FC = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 hover:shadow-lg h-9"
+                  className="w-full bg-[#9b87f5] hover:bg-[#8a75e6] text-white transition-all duration-300 hover:shadow-lg h-9"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -205,7 +204,7 @@ const Auth: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-blue-600 hover:underline text-sm"
+                className="text-[#9b87f5] hover:underline text-sm"
               >
                 {isSignUp 
                   ? 'Already have an account? Sign In' 
