@@ -26,13 +26,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message }) => {
               TUWAYE
             </h1>
             
-            <div className="relative mb-2">
-              <img 
-                src="/lovable-uploads/a9a6666f-a21a-4a74-b484-3fb5f3184fdc.png" 
-                alt="Let's Talk" 
-                className="w-44 h-auto drop-shadow-lg animate-pulse-slow"
-              />
-            </div>
+            <p className="text-xl text-white/90 font-medium mb-4 drop-shadow-md animate-pulse-slow">
+              Let's Talk
+            </p>
           </div>
         </div>
         

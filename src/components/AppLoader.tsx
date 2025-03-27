@@ -13,7 +13,7 @@ const AppLoader: React.FC<AppLoaderProps> = ({ children }) => {
     // Simulate app loading with a slightly longer delay to appreciate the splash screen
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500);
+    }, 2800);
 
     return () => clearTimeout(timer);
   }, []);
