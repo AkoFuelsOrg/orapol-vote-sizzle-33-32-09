@@ -320,7 +320,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         password,
       });
       if (error) throw error;
-      navigate('/home');
+      navigate('/');
       toast.success('Signed in successfully');
     } catch (error: any) {
       toast.error(error.message || 'Error signing in');
