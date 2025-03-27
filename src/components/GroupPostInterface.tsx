@@ -1,11 +1,12 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Image, PlusCircle, BarChart, Smile } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { useGroup } from '../context/GroupContext';
 import { Button } from './ui/button';
+import EmojiPicker from './EmojiPicker';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface GroupPostInterfaceProps {
   groupId: string;
@@ -17,6 +18,8 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
   const { user, profile } = useSupabase();
   const { isGroupMember } = useGroup();
   const [isMember, setIsMember] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [postText, setPostText] = useState('');
   
   React.useEffect(() => {
     if (user && groupId) {
@@ -28,6 +31,12 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
     if (!user || !groupId) return;
     const memberStatus = await isGroupMember(groupId);
     setIsMember(memberStatus);
+  };
+  
+  const handleEmojiSelect = (emoji: string) => {
+    setPostText(prev => prev + emoji);
+    // Keep emoji picker open
+    setPostModalOpen(true);
   };
   
   if (!user || !isMember) {
@@ -70,14 +79,26 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
             <span className="text-sm font-medium text-gray-700">Poll</span>
           </Button>
           
-          <Button 
-            onClick={() => setPostModalOpen(true)}
-            variant="ghost"
-            className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
-          >
-            <Smile size={20} className="text-yellow-500" />
-            <span className="text-sm font-medium text-gray-700">Emoji</span>
-          </Button>
+          <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost"
+                className="flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-lg flex-1 transition-colors"
+              >
+                <Smile size={20} className="text-yellow-500" />
+                <span className="text-sm font-medium text-gray-700">Emoji</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 border-none shadow-lg w-auto" align="center">
+              <EmojiPicker 
+                onSelectEmoji={(emoji) => {
+                  handleEmojiSelect(emoji);
+                  setIsEmojiPickerOpen(false);
+                }} 
+                onClose={() => setIsEmojiPickerOpen(false)} 
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
       
@@ -85,6 +106,7 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
         isOpen={postModalOpen} 
         onClose={() => setPostModalOpen(false)} 
         groupId={groupId}
+        initialContent={postText}
       />
       
       <CreatePollModal 

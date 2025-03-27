@@ -46,7 +46,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelectEmoji, onClose }) => 
       : commonEmojis;
 
   return (
-    <div className="p-2 bg-background border rounded-lg shadow-lg w-full max-w-xs">
+    <div className="p-2 bg-background border rounded-lg shadow-lg w-full max-w-xs z-50">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-sm font-medium">Select Emoji</h3>
         <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
