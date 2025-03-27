@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { User } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface UserAvatarProps {
@@ -27,6 +26,8 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   };
 
+  const defaultAvatarUrl = "/lovable-uploads/a1460791-238f-4bd1-8f10-fb38f230f3ad.png";
+  
   const initials = user?.username 
     ? user.username.substring(0, 2).toUpperCase() 
     : '?';
@@ -38,7 +39,12 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           src={user.avatar_url} 
           alt={user?.username || 'User'} 
         />
-      ) : null}
+      ) : (
+        <AvatarImage 
+          src={defaultAvatarUrl} 
+          alt={user?.username || 'User'} 
+        />
+      )}
       <AvatarFallback className="bg-blue-100 text-blue-800 flex items-center justify-center">
         {initials}
       </AvatarFallback>

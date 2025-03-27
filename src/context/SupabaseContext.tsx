@@ -1,9 +1,9 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
-import { User as UserIcon } from 'lucide-react';
 
 interface ProfileUpdateData {
   username?: string;
@@ -292,7 +292,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const createDefaultProfile = async (userId: string) => {
     try {
-      const defaultAvatarUrl = 'https://api.dicebear.com/7.x/initials/svg?seed=' + Math.random().toString(36).substring(2);
+      const defaultAvatarUrl = '/lovable-uploads/a1460791-238f-4bd1-8f10-fb38f230f3ad.png';
       
       const profileData = {
         id: userId,
