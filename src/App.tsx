@@ -87,6 +87,11 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Create a redirect component
+const RedirectToAuth = () => {
+  return <Navigate to="/auth" replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -101,7 +106,9 @@ const App = () => (
                   <AppLoader>
                     <ResponsiveLayout>
                       <Routes>
-                        <Route path="/" element={<Index />} />
+                        {/* Redirect root to auth page */}
+                        <Route path="/" element={<RedirectToAuth />} />
+                        <Route path="/home" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/search" element={<SearchResults />} />
                         <Route
