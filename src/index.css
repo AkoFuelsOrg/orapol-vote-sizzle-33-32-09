@@ -293,6 +293,22 @@
   .comments-section {
     @apply bg-white rounded-xl border border-gray-100 shadow-sm p-5;
   }
+  
+  .footer-link {
+    @apply text-blue-200 hover:text-white transition-colors;
+  }
+  
+  .footer-social-icon {
+    @apply bg-blue-800/50 p-2 rounded-full hover:bg-blue-700 transition-colors;
+  }
+  
+  .footer-input {
+    @apply text-sm bg-blue-800/30 border border-blue-700 rounded-md px-3 py-2 w-full focus:outline-none focus:ring-1 focus:ring-blue-400 text-white;
+  }
+  
+  .footer-button {
+    @apply bg-blue-600 hover:bg-blue-500 transition-colors text-white rounded-md px-4 text-sm font-medium;
+  }
 }
 
 #root {
