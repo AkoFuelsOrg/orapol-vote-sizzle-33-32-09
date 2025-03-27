@@ -4,8 +4,8 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { PollProvider } from "./context/PollContext";
 import { SupabaseProvider } from "./context/SupabaseContext";
+import { PollProvider } from "./context/PollContext";
 import { GroupProvider } from "./context/GroupContext";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
 import { VibezoneProvider } from "./context/VibezoneContext";
