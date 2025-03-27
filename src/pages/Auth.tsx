@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -80,7 +81,7 @@ const Auth: React.FC = () => {
 
   return (
     <div 
-      className="h-[98vh] flex flex-col items-center justify-between relative bg-cover bg-center overflow-auto"
+      className="h-screen flex flex-col items-center justify-between relative bg-cover bg-center overflow-auto"
       style={{ 
         backgroundImage: `url('/lovable-uploads/3c9147ee-68a9-469d-a3c0-84763e903fd5.png')`,
         backgroundColor: 'rgba(33, 150, 243, 0.7)',
