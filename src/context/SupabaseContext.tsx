@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -299,7 +298,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const createDefaultProfile = async (userId: string) => {
     try {
-      // Update to use the new default avatar image
       const defaultAvatarUrl = '/lovable-uploads/a031d96a-edf1-46c7-a8b5-2b75b8ff96ec.png';
       
       const profileData = {
@@ -337,7 +335,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       toast.success('Sign up successful!');
-      // Navigate to profile setup page instead of auth page
       navigate('/profile-setup');
     } catch (error: any) {
       toast.error(error.message || 'Error signing up');
