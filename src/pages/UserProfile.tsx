@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Button } from '../components/ui/button';
 import UserAvatar from '../components/UserAvatar';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { toast } from "sonner";
 
 const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
