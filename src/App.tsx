@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -23,6 +24,7 @@ import CreatePoll from "./pages/CreatePoll";
 import PollDetail from "./pages/PollDetail";
 import Profile from "./pages/Profile";
 import ProfileSetup from "./pages/ProfileSetup";
+import FindFriends from "./pages/FindFriends"; // Add this import
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
@@ -54,8 +56,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const isDesktop = breakpoint === "desktop";
   const location = useLocation();
   
-  // Add profile-setup to paths that don't show the layout
-  if (location.pathname === '/auth' || location.pathname === '/profile-setup') {
+  // Add find-friends to paths that don't show the layout
+  if (location.pathname === '/auth' || location.pathname === '/profile-setup' || location.pathname === '/find-friends') {
     return <>{children}</>;
   }
   
@@ -108,6 +110,14 @@ const App = () => (
                           path="/profile-setup" 
                           element={
                             <ProfileSetup />
+                          } 
+                        />
+                        <Route 
+                          path="/find-friends" 
+                          element={
+                            <ProtectedRoute>
+                              <FindFriends />
+                            </ProtectedRoute>
                           } 
                         />
                         <Route path="/search" element={<SearchResults />} />

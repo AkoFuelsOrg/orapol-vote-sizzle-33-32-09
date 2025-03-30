@@ -80,9 +80,9 @@ const ProfileSetup: React.FC = () => {
       setSetupComplete(true);
       toast.success('Profile setup complete!');
       
-      // Redirect to home page after a delay
+      // Redirect to find-friends page after a delay instead of home
       setTimeout(() => {
-        navigate('/');
+        navigate('/find-friends');
       }, 1500);
     } catch (error: any) {
       toast.error('Failed to update profile');

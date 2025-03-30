@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import AppLoader from './AppLoader';
 import { supabase } from '../integrations/supabase/client';
@@ -14,6 +14,7 @@ const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRout
   const { session } = useSupabase();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
+  const location = useLocation();
   
   useEffect(() => {
     const checkProfile = async () => {
@@ -47,6 +48,11 @@ const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRout
   // For profile setup page: redirect to home if profile already set up
   if (requireProfileSetup && hasProfile) {
     return <Navigate to="/" replace />;
+  }
+  
+  // Special case for find-friends page - always accessible after authentication
+  if (location.pathname === '/find-friends') {
+    return <>{children}</>;
   }
   
   // For normal protected pages: redirect to profile setup if profile not set up
