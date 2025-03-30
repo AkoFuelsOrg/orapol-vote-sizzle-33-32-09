@@ -1,29 +1,16 @@
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React from 'react';
 
-// Create a context to provide the default avatar URL throughout the app
-interface DefaultAvatarContextType {
-  defaultAvatarUrl: string;
-}
+export const DEFAULT_AVATAR_URL = '/lovable-uploads/a031d96a-edf1-46c7-a8b5-2b75b8ff96ec.png';
 
-const DefaultAvatarContext = createContext<DefaultAvatarContextType>({
-  defaultAvatarUrl: "/lovable-uploads/a4e9124a-4f86-442b-a248-deb01d8501eb.png",
-});
-
-export const useDefaultAvatar = () => useContext(DefaultAvatarContext);
-
-interface DefaultAvatarProviderProps {
-  children: ReactNode;
-}
-
-export const DefaultAvatarProvider: React.FC<DefaultAvatarProviderProps> = ({ children }) => {
+export const DefaultAvatarProvider: React.FC = () => {
   return (
-    <DefaultAvatarContext.Provider
-      value={{
-        defaultAvatarUrl: "/lovable-uploads/a4e9124a-4f86-442b-a248-deb01d8501eb.png",
-      }}
-    >
-      {children}
-    </DefaultAvatarContext.Provider>
+    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200">
+      <img 
+        src={DEFAULT_AVATAR_URL} 
+        alt="Default user avatar" 
+        className="w-full h-full rounded-full object-cover"
+      />
+    </div>
   );
 };
