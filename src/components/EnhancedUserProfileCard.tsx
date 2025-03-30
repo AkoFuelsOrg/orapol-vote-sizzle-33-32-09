@@ -19,19 +19,17 @@ export const EnhancedUserProfileCard: React.FC<EnhancedUserProfileCardProps> = (
   isFollowing,
   isCurrentUser,
 }) => {
-  // Create a modified user object with the default avatar if needed
-  const enhancedUser = {
-    ...user,
-    avatar_url: getAvatarUrl(user.avatar_url),
-  };
-
+  // Extract the needed properties from user object
+  const enhancedAvatarUrl = getAvatarUrl(user.avatar_url);
+  
+  // Pass props that match UserProfileCard requirements
   return (
     <UserProfileCard
-      user={enhancedUser}
-      onFollow={onFollow}
-      onUnfollow={onUnfollow}
-      isFollowing={isFollowing}
-      isCurrentUser={isCurrentUser}
+      userId={user.id}
+      username={user.username || "Anonymous"}
+      avatarUrl={enhancedAvatarUrl}
+      hideFollowButton={isCurrentUser}
+      minimal={false}
     />
   );
 };
