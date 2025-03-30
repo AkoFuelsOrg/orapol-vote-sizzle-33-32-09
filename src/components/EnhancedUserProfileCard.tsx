@@ -1,6 +1,6 @@
 
 import React from "react";
-import { UserProfileCard } from "./UserProfileCard";
+import UserProfileCard from "./UserProfileCard";
 import { User } from "../lib/types";
 import { getAvatarUrl } from "../lib/avatar-utils";
 

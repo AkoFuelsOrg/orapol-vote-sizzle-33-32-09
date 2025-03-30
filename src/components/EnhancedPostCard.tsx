@@ -1,6 +1,6 @@
 
 import React from "react";
-import { PostCard } from "./PostCard";
+import PostCard from "./PostCard";
 import { Post } from "../lib/types";
 
 interface EnhancedPostCardProps {

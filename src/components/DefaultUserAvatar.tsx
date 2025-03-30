@@ -1,6 +1,6 @@
 
 import React from "react";
-import { UserAvatar } from "./UserAvatar";
+import UserAvatar from "./UserAvatar";
 import { getAvatarUrl } from "../lib/avatar-utils";
 import { User } from "../lib/types";
 
