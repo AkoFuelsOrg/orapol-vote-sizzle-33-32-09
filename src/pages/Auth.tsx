@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -7,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '../hooks/use-toast';
 import { Helmet } from 'react-helmet';
+import { supabase } from '../integrations/supabase/client';
 
 const Auth = () => {
-  const { supabase, session } = useSupabase();
+  const { session } = useSupabase();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ const Auth = () => {
       
       checkProfileExists();
     }
-  }, [session, navigate, supabase]);
+  }, [session, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

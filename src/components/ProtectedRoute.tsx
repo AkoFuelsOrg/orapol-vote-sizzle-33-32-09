@@ -1,8 +1,9 @@
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import AppLoader from './AppLoader';
+import { supabase } from '../integrations/supabase/client';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRouteProps) => {
-  const { session, supabase } = useSupabase();
+  const { session } = useSupabase();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   
@@ -33,7 +34,7 @@ const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRout
     };
     
     checkProfile();
-  }, [session, supabase]);
+  }, [session]);
   
   if (loading) {
     return <AppLoader>Loading...</AppLoader>;
