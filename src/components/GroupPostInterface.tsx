@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Image, PlusCircle, BarChart, Smile } from 'lucide-react';
+import { Image, BarChart, Smile } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
@@ -37,6 +37,11 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
     setPostText(prev => prev + emoji);
     // Keep emoji picker open
     setPostModalOpen(true);
+  };
+
+  const handlePostCreated = () => {
+    // Trigger content refresh
+    window.dispatchEvent(new CustomEvent('group-post-created', { detail: { groupId } }));
   };
   
   if (!user || !isMember) {
@@ -104,9 +109,13 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
       
       <CreatePostModal 
         isOpen={postModalOpen} 
-        onClose={() => setPostModalOpen(false)} 
+        onClose={() => {
+          setPostModalOpen(false);
+          handlePostCreated();
+        }} 
         groupId={groupId}
         initialContent={postText}
+        onPostUpdate={handlePostCreated}
       />
       
       <CreatePollModal 

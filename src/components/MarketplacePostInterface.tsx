@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Image, PlusCircle, BarChart, Smile } from 'lucide-react';
+import { Image, BarChart, Smile } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 import CreatePollModal from './CreatePollModal';
 import { useSupabase } from '../context/SupabaseContext';
@@ -39,6 +40,11 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
   const handleEmojiSelect = (emoji: string) => {
     setPostText(prev => prev + emoji);
     setPostModalOpen(true);
+  };
+
+  const handlePostCreated = () => {
+    // Trigger content refresh
+    window.dispatchEvent(new CustomEvent('marketplace-post-created', { detail: { marketplaceId } }));
   };
   
   if (!user || !isMember) {
@@ -106,9 +112,13 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
       
       <CreatePostModal 
         isOpen={postModalOpen} 
-        onClose={() => setPostModalOpen(false)} 
+        onClose={() => {
+          setPostModalOpen(false);
+          handlePostCreated();
+        }} 
         marketplaceId={marketplaceId}
         initialContent={postText}
+        onPostUpdate={handlePostCreated}
       />
       
       <CreatePollModal 

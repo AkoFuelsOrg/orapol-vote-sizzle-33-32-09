@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { Image, ListPlus, ChevronRight, Camera, PenLine } from 'lucide-react';
+import { Image, PenLine, Camera } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 const CreatePostInterface = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -16,6 +17,11 @@ const CreatePostInterface = () => {
   if (!user) {
     return null;
   }
+
+  const handlePostCreated = () => {
+    // Force a refresh of the content
+    window.dispatchEvent(new CustomEvent('post-created'));
+  };
   
   return (
     <>
@@ -64,7 +70,11 @@ const CreatePostInterface = () => {
       
       <CreatePostModal 
         isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
+        onClose={() => {
+          setModalOpen(false);
+          handlePostCreated();
+        }} 
+        onPostUpdate={handlePostCreated}
       />
     </>
   );

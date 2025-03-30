@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
@@ -153,11 +152,35 @@ const CreatePostModal = ({
           ...(marketplaceId ? { marketplace_id: marketplaceId } : {})
         };
         
-        const { error: postError } = await supabase
+        const { data: newPost, error: postError } = await supabase
           .from('posts')
-          .insert(postData);
+          .insert(postData)
+          .select();
         
         if (postError) throw postError;
+        
+        // If we have the new post data and need immediate display
+        if (newPost && newPost.length > 0) {
+          const postId = newPost[0].id;
+          
+          // Fetch the complete post with profile details for immediate display
+          const { data: completePost, error: fetchError } = await supabase
+            .from('posts')
+            .select(`
+              id,
+              content,
+              created_at,
+              image,
+              comment_count,
+              user_id
+            `)
+            .eq('id', postId)
+            .single();
+          
+          if (!fetchError && completePost) {
+            console.log('Post created successfully, ready for immediate display:', completePost);
+          }
+        }
         
         toast.success('Post created successfully!');
       }

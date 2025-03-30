@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -21,6 +20,16 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   useEffect(() => {
     if (groupId) {
       fetchGroupPosts();
+      
+      // Listen for group post creation events
+      const handleGroupPostCreated = (event: CustomEvent) => {
+        if (event.detail?.groupId === groupId) {
+          console.log('Group post created event detected, refreshing content...');
+          fetchGroupPosts();
+        }
+      };
+      
+      window.addEventListener('group-post-created', handleGroupPostCreated as EventListener);
       
       // Set up real-time subscription for posts and polls
       const postsChannel = supabase
@@ -56,6 +65,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
       return () => {
         supabase.removeChannel(postsChannel);
         supabase.removeChannel(pollsChannel);
+        window.removeEventListener('group-post-created', handleGroupPostCreated as EventListener);
       };
     }
   }, [groupId]);

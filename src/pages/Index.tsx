@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
@@ -27,6 +26,13 @@ const Index: React.FC = () => {
   
   useEffect(() => {
     fetchContent();
+    
+    const handlePostCreated = () => {
+      console.log('Post created event detected, refreshing content...');
+      fetchContent();
+    };
+    
+    window.addEventListener('post-created', handlePostCreated);
     
     const pollsChannel = supabase
       .channel('public:polls')
@@ -65,6 +71,7 @@ const Index: React.FC = () => {
     return () => {
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(postsChannel);
+      window.removeEventListener('post-created', handlePostCreated);
     };
   }, []);
   
