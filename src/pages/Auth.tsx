@@ -3,19 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '../hooks/use-toast';
 import { Helmet } from 'react-helmet';
 import { supabase } from '../integrations/supabase/client';
+import { AtSign, Lock, LogIn } from 'lucide-react';
 
 const Auth = () => {
   const { session } = useSupabase();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,7 +70,6 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setIsSignUp(true);
 
     try {
       const { error } = await supabase.auth.signUp({
@@ -96,112 +94,122 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#00a0ff]">
       <Helmet>
         <title>TUWAYE - Authentication</title>
       </Helmet>
       
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">TUWAYE</h1>
-          <p className="text-gray-600">Connect, Share, Discover</p>
+      <div className="text-center mb-4">
+        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-2">
+          <img 
+            src="/lovable-uploads/219fa93b-be40-496d-b7da-25b52bfeb46e.png" 
+            alt="Tuwaye Logo" 
+            className="w-12 h-12"
+          />
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-0">Tuwaye</h1>
+        <p className="text-white text-lg mb-6">Let's Talk</p>
+      </div>
+      
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">
+            {isLogin ? "Welcome Back" : "Create Account"}
+          </h2>
+          <p className="text-gray-600 mt-1">
+            {isLogin 
+              ? "Sign in to continue to Tuwaye" 
+              : "Sign up to get started with Tuwaye"}
+          </p>
         </div>
         
-        <Card>
-          <CardHeader className="space-y-1 text-center pb-2">
-            <CardTitle className="text-2xl font-bold">
-              Welcome Back
-            </CardTitle>
-            <CardDescription>
-              Enter your details to access your account
-            </CardDescription>
-          </CardHeader>
-          
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <form onSubmit={handleLogin}>
-                <CardContent className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading ? "Loading..." : "Login"}
-                  </Button>
-                </CardFooter>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    {loading ? "Loading..." : "Sign Up"}
-                  </Button>
-                </CardFooter>
-              </form>
-            </TabsContent>
-          </Tabs>
-          
-          <div className="px-6 pb-6 pt-2 text-center">
-            <p className="text-sm text-gray-500">
-              By continuing, you agree to our Terms of Service and Privacy Policy
-            </p>
+        <form onSubmit={isLogin ? handleLogin : handleSignUp} className="space-y-5">
+          <div className="space-y-2">
+            <label className="block text-gray-700 font-medium">Email Address</label>
+            <div className="relative">
+              <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="pl-10 h-12 border-gray-300"
+              />
+            </div>
           </div>
-        </Card>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="block text-gray-700 font-medium">Password</label>
+              {isLogin && (
+                <a href="#" className="text-[#00a0ff] text-sm hover:underline">
+                  Forgot Password?
+                </a>
+              )}
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="pl-10 h-12 border-gray-300"
+              />
+            </div>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full h-12 bg-[#00a0ff] hover:bg-[#0090e6]"
+            disabled={loading}
+          >
+            {loading ? (
+              "Loading..."
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                {isLogin ? "Sign In" : "Sign Up"} <LogIn className="w-5 h-5" />
+              </span>
+            )}
+          </Button>
+        </form>
+        
+        <div className="text-center mt-6">
+          {isLogin ? (
+            <p className="text-gray-600">
+              Don't have an account?{" "}
+              <button 
+                onClick={() => setIsLogin(false)} 
+                className="text-[#00a0ff] hover:underline font-medium"
+              >
+                Sign Up
+              </button>
+            </p>
+          ) : (
+            <p className="text-gray-600">
+              Already have an account?{" "}
+              <button 
+                onClick={() => setIsLogin(true)} 
+                className="text-[#00a0ff] hover:underline font-medium"
+              >
+                Sign In
+              </button>
+            </p>
+          )}
+        </div>
+      </div>
+      
+      <div className="mt-8 text-white text-sm flex flex-wrap justify-center gap-4">
+        <a href="#" className="hover:underline">Terms</a>
+        <a href="#" className="hover:underline">Privacy</a>
+        <a href="#" className="hover:underline">Cookies</a>
+        <a href="#" className="hover:underline">Help</a>
+      </div>
+      
+      <div className="mt-4 text-white text-sm">
+        © 2023 Tuwaye
       </div>
     </div>
   );
