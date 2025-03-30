@@ -1,210 +1,238 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSupabase } from '../context/SupabaseContext';
-import { Camera, Upload, Loader2, ArrowRight, CheckCircle } from 'lucide-react';
+import { useSupabase } from '@/context/SupabaseContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { LoaderCircle, Camera, User } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import UserAvatar from '@/components/UserAvatar';
 import { toast } from 'sonner';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardHeader, CardContent, CardFooter } from '../components/ui/card';
-import { getAvatarUrl } from '../lib/avatar-utils';
-import UserAvatar from '../components/UserAvatar';
+import { getErrorMessage } from '@/lib/utils';
 
-const ProfileSetup: React.FC = () => {
-  const { user, profile, updateProfile, loading } = useSupabase();
-  const [username, setUsername] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
-  const [setupComplete, setSetupComplete] = useState(false);
-  const profileFileInputRef = useRef<HTMLInputElement>(null);
+const ProfileSetup = () => {
+  const { supabase, session, profile, loading, fetchUserProfile } = useSupabase();
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [location, setLocation] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<{
+    username?: string;
+    avatar?: string;
+  }>({});
 
   useEffect(() => {
     if (profile) {
       setUsername(profile.username || '');
-      setLocalAvatarUrl(profile.avatar_url);
+      setBio(profile.bio || '');
+      setLocation(profile.location || '');
+      setAvatarUrl(profile.avatar_url || '');
     }
   }, [profile]);
 
-  // If user is not logged in, redirect to auth page
-  useEffect(() => {
-    if (!user && !loading) {
-      navigate('/auth');
-    }
-  }, [user, loading, navigate]);
-
-  const handleProfileImageClick = () => {
-    profileFileInputRef.current?.click();
-  };
-
-  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
-      const file = e.target.files[0];
+      setErrors(prev => ({ ...prev, avatar: undefined }));
       
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
+      if (!event.target.files || event.target.files.length === 0) {
         return;
       }
-      
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
-        return;
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${session?.user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
       }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       
-      const tempUrl = URL.createObjectURL(file);
-      setLocalAvatarUrl(tempUrl);
-      
-      await updateProfile({ profileFile: file });
-      toast.success('Profile image updated');
-    } catch (error: any) {
-      toast.error('Failed to upload image');
-      console.error('Error uploading image:', error);
-      setLocalAvatarUrl(profile?.avatar_url || null);
+      setAvatarUrl(data.publicUrl);
+      toast.success('Avatar uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Error uploading avatar');
     } finally {
       setUploading(false);
-      if (profileFileInputRef.current) profileFileInputRef.current.value = '';
     }
   };
 
-  const handleSaveProfile = async () => {
+  const validateForm = () => {
+    const newErrors: { username?: string; avatar?: string } = {};
+    let isValid = true;
+
     if (!username.trim()) {
-      toast.error('Username cannot be empty');
+      newErrors.username = 'Username is required';
+      isValid = false;
+    }
+
+    if (!avatarUrl) {
+      newErrors.avatar = 'Profile image is required';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
       return;
     }
     
     try {
-      await updateProfile({ username });
-      setSetupComplete(true);
-      toast.success('Profile setup complete!');
-      
-      // Redirect to find-friends page after a delay instead of home
-      setTimeout(() => {
-        navigate('/find-friends');
-      }, 1500);
-    } catch (error: any) {
-      toast.error('Failed to update profile');
+      setSaving(true);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          username,
+          bio,
+          location,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', session?.user.id);
+
+      if (error) throw error;
+
+      await fetchUserProfile();
+      toast.success('Profile updated successfully!');
+      navigate('/');
+    } catch (error) {
       console.error('Error updating profile:', error);
+      toast.error(`Error updating profile: ${getErrorMessage(error)}`);
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (!user) {
-    return null; // Don't render anything while checking authentication
-  }
-
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4"
-    >
-      <Card className="w-full max-w-md shadow-lg border-none animate-fade-in">
-        <CardHeader className="text-center pb-2">
-          <div className="flex flex-col items-center">
-            <div className="mb-3">
-              <img 
-                src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
-                alt="Tuwaye Logo" 
-                className="h-12 w-12 object-contain"
-              />
-            </div>
-            <h1 className="text-2xl font-bold">Complete Your Profile</h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Set up your profile to get started with Tuwaye
-            </p>
-          </div>
-        </CardHeader>
+    <div className="container mx-auto max-w-2xl py-8 px-4">
+      <div className="flex flex-col space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Complete Your Profile</h1>
+          <p className="text-muted-foreground">
+            Set up your TUWAYE profile to get started.
+          </p>
+        </div>
         
-        <CardContent className="space-y-4 pt-4">
-          {setupComplete ? (
-            <div className="flex flex-col items-center justify-center py-6">
-              <div className="rounded-full bg-green-100 p-3 mb-4">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-              <h2 className="text-xl font-semibold">All Set!</h2>
-              <p className="text-center text-muted-foreground mt-2">
-                Your profile has been updated successfully. Redirecting you to the home page...
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Profile image section */}
-              <div className="flex flex-col items-center">
-                <div 
-                  onClick={handleProfileImageClick}
-                  className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative bg-white"
+        <Separator />
+        
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative w-32 h-32">
+              {avatarUrl ? (
+                <Avatar className="w-32 h-32">
+                  <AvatarImage src={avatarUrl} alt="Profile" />
+                  <AvatarFallback>
+                    <User className="h-16 w-16" />
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-gray-300">
+                  <User className="h-16 w-16 text-gray-400" />
+                </div>
+              )}
+              
+              <div className="absolute bottom-0 right-0">
+                <Label 
+                  htmlFor="avatar" 
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90"
                 >
                   {uploading ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
+                    <LoaderCircle className="h-5 w-5 animate-spin" />
                   ) : (
-                    <>
-                      {profile && (
-                        <div className="w-full h-full">
-                          <img 
-                            src={localAvatarUrl || getAvatarUrl(profile.avatar_url)}
-                            alt="Profile" 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/40 transition-opacity">
-                        <Camera className="h-8 w-8 text-white" />
-                      </div>
-                    </>
+                    <Camera className="h-5 w-5" />
                   )}
-                </div>
-                <input 
-                  type="file"
-                  ref={profileFileInputRef}
-                  onChange={handleProfileImageUpload}
-                  accept="image/*"
-                  className="hidden"
+                </Label>
+                <Input 
+                  id="avatar" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={uploadAvatar}
+                  disabled={uploading}
                 />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Click to upload your profile picture
-                </p>
               </div>
-              
-              {/* Username section */}
-              <div className="space-y-1.5 pt-2">
-                <label htmlFor="username" className="text-sm font-medium">
-                  Choose a username
-                </label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                  className="focus:ring-primary"
-                />
-                <p className="text-xs text-muted-foreground">
-                  This is how other users will see you
-                </p>
-              </div>
-            </>
-          )}
-        </CardContent>
-        
-        {!setupComplete && (
-          <CardFooter>
-            <Button 
-              onClick={handleSaveProfile}
-              disabled={loading || uploading || !username.trim()} 
-              className="w-full bg-[#3eb0ff] hover:bg-[#2ea0ee]"
-            >
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  Continue to Tuwaye <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+            </div>
+            {errors.avatar && (
+              <p className="text-destructive text-sm font-medium">{errors.avatar}</p>
+            )}
+            <p className="text-sm text-center text-muted-foreground">
+              Profile image is required
+            </p>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (e.target.value.trim()) {
+                    setErrors(prev => ({ ...prev, username: undefined }));
+                  }
+                }}
+                placeholder="Choose a unique username"
+              />
+              {errors.username && (
+                <p className="text-destructive text-sm">{errors.username}</p>
               )}
-            </Button>
-          </CardFooter>
-        )}
-      </Card>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself"
+                className="resize-none h-24"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Where are you based?"
+              />
+            </div>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={saving || uploading}
+          >
+            {saving ? (
+              <>
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Complete Profile Setup'
+            )}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 };
