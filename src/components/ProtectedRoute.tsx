@@ -1,22 +1,56 @@
 
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useSupabase } from '../context/SupabaseContext';
-import SplashScreen from './SplashScreen';
+import { SupabaseContext } from '../context/SupabaseContext';
+import AppLoader from './AppLoader';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireProfileSetup?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useSupabase();
+const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRouteProps) => {
+  const { session, supabase } = useContext(SupabaseContext);
+  const [loading, setLoading] = useState(true);
+  const [hasProfile, setHasProfile] = useState(false);
+  
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (session) {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+          
+          setHasProfile(!!data && !!data.username);
+        } catch (error) {
+          setHasProfile(false);
+        }
+      }
+      setLoading(false);
+    };
+    
+    checkProfile();
+  }, [session, supabase]);
   
   if (loading) {
-    return <SplashScreen message="Checking permissions..." />;
+    return <AppLoader />;
   }
   
-  if (!user) {
-    return <Navigate to="/auth" state={{ message: "Please log in to continue" }} />;
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  // For profile setup page: redirect to home if profile already set up
+  if (requireProfileSetup && hasProfile) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // For normal protected pages: redirect to profile setup if profile not set up
+  if (!requireProfileSetup && !hasProfile) {
+    return <Navigate to="/profile-setup" replace />;
   }
   
   return <>{children}</>;
