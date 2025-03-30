@@ -48,7 +48,7 @@ const Auth: React.FC = () => {
   const isDesktop = breakpoint === "desktop";
 
   useEffect(() => {
-    if (user && !loading && !isSignUp) {
+    if (user && !loading) {
       navigate('/');
     }
 
@@ -64,7 +64,7 @@ const Auth: React.FC = () => {
         if (topHeader) topHeader.classList.remove('hidden');
       };
     }
-  }, [user, loading, navigate, isDesktop, isSignUp]);
+  }, [user, loading, navigate, isDesktop]);
 
   useEffect(() => {
     let progress = 0;
@@ -76,21 +76,6 @@ const Auth: React.FC = () => {
   const changeLanguage = (value: string) => {
     setLanguage(value);
     console.log(`Language changed to: ${value}`);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      if (isSignUp) {
-        await signUp(email, password);
-      } else {
-        await signIn(email, password);
-      }
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -142,7 +127,11 @@ const Auth: React.FC = () => {
                 <Progress value={formProgress} className="h-1 mb-3 bg-blue-100" />
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                setIsLoading(true);
+                isSignUp ? signUp(email, password) : signIn(email, password);
+              }} className="space-y-3">
                 <div className="space-y-1">
                   <Label htmlFor="email" className="text-gray-700 text-sm">Email Address</Label>
                   <div className="relative">
