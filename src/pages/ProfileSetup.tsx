@@ -1,14 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { LoaderCircle, Camera, User } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import UserAvatar from '@/components/UserAvatar';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,8 +16,6 @@ const ProfileSetup = () => {
   const { session, profile, loading } = useSupabase();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
-  const [bio, setBio] = useState('');
-  const [location, setLocation] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,8 +27,6 @@ const ProfileSetup = () => {
   useEffect(() => {
     if (profile) {
       setUsername(profile.username || '');
-      setBio(profile.bio || '');
-      setLocation(profile.location || '');
       setAvatarUrl(profile.avatar_url || '');
     }
   }, [profile]);
@@ -117,8 +112,6 @@ const ProfileSetup = () => {
         .from('profiles')
         .update({
           username,
-          bio,
-          location,
           avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
         })
@@ -211,27 +204,6 @@ const ProfileSetup = () => {
               {errors.username && (
                 <p className="text-destructive text-sm">{errors.username}</p>
               )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself"
-                className="resize-none h-24"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Where are you based?"
-              />
             </div>
           </div>
           
