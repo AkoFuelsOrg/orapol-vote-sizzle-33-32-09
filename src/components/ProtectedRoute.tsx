@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import AppLoader from './AppLoader';
+import { supabase } from '../integrations/supabase/client';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRouteProps) => {
-  const { session, profile, fetchProfile } = useSupabase();
+  const { session } = useSupabase();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const location = useLocation();
@@ -19,9 +20,13 @@ const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRout
     const checkProfile = async () => {
       if (session) {
         try {
-          // Use the context's fetchProfile method to ensure we have the latest data
-          const profileData = profile || await fetchProfile(session.user.id);
-          setHasProfile(!!profileData && !!profileData.username);
+          const { data } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', session.user.id)
+            .single();
+          
+          setHasProfile(!!data && !!data.username);
         } catch (error) {
           setHasProfile(false);
         }
@@ -30,7 +35,7 @@ const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRout
     };
     
     checkProfile();
-  }, [session, profile, fetchProfile]);
+  }, [session]);
   
   if (loading) {
     return <AppLoader>Loading...</AppLoader>;
