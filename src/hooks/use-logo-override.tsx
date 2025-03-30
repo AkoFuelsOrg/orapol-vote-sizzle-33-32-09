@@ -18,7 +18,7 @@ export const useLogoOverride = () => {
       
       logoElements.forEach(element => {
         if (element instanceof HTMLImageElement) {
-          element.src = "/lovable-uploads/143ae866-e284-4f13-82da-318647724a55.png";
+          element.src = "/lovable-uploads/142738e7-3764-4db2-8b2f-b9a9614f97e9.png";
         }
       });
     }

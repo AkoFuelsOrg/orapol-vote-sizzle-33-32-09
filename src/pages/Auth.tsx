@@ -102,7 +102,7 @@ const Auth = () => {
       <div className="text-center mb-4">
         <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-2">
           <img 
-            src="/lovable-uploads/219fa93b-be40-496d-b7da-25b52bfeb46e.png" 
+            src="/lovable-uploads/142738e7-3764-4db2-8b2f-b9a9614f97e9.png" 
             alt="Tuwaye Logo" 
             className="w-12 h-12"
           />
