@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -25,6 +24,7 @@ interface SupabaseContextType {
   unfollowUser: (targetUserId: string) => Promise<void>;
   isFollowing: (targetUserId: string) => Promise<boolean>;
   getFollowCounts: (userId: string) => Promise<{followers: number, following: number}>;
+  fetchProfile: (userId: string) => Promise<any | null>;
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
@@ -44,6 +44,26 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
+  const fetchProfile = async (userId: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching profile:', error.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -55,11 +75,12 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
       if (session?.user) {
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       } else {
         setProfile(null);
         setLoading(false);
@@ -70,23 +91,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       subscription.unsubscribe();
     };
   }, []);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
-    } catch (error: any) {
-      console.error('Error fetching profile:', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const updateProfile = async (data: ProfileUpdateData) => {
     if (!user) throw new Error('User not authenticated');
@@ -395,6 +399,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         unfollowUser,
         isFollowing,
         getFollowCounts,
+        fetchProfile,
       }}
     >
       {children}

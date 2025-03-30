@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -13,7 +12,7 @@ import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 const ProfileSetup = () => {
-  const { session, profile, loading } = useSupabase();
+  const { session, profile, loading, fetchProfile } = useSupabase();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -81,24 +80,6 @@ const ProfileSetup = () => {
     return isValid;
   };
 
-  const fetchUserProfile = async () => {
-    if (!session?.user.id) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast.error(`Error fetching profile: ${getErrorMessage(error)}`);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -119,9 +100,11 @@ const ProfileSetup = () => {
 
       if (error) throw error;
 
-      await fetchUserProfile();
+      if (session?.user.id) {
+        await fetchProfile(session.user.id);
+      }
+      
       toast.success('Profile updated successfully!');
-      // Navigate to find-friends page instead of home
       navigate('/find-friends');
     } catch (error) {
       console.error('Error updating profile:', error);
