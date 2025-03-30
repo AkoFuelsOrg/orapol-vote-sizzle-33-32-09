@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getAvatarUrl } from '../lib/avatar-utils';
 
 interface UserAvatarProps {
   user: {
@@ -26,8 +27,8 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   };
 
-  // Update default avatar URL to use the new image
-  const defaultAvatarUrl = "/lovable-uploads/d731e3a9-5c0f-466c-8468-16c2465aca8a.png";
+  // Get the appropriate avatar URL using our utility function
+  const avatarUrl = getAvatarUrl(user?.avatar_url);
   
   const initials = user?.username 
     ? user.username.substring(0, 2).toUpperCase() 
@@ -35,17 +36,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   return (
     <Avatar className={`${getSize()} ${className}`}>
-      {user?.avatar_url ? (
-        <AvatarImage 
-          src={user.avatar_url} 
-          alt={user?.username || 'User'} 
-        />
-      ) : (
-        <AvatarImage 
-          src={defaultAvatarUrl} 
-          alt={user?.username || 'User'} 
-        />
-      )}
+      <AvatarImage 
+        src={avatarUrl} 
+        alt={user?.username || 'User'} 
+      />
       <AvatarFallback className="bg-blue-100 text-blue-800 flex items-center justify-center">
         {initials}
       </AvatarFallback>

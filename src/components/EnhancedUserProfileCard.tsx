@@ -19,7 +19,7 @@ export const EnhancedUserProfileCard: React.FC<EnhancedUserProfileCardProps> = (
   isFollowing,
   isCurrentUser,
 }) => {
-  // Extract the needed properties from user object
+  // Ensure the avatar URL is properly set
   const enhancedAvatarUrl = getAvatarUrl(user.avatar_url);
   
   // Pass props that match UserProfileCard requirements

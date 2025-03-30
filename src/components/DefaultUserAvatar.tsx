@@ -15,14 +15,11 @@ export const DefaultUserAvatar: React.FC<DefaultUserAvatarProps> = ({
   size,
   className,
 }) => {
-  // Use the utility function to get the avatar URL
-  const avatarUrl = user?.avatar_url ? getAvatarUrl(user.avatar_url) : getAvatarUrl(null);
-  
   // Create a modified user object with the default avatar
   const userWithDefaultAvatar = user
     ? {
         ...user,
-        avatar_url: avatarUrl,
+        avatar_url: getAvatarUrl(user.avatar_url),
       }
     : null;
 

@@ -8,10 +8,10 @@
  * Uses the default avatar if the user has no avatar set
  */
 export const getAvatarUrl = (avatarUrl?: string | null): string => {
-  if (avatarUrl) {
+  if (avatarUrl && avatarUrl.trim() !== '') {
     return avatarUrl;
   }
   
   // Return the default avatar image
-  return "/lovable-uploads/a4e9124a-4f86-442b-a248-deb01d8501eb.png";
+  return "/lovable-uploads/default-avatar.png";
 };
