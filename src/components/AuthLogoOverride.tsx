@@ -9,7 +9,7 @@ const AuthLogoOverride: React.FC = () => {
       
       logoElements.forEach(element => {
         if (element instanceof HTMLImageElement) {
-          element.src = "/lovable-uploads/142738e7-3764-4db2-8b2f-b9a9614f97e9.png";
+          element.src = "/lovable-uploads/e75d5e1d-7b70-4d61-9955-995f071eeaad.png";
         }
       });
     };

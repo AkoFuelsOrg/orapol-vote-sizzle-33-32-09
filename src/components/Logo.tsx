@@ -15,7 +15,7 @@ const Logo: React.FC<LogoProps> = ({ className = "", size = 'md' }) => {
 
   return (
     <img
-      src="/lovable-uploads/142738e7-3764-4db2-8b2f-b9a9614f97e9.png"
+      src="/lovable-uploads/e75d5e1d-7b70-4d61-9955-995f071eeaad.png"
       alt="TUWAYE Logo"
       className={`${sizeClasses[size]} ${className}`}
     />

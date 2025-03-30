@@ -44,7 +44,11 @@ const Auth = () => {
       <div className="w-full max-w-md z-10">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <AuthLogoOverride />
+            <img 
+              src="/lovable-uploads/e75d5e1d-7b70-4d61-9955-995f071eeaad.png" 
+              alt="TUWAYE Logo" 
+              className="h-20 w-20 object-contain animate-pulse-slow"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 animate-fade-in">
             Welcome to TUWAYE
