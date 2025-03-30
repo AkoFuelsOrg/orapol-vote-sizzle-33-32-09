@@ -1,0 +1,5 @@
+
+/* Override for Auth page logo */
+.auth-logo-override img[src$=".png"] {
+  content: url("/lovable-uploads/143ae866-e284-4f13-82da-318647724a55.png");
+}
