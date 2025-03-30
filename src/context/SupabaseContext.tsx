@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -298,7 +299,8 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const createDefaultProfile = async (userId: string) => {
     try {
-      const defaultAvatarUrl = '/lovable-uploads/a1460791-238f-4bd1-8f10-fb38f230f3ad.png';
+      // Update to use the new default avatar image
+      const defaultAvatarUrl = '/lovable-uploads/d731e3a9-5c0f-466c-8468-16c2465aca8a.png';
       
       const profileData = {
         id: userId,

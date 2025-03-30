@@ -26,7 +26,8 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   };
 
-  const defaultAvatarUrl = "/lovable-uploads/a1460791-238f-4bd1-8f10-fb38f230f3ad.png";
+  // Update default avatar URL to use the new image
+  const defaultAvatarUrl = "/lovable-uploads/d731e3a9-5c0f-466c-8468-16c2465aca8a.png";
   
   const initials = user?.username 
     ? user.username.substring(0, 2).toUpperCase() 

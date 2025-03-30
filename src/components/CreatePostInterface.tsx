@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import UserAvatar from './UserAvatar';
 
 const CreatePostInterface = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -32,11 +33,10 @@ const CreatePostInterface = () => {
           <div className="flex items-center gap-3 mb-3">
             <div className="relative group">
               <div className="absolute inset-0 bg-primary/20 rounded-full blur-md group-hover:blur-lg opacity-30 group-hover:opacity-70 transition-all duration-300"></div>
-              <img 
-                src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
-                alt="Your avatar" 
-                className="w-10 h-10 rounded-full border border-white object-cover shadow-sm relative z-10"
-                key={profile?.avatar_url} // Add key to force re-render when URL changes
+              <UserAvatar 
+                user={profile} 
+                size="md"
+                className="border border-white shadow-sm relative z-10"
               />
             </div>
             <button 
