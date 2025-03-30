@@ -1,5 +1,4 @@
 
-
 /* Override for Auth page logo */
 .auth-logo-override img[src$=".png"] {
   content: url("/lovable-uploads/142738e7-3764-4db2-8b2f-b9a9614f97e9.png");
@@ -10,3 +9,34 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* Background pattern grid for auth page */
+.bg-pattern-grid {
+  background-image: 
+    linear-gradient(rgba(66, 153, 225, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(66, 153, 225, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Animation delays */
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+/* Custom form elements styling */
+.auth-input-icon {
+  @apply absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400;
+}
+
+/* Card hover effect */
+.auth-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
