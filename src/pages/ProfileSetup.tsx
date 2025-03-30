@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -12,9 +11,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import UserAvatar from '@/components/UserAvatar';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProfileSetup = () => {
-  const { supabase, session, profile, loading, fetchUserProfile } = useSupabase();
+  const { session, profile, loading } = useSupabase();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -84,6 +84,24 @@ const ProfileSetup = () => {
 
     setErrors(newErrors);
     return isValid;
+  };
+
+  const fetchUserProfile = async () => {
+    if (!session?.user.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error(`Error fetching profile: ${getErrorMessage(error)}`);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
