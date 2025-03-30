@@ -36,6 +36,7 @@ const CreatePostInterface = () => {
                 src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
                 alt="Your avatar" 
                 className="w-10 h-10 rounded-full border border-white object-cover shadow-sm relative z-10"
+                key={profile?.avatar_url} // Add key to force re-render when URL changes
               />
             </div>
             <button 

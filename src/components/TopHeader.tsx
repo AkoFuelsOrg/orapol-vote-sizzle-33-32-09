@@ -138,7 +138,11 @@ const TopHeader: React.FC = () => {
                 <div className="absolute inset-0 bg-white/10 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 {profile?.avatar_url ? (
                   <Avatar className="h-8 w-8 border border-white/30">
-                    <AvatarImage src={profile.avatar_url} alt={profile.username || "Profile"} />
+                    <AvatarImage 
+                      src={profile.avatar_url} 
+                      alt={profile.username || "Profile"} 
+                      key={profile.avatar_url} // Add key to force re-render when URL changes
+                    />
                     <AvatarFallback><User size={18} /></AvatarFallback>
                   </Avatar>
                 ) : (

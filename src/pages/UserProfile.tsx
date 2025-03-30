@@ -17,7 +17,7 @@ import { useBreakpoint } from '../hooks/use-mobile';
 
 const UserProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, followUser, unfollowUser, isFollowing } = useSupabase();
+  const { user, profile: currentUserProfile, followUser, unfollowUser, isFollowing } = useSupabase();
   const [profile, setProfile] = useState<any | null>(null);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -42,7 +42,25 @@ const UserProfile: React.FC = () => {
         checkCanMessage();
       }
     }
+    
+    const handleProfileUpdated = () => {
+      if (id) {
+        fetchUserProfile(id);
+      }
+    };
+    
+    window.addEventListener('profile-updated', handleProfileUpdated);
+    
+    return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdated);
+    };
   }, [id, user]);
+
+  useEffect(() => {
+    if (currentUserProfile && id === currentUserProfile.id) {
+      setProfile(currentUserProfile);
+    }
+  }, [currentUserProfile, id]);
 
   useEffect(() => {
     if (activeTab === "followers" || activeTab === "following") {
@@ -72,10 +90,8 @@ const UserProfile: React.FC = () => {
     try {
       setIsLoadingContent(true);
       
-      // Fetch polls
       await fetchUserPolls(userId);
       
-      // Fetch posts
       await fetchUserPosts(userId);
     } catch (error: any) {
       console.error('Error fetching user content:', error);
@@ -136,7 +152,6 @@ const UserProfile: React.FC = () => {
   
   const fetchUserPosts = async (userId: string) => {
     try {
-      // Fetch posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -152,7 +167,6 @@ const UserProfile: React.FC = () => {
         
       if (postsError) throw postsError;
       
-      // Fetch profile for the user
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -163,7 +177,6 @@ const UserProfile: React.FC = () => {
         console.error('Error fetching profile:', profileError);
       }
       
-      // Get like counts for posts
       const { data: likeCounts, error: likeCountsError } = await supabase
         .from('post_likes')
         .select('post_id');
@@ -172,7 +185,6 @@ const UserProfile: React.FC = () => {
         console.error('Error fetching like counts:', likeCountsError);
       }
       
-      // Calculate like count per post
       const likeCountMap: Record<string, number> = {};
       if (likeCounts) {
         likeCounts.forEach(like => {
@@ -180,7 +192,6 @@ const UserProfile: React.FC = () => {
         });
       }
       
-      // Check if user has liked the posts
       let userLikes: Record<string, boolean> = {};
       
       if (user) {
@@ -197,7 +208,6 @@ const UserProfile: React.FC = () => {
         }
       }
       
-      // Format posts
       const formattedPosts: Post[] = postsData ? postsData.map(post => {
         return {
           id: post.id,
@@ -347,7 +357,6 @@ const UserProfile: React.FC = () => {
     }
   };
   
-  // Combine and sort all content items by creation date
   const allContent = [...polls, ...posts].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -399,7 +408,6 @@ const UserProfile: React.FC = () => {
           </Link>
         </div>
         
-        {/* Cover Image */}
         <div className="w-full h-32 sm:h-48 md:h-64 bg-gray-200 relative animate-fade-in overflow-hidden">
           {profile.cover_url ? (
             <img 

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Image, BarChart, Smile } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
@@ -56,6 +57,7 @@ const GroupPostInterface: React.FC<GroupPostInterfaceProps> = ({ groupId }) => {
             src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
             alt="Your avatar" 
             className="w-10 h-10 rounded-full border-2 border-red-500 object-cover"
+            key={profile?.avatar_url} // Add key to force re-render when URL changes
           />
           <button 
             onClick={() => setPostModalOpen(true)}

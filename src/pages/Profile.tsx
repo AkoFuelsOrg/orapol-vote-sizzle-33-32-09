@@ -35,6 +35,8 @@ const Profile: React.FC = () => {
   const [votedPolls, setVotedPolls] = useState<Poll[]>([]);
   const [isLoadingPolls, setIsLoadingPolls] = useState(true);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
   
   const profileFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +48,13 @@ const Profile: React.FC = () => {
       fetchUserPosts();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (profile) {
+      setLocalAvatarUrl(profile.avatar_url);
+      setLocalCoverUrl(profile.cover_url);
+    }
+  }, [profile]);
   
   const fetchFollowCounts = async () => {
     if (user) {
@@ -278,11 +287,15 @@ const Profile: React.FC = () => {
         return;
       }
       
+      const tempUrl = URL.createObjectURL(file);
+      setLocalAvatarUrl(tempUrl);
+      
       await updateProfile({ profileFile: file });
       toast.success('Profile image updated successfully');
     } catch (error: any) {
       toast.error('Failed to upload image');
       console.error('Error uploading image:', error);
+      setLocalAvatarUrl(profile?.avatar_url || null);
     } finally {
       setUploading(false);
       if (profileFileInputRef.current) profileFileInputRef.current.value = '';
@@ -306,11 +319,15 @@ const Profile: React.FC = () => {
         return;
       }
       
+      const tempUrl = URL.createObjectURL(file);
+      setLocalCoverUrl(tempUrl);
+      
       await updateProfile({ coverFile: file });
       toast.success('Cover image updated successfully');
     } catch (error: any) {
       toast.error('Failed to upload cover image');
       console.error('Error uploading cover image:', error);
+      setLocalCoverUrl(profile?.cover_url || null);
     } finally {
       setUploadingCover(false);
       if (coverFileInputRef.current) coverFileInputRef.current.value = '';
@@ -351,8 +368,8 @@ const Profile: React.FC = () => {
     return dateB - dateA; // Sort by newest first
   });
   
-  const avatarUrl = profile?.avatar_url || (user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : '');
-  const coverUrl = profile?.cover_url || '';
+  const avatarUrl = localAvatarUrl || (user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : '');
+  const coverUrl = localCoverUrl || '';
   
   return (
     <div className="min-h-screen bg-gray-50 w-full">
@@ -433,113 +450,111 @@ const Profile: React.FC = () => {
               </div>
               
               {/* Username and email */}
-              <div className="mt-3 sm:mt-4 text-center w-full">
-                {isEditing ? (
+              {isEditing ? (
+                <div className="space-y-2">
+                  <input 
+                    type="text" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="px-3 py-2 border border-input rounded text-center w-full max-w-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="Enter username"
+                  />
+                  <div className="flex space-x-2 justify-center">
+                    <button 
+                      onClick={handleSaveProfile}
+                      disabled={profileLoading}
+                      className="px-4 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
+                    >
+                      {profileLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setIsEditing(false);
+                        setUsername(profile?.username || '');
+                      }}
+                      className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded text-sm hover:bg-secondary/90 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <h2 className="text-lg sm:text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                </div>
+              )}
+              <p className="text-muted-foreground mt-1 text-sm">{user?.email}</p>
+              
+              {!isChangingPassword ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsChangingPassword(true)} 
+                  className="mt-2"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Change Password
+                </Button>
+              ) : (
+                <div className="mt-4 space-y-3 max-w-sm mx-auto px-2">
+                  <h3 className="font-medium text-left">Change Password</h3>
                   <div className="space-y-2">
-                    <input 
-                      type="text" 
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="px-3 py-2 border border-input rounded text-center w-full max-w-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                      placeholder="Enter username"
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Current Password"
                     />
-                    <div className="flex space-x-2 justify-center">
-                      <button 
-                        onClick={handleSaveProfile}
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New Password"
+                    />
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm New Password"
+                    />
+                    <div className="flex justify-end space-x-2 pt-2">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setCurrentPassword('');
+                          setNewPassword('');
+                          setConfirmPassword('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={handleChangePassword}
                         disabled={profileLoading}
-                        className="px-4 py-1.5 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 transition-colors"
                       >
                         {profileLoading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Save'
+                          'Update Password'
                         )}
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setIsEditing(false);
-                          setUsername(profile?.username || '');
-                        }}
-                        className="px-4 py-1.5 bg-secondary text-secondary-foreground rounded text-sm hover:bg-secondary/90 transition-colors"
-                      >
-                        Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <h2 className="text-lg sm:text-xl font-bold">{profile?.username || 'Anonymous'}</h2>
-                    <button 
-                      onClick={() => setIsEditing(true)}
-                      className="ml-2 p-1 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                  </div>
-                )}
-                <p className="text-muted-foreground mt-1 text-sm">{user?.email}</p>
-                
-                {!isChangingPassword ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setIsChangingPassword(true)} 
-                    className="mt-2"
-                  >
-                    <Lock className="w-4 h-4 mr-2" />
-                    Change Password
-                  </Button>
-                ) : (
-                  <div className="mt-4 space-y-3 max-w-sm mx-auto px-2">
-                    <h3 className="font-medium text-left">Change Password</h3>
-                    <div className="space-y-2">
-                      <Input
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        placeholder="Current Password"
-                      />
-                      <Input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="New Password"
-                      />
-                      <Input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirm New Password"
-                      />
-                      <div className="flex justify-end space-x-2 pt-2">
-                        <Button 
-                          variant="secondary" 
-                          size="sm" 
-                          onClick={() => {
-                            setIsChangingPassword(false);
-                            setCurrentPassword('');
-                            setNewPassword('');
-                            setConfirmPassword('');
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          onClick={handleChangePassword}
-                          disabled={profileLoading}
-                        >
-                          {profileLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            'Update Password'
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
             
             {/* Stats */}

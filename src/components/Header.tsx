@@ -239,6 +239,7 @@ const Header: React.FC = () => {
                         <AvatarImage
                           src={profile.avatar_url}
                           alt={profile.username || user.email || "Profile"}
+                          key={profile.avatar_url}
                         />
                         <AvatarFallback>
                           <User size={20} />

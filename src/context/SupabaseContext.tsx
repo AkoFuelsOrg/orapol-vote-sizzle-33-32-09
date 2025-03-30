@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -95,6 +94,14 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       let avatarUrl = profile?.avatar_url;
       let coverUrl = profile?.cover_url;
+      let updates: any = {
+        id: user.id,
+        updated_at: new Date().toISOString(),
+      };
+      
+      if (data.username) {
+        updates.username = data.username;
+      }
       
       if (data.profileFile) {
         const fileExt = data.profileFile.name.split('.').pop();
@@ -111,6 +118,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .getPublicUrl(filePath);
           
         avatarUrl = urlData.publicUrl;
+        updates.avatar_url = avatarUrl;
       }
       
       if (data.coverFile) {
@@ -128,15 +136,8 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .getPublicUrl(filePath);
           
         coverUrl = urlData.publicUrl;
+        updates.cover_url = coverUrl;
       }
-      
-      const updates = {
-        id: user.id,
-        updated_at: new Date().toISOString(),
-        ...(data.username && { username: data.username }),
-        ...(avatarUrl && { avatar_url: avatarUrl }),
-        ...(coverUrl && { cover_url: coverUrl }),
-      };
       
       const { error: updateError } = await supabase
         .from('profiles')
@@ -145,7 +146,12 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
       if (updateError) throw updateError;
       
-      fetchProfile(user.id);
+      setProfile(prev => ({
+        ...prev,
+        ...(data.username && { username: data.username }),
+        ...(avatarUrl && { avatar_url: avatarUrl }),
+        ...(coverUrl && { cover_url: coverUrl }),
+      }));
       
       toast.success('Profile updated successfully');
     } catch (error: any) {
