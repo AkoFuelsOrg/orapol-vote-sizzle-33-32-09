@@ -36,10 +36,10 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [posts, setPosts] = useState<Post[]>([]);
   const [comments, setComments] = useState<Comment[]>(initialComments);
 
-  // Generate a simple ID for new items
+  const defaultAvatarUrl = "/lovable-uploads/d731e3a9-5c0f-466c-8468-16c2465aca8a.png";
+
   const generateId = () => Math.random().toString(36).substring(2, 9);
 
-  // Add a new poll
   const addPoll = (question: string, optionTexts: string[], image?: string, optionImages?: (string | null)[]) => {
     if (!question || optionTexts.length < 2) {
       toast.error("Please provide a question and at least two options");
@@ -53,11 +53,16 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
       imageUrl: optionImages && optionImages[index] ? optionImages[index] : undefined
     }));
 
+    const author = {
+      ...currentUser,
+      avatar: currentUser.avatar || defaultAvatarUrl
+    };
+
     const newPoll: Poll = {
       id: generateId(),
       question,
       options,
-      author: currentUser,
+      author,
       createdAt: new Date().toISOString(),
       totalVotes: 0,
       commentCount: 0,
@@ -68,17 +73,21 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Poll created successfully");
   };
 
-  // Add a new post
   const addPost = (content: string, image?: string) => {
     if (!content.trim()) {
       toast.error("Post content cannot be empty");
       return;
     }
 
+    const author = {
+      ...currentUser,
+      avatar: currentUser.avatar || defaultAvatarUrl
+    };
+
     const newPost: Post = {
       id: generateId(),
       content,
-      author: currentUser,
+      author,
       createdAt: new Date().toISOString(),
       image: image || undefined,
       commentCount: 0,
@@ -90,7 +99,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Post created successfully");
   };
 
-  // Vote on a poll
   const votePoll = (pollId: string, optionId: string) => {
     setPolls(
       polls.map((poll) => {
@@ -121,7 +129,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Like a post
   const likePost = (postId: string) => {
     setPosts(
       posts.map((post) => {
@@ -138,7 +145,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Add a comment to a poll
   const addComment = (pollId: string, content: string) => {
     if (!content.trim()) {
       toast.error("Comment cannot be empty");
@@ -171,7 +177,6 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success("Comment added");
   };
 
-  // Like a comment
   const likeComment = (commentId: string) => {
     setComments(
       comments.map((comment) => {
@@ -186,17 +191,14 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Get a poll by ID
   const getPollById = (id: string) => {
     return polls.find((poll) => poll.id === id);
   };
 
-  // Get a post by ID
   const getPostById = (id: string) => {
     return posts.find((post) => post.id === id);
   };
 
-  // Get comments for a specific poll
   const getCommentsForPoll = (pollId: string) => {
     return comments.filter((comment) => comment.pollId === pollId);
   };

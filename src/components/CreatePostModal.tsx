@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import CreatePollModal from './CreatePollModal';
 import EmojiPicker from './EmojiPicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import UserAvatar from './UserAvatar';
 
 export interface CreatePostModalProps {
   isOpen?: boolean;
@@ -126,7 +127,6 @@ const CreatePostModal = ({
       }
 
       if (isEditing && postId) {
-        // Update existing post
         const postData = {
           content: content.trim(),
           image: imageUrl,
@@ -137,13 +137,12 @@ const CreatePostModal = ({
           .from('posts')
           .update(postData)
           .eq('id', postId)
-          .eq('user_id', user.id); // Ensure the user owns the post
+          .eq('user_id', user.id);
         
         if (updateError) throw updateError;
         
         toast.success('Post updated successfully!');
       } else {
-        // Create new post
         const postData = {
           content: content.trim(),
           user_id: user.id,
@@ -159,11 +158,9 @@ const CreatePostModal = ({
         
         if (postError) throw postError;
         
-        // If we have the new post data and need immediate display
         if (newPost && newPost.length > 0) {
           const postId = newPost[0].id;
           
-          // Fetch the complete post with profile details for immediate display
           const { data: completePost, error: fetchError } = await supabase
             .from('posts')
             .select(`
@@ -190,7 +187,6 @@ const CreatePostModal = ({
       setImagePreview(null);
       onClose();
       
-      // Call the onPostUpdate callback if provided
       if (onPostUpdate) {
         onPostUpdate();
       }
@@ -233,10 +229,10 @@ const CreatePostModal = ({
           
           <div className="flex items-start gap-3 mt-4">
             {user && (
-              <img 
-                src={profile?.avatar_url || user.user_metadata?.avatar_url || "https://i.pravatar.cc/150"} 
-                alt="Your avatar" 
-                className="w-10 h-10 rounded-full border-2 border-red-500 shrink-0"
+              <UserAvatar 
+                user={profile} 
+                size="sm" 
+                className="shrink-0"
               />
             )}
             

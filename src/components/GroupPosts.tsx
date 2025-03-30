@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -16,6 +17,9 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useSupabase();
+  
+  // Update default avatar URL to use the new image
+  const defaultAvatarUrl = "/lovable-uploads/d731e3a9-5c0f-466c-8468-16c2465aca8a.png";
   
   useEffect(() => {
     if (groupId) {
@@ -138,7 +142,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           author: {
             id: profileData?.id || 'unknown',
             name: profileData?.username || 'Anonymous',
-            avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${post.user_id}`,
+            avatar: profileData?.avatar_url || defaultAvatarUrl, // Use the consistent default avatar
           },
           groupId: post.group_id,
           marketplace_id: post.marketplace_id,
@@ -199,7 +203,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           author: {
             id: profileData?.id || 'unknown',
             name: profileData?.username || 'Anonymous',
-            avatar: profileData?.avatar_url || `https://i.pravatar.cc/150?u=${poll.user_id}`,
+            avatar: profileData?.avatar_url || defaultAvatarUrl, // Use the consistent default avatar
           },
           groupId: poll.group_id,
         };
