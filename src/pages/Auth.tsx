@@ -51,7 +51,7 @@ const Auth = () => {
             />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 animate-fade-in">
-            Welcome to TUWAYE
+            Welcome to Tuwaye
           </h1>
           <p className="text-gray-600 mt-2 animate-fade-in delay-100">
             Connect and share with your community
