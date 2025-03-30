@@ -8,7 +8,7 @@
  * Uses the default avatar if the user has no avatar set
  */
 export const getAvatarUrl = (avatarUrl?: string | null): string => {
-  if (avatarUrl && avatarUrl.trim() !== '') {
+  if (avatarUrl && avatarUrl.trim() !== '' && !avatarUrl.includes('i.pravatar.cc')) {
     return avatarUrl;
   }
   

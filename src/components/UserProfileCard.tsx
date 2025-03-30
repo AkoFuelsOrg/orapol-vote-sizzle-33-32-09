@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -7,6 +6,7 @@ import { supabase } from '../integrations/supabase/client';
 import { Button } from './ui/button';
 import UnfollowDialog from './UnfollowDialog';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { getAvatarUrl } from '../lib/avatar-utils';
 
 interface UserProfileCardProps {
   userId: string;
@@ -93,14 +93,13 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     }
   };
   
-  // Only show follow button if user is logged in and it's not the current user
   const showFollowButton = !hideFollowButton && user && user.id !== userId;
   
   if (minimal) {
     return (
       <Link to={`/user/${userId}`} className="flex items-center space-x-2 p-2 hover:bg-secondary/50 rounded-lg transition-colors">
         <img 
-          src={avatarUrl || `https://i.pravatar.cc/150?u=${userId}`} 
+          src={getAvatarUrl(avatarUrl)} 
           alt={username} 
           className="w-8 h-8 rounded-full border-2 border-primary object-cover"
         />
@@ -114,7 +113,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
       <Link to={`/user/${userId}`} className="flex items-center space-x-3 mb-3">
         <div className="relative">
           <img 
-            src={avatarUrl || `https://i.pravatar.cc/150?u=${userId}`} 
+            src={getAvatarUrl(avatarUrl)} 
             alt={username} 
             className="w-11 h-11 rounded-full border-2 border-primary/80 object-cover"
           />

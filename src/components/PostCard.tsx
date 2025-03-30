@@ -341,7 +341,10 @@ const PostCard: React.FC<PostCardProps> = ({
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/10 rounded-full blur-md opacity-0 group-hover:opacity-70 transition-all duration-300"></div>
               <Avatar className="w-10 h-10 border-2 border-white shadow-sm group-hover:border-primary/20 transition-all">
-                <AvatarImage src={post.author.avatar} alt={post.author.name} />
+                <AvatarImage 
+                  src={post.author.avatar} 
+                  alt={post.author.name} 
+                />
                 <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
                   {post.author.name.charAt(0)}
                 </AvatarFallback>
@@ -527,7 +530,10 @@ const PostCard: React.FC<PostCardProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Avatar className="w-8 h-8 border-2 border-white group-hover:border-primary/20 transition-all">
-                    <AvatarImage src={post.author.avatar} alt={post.author.name} />
+                    <AvatarImage 
+                      src={post.author.avatar} 
+                      alt={post.author.name} 
+                    />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
                       {post.author.name.charAt(0)}
                     </AvatarFallback>
@@ -578,7 +584,10 @@ const PostCard: React.FC<PostCardProps> = ({
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/5 rounded-full blur-md opacity-0 group-hover:opacity-70 transition-all duration-300"></div>
                   <Avatar className="w-10 h-10 border-2 border-white shadow-sm group-hover:border-primary/20 transition-all">
-                    <AvatarImage src={post.author.avatar} alt={post.author.name} />
+                    <AvatarImage 
+                      src={post.author.avatar} 
+                      alt={post.author.name} 
+                    />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
                       {post.author.name.charAt(0)}
                     </AvatarFallback>
