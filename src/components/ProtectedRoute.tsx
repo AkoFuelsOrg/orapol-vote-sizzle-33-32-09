@@ -1,7 +1,7 @@
 
 import React, { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { SupabaseContext } from '../context/SupabaseContext';
+import { useSupabase } from '../context/SupabaseContext';
 import AppLoader from './AppLoader';
 
 interface ProtectedRouteProps {
@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRouteProps) => {
-  const { session, supabase } = useContext(SupabaseContext);
+  const { session, supabase } = useSupabase();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   
@@ -36,7 +36,7 @@ const ProtectedRoute = ({ children, requireProfileSetup = false }: ProtectedRout
   }, [session, supabase]);
   
   if (loading) {
-    return <AppLoader />;
+    return <AppLoader>Loading...</AppLoader>;
   }
   
   if (!session) {

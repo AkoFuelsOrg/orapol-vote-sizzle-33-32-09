@@ -1,7 +1,6 @@
-
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SupabaseContext } from '../context/SupabaseContext';
+import { useSupabase } from '../context/SupabaseContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +9,7 @@ import { useToast } from '../hooks/use-toast';
 import { Helmet } from 'react-helmet';
 
 const Auth = () => {
-  const { supabase, session } = useContext(SupabaseContext);
+  const { supabase, session } = useSupabase();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
