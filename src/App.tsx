@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -108,9 +107,7 @@ const App = () => (
                         <Route 
                           path="/profile-setup" 
                           element={
-                            <ProtectedRoute>
-                              <ProfileSetup />
-                            </ProtectedRoute>
+                            <ProfileSetup />
                           } 
                         />
                         <Route path="/search" element={<SearchResults />} />

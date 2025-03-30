@@ -16,7 +16,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   if (!user) {
-    return <Navigate to="/auth" />;
+    return <Navigate to="/auth" state={{ message: "Please log in to continue" }} />;
   }
   
   return <>{children}</>;

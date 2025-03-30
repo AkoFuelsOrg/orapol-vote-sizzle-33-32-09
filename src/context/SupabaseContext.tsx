@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -332,10 +333,11 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (data.user) {
         await createDefaultProfile(data.user.id);
+        
+        // After successful signup, explicitly navigate to profile-setup
+        navigate('/profile-setup');
+        toast.success('Sign up successful! Please complete your profile.');
       }
-      
-      toast.success('Sign up successful!');
-      navigate('/profile-setup');
     } catch (error: any) {
       toast.error(error.message || 'Error signing up');
       console.error('Error signing up:', error.message);
