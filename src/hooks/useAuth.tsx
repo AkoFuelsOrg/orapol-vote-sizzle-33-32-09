@@ -1,12 +1,12 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { handleProfileCreationError } from '../lib/auth-error-handler';
+import { supabase } from '../integrations/supabase/client';
 
 export const useAuth = () => {
   const navigate = useNavigate();
-  const { supabase, session, user } = useSupabase();
+  const { session, user } = useSupabase();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
