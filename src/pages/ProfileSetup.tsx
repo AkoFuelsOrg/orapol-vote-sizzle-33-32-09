@@ -121,7 +121,8 @@ const ProfileSetup = () => {
 
       await fetchUserProfile();
       toast.success('Profile updated successfully!');
-      navigate('/');
+      // Navigate to find-friends page instead of home
+      navigate('/find-friends');
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error(`Error updating profile: ${getErrorMessage(error)}`);
