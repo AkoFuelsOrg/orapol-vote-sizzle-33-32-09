@@ -11,6 +11,7 @@ import { Card, CardContent, CardFooter } from './ui/card';
 import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
 import PostCommentSection from './PostCommentSection';
 import { AspectRatio } from './ui/aspect-ratio';
+import { getAvatarUrl } from '../lib/avatar-utils';
 import { 
   Drawer,
   DrawerClose,
@@ -251,6 +252,8 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
+  const authorAvatarUrl = getAvatarUrl(post.author.avatar);
+
   const PostOptionsDropdown = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -342,7 +345,7 @@ const PostCard: React.FC<PostCardProps> = ({
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/10 rounded-full blur-md opacity-0 group-hover:opacity-70 transition-all duration-300"></div>
               <Avatar className="w-10 h-10 border-2 border-white shadow-sm group-hover:border-primary/20 transition-all">
                 <AvatarImage 
-                  src={post.author.avatar} 
+                  src={authorAvatarUrl} 
                   alt={post.author.name} 
                 />
                 <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
@@ -531,7 +534,7 @@ const PostCard: React.FC<PostCardProps> = ({
                 >
                   <Avatar className="w-8 h-8 border-2 border-white group-hover:border-primary/20 transition-all">
                     <AvatarImage 
-                      src={post.author.avatar} 
+                      src={authorAvatarUrl} 
                       alt={post.author.name} 
                     />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
@@ -585,7 +588,7 @@ const PostCard: React.FC<PostCardProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-primary/5 rounded-full blur-md opacity-0 group-hover:opacity-70 transition-all duration-300"></div>
                   <Avatar className="w-10 h-10 border-2 border-white shadow-sm group-hover:border-primary/20 transition-all">
                     <AvatarImage 
-                      src={post.author.avatar} 
+                      src={authorAvatarUrl} 
                       alt={post.author.name} 
                     />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">

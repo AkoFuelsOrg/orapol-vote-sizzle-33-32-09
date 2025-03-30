@@ -24,7 +24,7 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   onPostClick,
   onUserClick,
 }) => {
-  // Create a modified post with the author's avatar updated
+  // Create a modified post with the author's avatar updated using our utility
   const enhancedPost = {
     ...post,
     author: {
