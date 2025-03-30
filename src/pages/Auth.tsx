@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '../hooks/use-toast';
 import { Helmet } from 'react-helmet';
 import { supabase } from '../integrations/supabase/client';
+import { AtSign, Lock, ArrowRight } from 'lucide-react';
 
 const Auth = () => {
   const { session } = useSupabase();
@@ -96,84 +97,131 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-100 flex items-center justify-center p-4">
       <Helmet>
         <title>TUWAYE - Authentication</title>
       </Helmet>
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold">TUWAYE</CardTitle>
-          <CardDescription>Enter your email to sign in to your account</CardDescription>
-        </CardHeader>
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
-          <TabsContent value="login">
-            <form onSubmit={handleLogin}>
-              <CardContent className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Loading..." : "Login"}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-          <TabsContent value="signup">
-            <form onSubmit={handleSignUp}>
-              <CardContent className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Loading..." : "Sign Up"}
-                </Button>
-              </CardFooter>
-            </form>
-          </TabsContent>
-        </Tabs>
-      </Card>
+      
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-primary mb-2 animate-fade-in">TUWAYE</h1>
+          <p className="text-gray-600 animate-fade-in">Connect, Share, Discover</p>
+        </div>
+        
+        <Card className="border-none shadow-xl bg-white/90 backdrop-blur-sm animate-scale-in">
+          <CardHeader className="space-y-1 text-center pb-2">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+              Welcome Back
+            </CardTitle>
+            <CardDescription>
+              Enter your details to access your account
+            </CardDescription>
+          </CardHeader>
+          
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4 rounded-lg">
+              <TabsTrigger value="login" className="data-[state=active]:shadow-md">Login</TabsTrigger>
+              <TabsTrigger value="signup" className="data-[state=active]:shadow-md">Sign Up</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login">
+              <form onSubmit={handleLogin}>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 transition-all focus:ring-primary/50 focus:border-primary"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 transition-all focus:ring-primary/50 focus:border-primary"
+                        required
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    type="submit" 
+                    className="w-full py-6 transition-all duration-300 hover:shadow-md flex gap-2"
+                    disabled={loading}
+                  >
+                    {loading ? "Loading..." : "Login"} 
+                    {!loading && <ArrowRight className="h-4 w-4" />}
+                  </Button>
+                </CardFooter>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp}>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 transition-all focus:ring-primary/50 focus:border-primary"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 transition-all focus:ring-primary/50 focus:border-primary"
+                        required
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    type="submit" 
+                    className="w-full py-6 transition-all duration-300 hover:shadow-md flex gap-2"
+                    disabled={loading}
+                  >
+                    {loading ? "Loading..." : "Sign Up"}
+                    {!loading && <ArrowRight className="h-4 w-4" />}
+                  </Button>
+                </CardFooter>
+              </form>
+            </TabsContent>
+          </Tabs>
+          
+          <div className="px-6 pb-6 pt-2 text-center">
+            <p className="text-sm text-gray-500">
+              By continuing, you agree to our Terms of Service and Privacy Policy
+            </p>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };
