@@ -23,6 +23,7 @@ import Index from "./pages/Index";
 import CreatePoll from "./pages/CreatePoll";
 import PollDetail from "./pages/PollDetail";
 import Profile from "./pages/Profile";
+import ProfileSetup from "./pages/ProfileSetup";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
@@ -54,7 +55,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const isDesktop = breakpoint === "desktop";
   const location = useLocation();
   
-  if (location.pathname === '/auth') {
+  // Add profile-setup to paths that don't show the layout
+  if (location.pathname === '/auth' || location.pathname === '/profile-setup') {
     return <>{children}</>;
   }
   
@@ -103,6 +105,14 @@ const App = () => (
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />
+                        <Route 
+                          path="/profile-setup" 
+                          element={
+                            <ProtectedRoute>
+                              <ProfileSetup />
+                            </ProtectedRoute>
+                          } 
+                        />
                         <Route path="/search" element={<SearchResults />} />
                         <Route
                           path="/create"

@@ -300,7 +300,7 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const createDefaultProfile = async (userId: string) => {
     try {
       // Update to use the new default avatar image
-      const defaultAvatarUrl = '/lovable-uploads/d731e3a9-5c0f-466c-8468-16c2465aca8a.png';
+      const defaultAvatarUrl = '/lovable-uploads/a031d96a-edf1-46c7-a8b5-2b75b8ff96ec.png';
       
       const profileData = {
         id: userId,
@@ -336,8 +336,9 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         await createDefaultProfile(data.user.id);
       }
       
-      toast.success('Sign up successful. Check your email for confirmation.');
-      navigate('/auth', { state: { message: 'Please check your email for a confirmation link.' } });
+      toast.success('Sign up successful!');
+      // Navigate to profile setup page instead of auth page
+      navigate('/profile-setup');
     } catch (error: any) {
       toast.error(error.message || 'Error signing up');
       console.error('Error signing up:', error.message);

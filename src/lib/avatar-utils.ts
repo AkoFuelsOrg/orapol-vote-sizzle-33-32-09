@@ -20,5 +20,5 @@ export const getAvatarUrl = (avatarUrl?: string | null): string => {
   }
   
   // Return the default avatar image
-  return "/lovable-uploads/default-avatar.png";
+  return "/lovable-uploads/a031d96a-edf1-46c7-a8b5-2b75b8ff96ec.png";
 };
