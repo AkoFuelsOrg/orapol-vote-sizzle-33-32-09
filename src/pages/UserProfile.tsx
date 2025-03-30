@@ -11,8 +11,7 @@ import { Poll, PollOption, Post } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Button } from '../components/ui/button';
-import { toast } from 'sonner';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import UserAvatar from '../components/UserAvatar';
 import { useBreakpoint } from '../hooks/use-mobile';
 
 const UserProfile: React.FC = () => {
@@ -423,15 +422,11 @@ const UserProfile: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-border/50 p-4 sm:p-5 mb-4 animate-fade-in relative mt-[-3rem] mx-3 sm:mx-4">
           <div className="flex flex-col items-center">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white overflow-hidden bg-white mt-[-4rem] shadow-sm">
-              <Avatar className="w-full h-full">
-                <AvatarImage
-                  src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`}
-                  alt={profile.username || 'User'}
-                />
-                <AvatarFallback>
-                  {profile.username ? profile.username.charAt(0).toUpperCase() : 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar 
+                user={profile}
+                size="xl"
+                className="w-full h-full"
+              />
             </div>
             
             <div className="mt-3 sm:mt-4 text-center">

@@ -12,7 +12,7 @@ import { supabase } from '../integrations/supabase/client';
 import { Poll, PollOption, Post } from '../lib/types';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import UserAvatar from '../components/UserAvatar';
 import { useBreakpoint } from '../hooks/use-mobile';
 
 const Profile: React.FC = () => {
@@ -424,16 +424,11 @@ const Profile: React.FC = () => {
                     </div>
                   ) : (
                     <>
-                      <Avatar className="w-full h-full">
-                        <AvatarImage 
-                          src={avatarUrl} 
-                          alt={profile?.username || 'User'} 
-                          className="w-full h-full object-cover"
-                        />
-                        <AvatarFallback>
-                          <UserCircle className="w-full h-full text-gray-400" />
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar 
+                        user={profile}
+                        size="xl"
+                        className="w-full h-full"
+                      />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
                         <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                       </div>
