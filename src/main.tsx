@@ -4,6 +4,9 @@ import { StrictMode } from 'react'
 import App from './App.tsx'
 import './index.css'
 
+// Override window.alert to prevent alerts from showing
+window.alert = () => {}
+
 // Handle redirects from 200.html
 const redirect = sessionStorage.redirect;
 if (redirect && redirect !== window.location.href) {

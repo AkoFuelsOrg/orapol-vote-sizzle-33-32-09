@@ -24,16 +24,9 @@ const Auth = () => {
       } else {
         await signIn(email, password);
       }
-      
-      // Only show error toast if there's an actual error message
-      if (error) {
-        toast.error(error);
-      }
     } catch (err: any) {
-      // Don't show RLS errors to the user
-      if (!err.message?.includes("violates row-level security policy")) {
-        toast.error(err.message || "Authentication error");
-      }
+      // Silently handle errors - don't show any alerts to user
+      console.error("Authentication error:", err);
     }
   };
 

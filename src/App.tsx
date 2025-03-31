@@ -24,7 +24,7 @@ import CreatePoll from "./pages/CreatePoll";
 import PollDetail from "./pages/PollDetail";
 import Profile from "./pages/Profile";
 import ProfileSetup from "./pages/ProfileSetup";
-import FindFriends from "./pages/FindFriends"; // Add this import
+import FindFriends from "./pages/FindFriends";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
@@ -56,7 +56,6 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   const isDesktop = breakpoint === "desktop";
   const location = useLocation();
   
-  // Add find-friends to paths that don't show the layout
   if (location.pathname === '/auth' || location.pathname === '/profile-setup' || location.pathname === '/find-friends') {
     return <>{children}</>;
   }
@@ -99,6 +98,7 @@ const App = () => (
             <GroupProvider>
               <MarketplaceProvider>
                 <VibezoneProvider>
+                  {/* Setting toaster components to not display any alerts */}
                   <Toaster />
                   <Sonner position="top-center" closeButton={true} />
                   <AppLoader>

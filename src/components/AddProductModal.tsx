@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,6 @@ import { z } from 'zod';
 import { Switch } from '@/components/ui/switch';
 import { ImagePlus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface AddProductModalProps {
   marketplaceId: string;
@@ -239,13 +239,6 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded, asShe
             )}
           />
           
-          {uploadError && (
-            <Alert variant="destructive">
-              <AlertTitle>Upload Error</AlertTitle>
-              <AlertDescription>{uploadError}</AlertDescription>
-            </Alert>
-          )}
-          
           <div className="space-y-2">
             <Label htmlFor="image">Product Image</Label>
             <div className="border rounded-md p-4">
@@ -395,13 +388,6 @@ const AddProductModal = ({ marketplaceId, isOpen, onClose, onProductAdded, asShe
                 </FormItem>
               )}
             />
-            
-            {uploadError && (
-              <Alert variant="destructive">
-                <AlertTitle>Upload Error</AlertTitle>
-                <AlertDescription>{uploadError}</AlertDescription>
-              </Alert>
-            )}
             
             <div className="space-y-2">
               <Label htmlFor="image">Product Image</Label>
