@@ -11,6 +11,8 @@ const FindFriends: React.FC = () => {
   const navigate = useNavigate();
   
   const handleContinue = () => {
+    // Set a flag in session storage to indicate that the page should refresh
+    sessionStorage.setItem('shouldRefreshHome', 'true');
     navigate('/');
   };
 

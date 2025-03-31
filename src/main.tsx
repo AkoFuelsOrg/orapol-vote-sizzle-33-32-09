@@ -11,8 +11,15 @@ if (redirect && redirect !== window.location.href) {
   window.history.replaceState(null, '', redirect);
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+// Check if we need to refresh the home page
+const shouldRefreshHome = sessionStorage.getItem('shouldRefreshHome');
+if (shouldRefreshHome === 'true' && window.location.pathname === '/') {
+  sessionStorage.removeItem('shouldRefreshHome');
+  window.location.reload();
+} else {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+}
