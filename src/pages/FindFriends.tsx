@@ -20,7 +20,7 @@ const FindFriends: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
       <Helmet>
-        <title>TUWAYE - Find Friends</title>
+        <title>Tuwaye - Find Friends</title>
       </Helmet>
       
       <Card className="w-full max-w-3xl shadow-lg border-none animate-fade-in">
