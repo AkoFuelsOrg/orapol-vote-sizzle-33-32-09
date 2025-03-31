@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
 import { Post } from '../lib/types';
@@ -12,6 +12,7 @@ import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
 import PostCommentSection from './PostCommentSection';
 import { AspectRatio } from './ui/aspect-ratio';
 import { getAvatarUrl } from '../lib/avatar-utils';
+import { extractDominantColor } from '../lib/image-utils';
 import { 
   Drawer,
   DrawerClose,
@@ -54,6 +55,20 @@ const PostCard: React.FC<PostCardProps> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const isPostOwner = user && post.author.id === user.id;
   
+  const [dominantColor, setDominantColor] = useState("#000000");
+  
+  useEffect(() => {
+    if (post.image) {
+      extractDominantColor(post.image)
+        .then(color => {
+          setDominantColor(color);
+        })
+        .catch(error => {
+          console.error('Error extracting color:', error);
+        });
+    }
+  }, [post.image]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', { 
@@ -559,7 +574,7 @@ const PostCard: React.FC<PostCardProps> = ({
             
             {isImageExpanded && (
               <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
-                <DialogContent className="max-w-5xl p-0 overflow-hidden bg-white rounded-xl border-none shadow-2xl">
+                <DialogContent className="max-w-5xl p-0 overflow-hidden bg-white rounded-xl border-none shadow-2xl" style={{ backgroundColor: `${dominantColor}20` }}>
                   <DialogTitle className="sr-only">Post Image</DialogTitle>
                   <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none">
                     <X size={24} />
@@ -597,164 +612,4 @@ const PostCard: React.FC<PostCardProps> = ({
                   </Avatar>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold group-hover:text-primary transition-colors">{post.author.name}</p>
-                  <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
-                </div>
-              </Link>
-              {isPostOwner ? (
-                <PostOptionsDropdown />
-              ) : (
-                <button className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
-                    <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
-                    <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          )}
-          
-          {post.image && (
-            <div className="px-5 py-4 border-b border-gray-100">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <p className="text-sm font-medium text-gray-900">{post.author.name}</p>
-                  <span className="mx-2 text-gray-300">•</span>
-                  <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
-                </div>
-                {isPostOwner ? (
-                  <PostOptionsDropdown />
-                ) : (
-                  <button className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
-                      <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
-                      <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          
-          <div className="px-5 py-4">
-            <div className="space-y-2">
-              <p className="text-sm leading-relaxed whitespace-pre-line break-words">
-                {post.image ? '' : <span className="font-semibold">{post.author.name}</span>}{" "}
-                <span>
-                  {post.content}
-                </span>
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex-grow overflow-y-auto border-t border-gray-100 bg-gray-50/50">
-            <PostCommentSection 
-              postId={post.id} 
-              updateCommentCount={updateCommentCount}
-              showCommentForm={showCommentForm}
-            />
-          </div>
-          
-          <CardFooter className="px-5 py-3 border-t border-gray-100 flex justify-between items-center bg-white">
-            <div className="flex items-center space-x-4">
-              <button 
-                className={`flex items-center justify-center space-x-1.5 p-2 rounded-full transition-colors ${
-                  hasLiked 
-                    ? 'text-red-500 bg-red-50' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleLike();
-                }}
-              >
-                <Heart size={20} className={`${hasLiked ? 'fill-red-500' : ''} transition-all ${hasLiked ? 'scale-110' : 'scale-100'}`} />
-              </button>
-              
-              <button 
-                className="flex items-center justify-center p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                onClick={toggleCommentForm}
-              >
-                <MessageCircle size={20} />
-              </button>
-              
-              {isMobile ? (
-                <Drawer open={isShareOpen} onOpenChange={setIsShareOpen}>
-                  <DrawerTrigger asChild>
-                    <button 
-                      className="flex items-center justify-center p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                      onClick={(e) => handleShare(e)}
-                    >
-                      <Share2 size={20} />
-                    </button>
-                  </DrawerTrigger>
-                  <DrawerContent className="rounded-t-xl">
-                    <DrawerHeader className="border-b border-gray-100">
-                      <DrawerTitle className="text-center">Share This Post</DrawerTitle>
-                      <DrawerDescription className="text-center text-sm">
-                        Choose a platform to share
-                      </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="px-4">
-                      <ShareOptions />
-                    </div>
-                    <DrawerFooter>
-                      <DrawerClose asChild>
-                        <Button variant="outline" className="w-full border-gray-200">Cancel</Button>
-                      </DrawerClose>
-                    </DrawerFooter>
-                  </DrawerContent>
-                </Drawer>
-              ) : (
-                <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
-                  <button 
-                    className="flex items-center justify-center p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
-                    onClick={(e) => handleShare(e)}
-                  >
-                    <Share2 size={20} />
-                  </button>
-                  <DialogContent className="sm:max-w-md rounded-xl">
-                    <DialogTitle className="text-center">Share This Post</DialogTitle>
-                    <div className="p-2">
-                      <ShareOptions />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1.5">
-                <div className="flex items-center justify-center h-5 w-5 bg-red-100 rounded-full">
-                  <Heart size={10} className="text-red-500" />
-                </div>
-                <span className="text-sm font-medium">{likeCount}</span>
-              </div>
-              
-              <button className="p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors">
-                <Bookmark size={20} />
-              </button>
-            </div>
-          </CardFooter>
-        </div>
-      </div>
-
-      <CreatePostModal 
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        groupId={post.groupId}
-        marketplaceId={post.marketplace_id}
-        initialContent={post.content}
-        isEditing={true}
-        postId={post.id}
-        initialImage={post.image}
-        onPostUpdate={onPostUpdate}
-      />
-    </Card>
-  );
-};
-
-export default PostCard;
+                  <p className="text-sm
