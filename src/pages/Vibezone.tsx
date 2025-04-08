@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -43,11 +42,9 @@ const Vibezone: React.FC = () => {
   const [showComments, setShowComments] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  
-  // Ref for the video element to manage loading states
+  const [isPlaying, setIsPlaying] = useState(true);
+
   const videoRef = useRef<HTMLVideoElement>(null);
-  
-  // Preload refs for next and previous videos
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   const prevVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -61,7 +58,6 @@ const Vibezone: React.FC = () => {
           const videoArray = Array.isArray(fetchedVideos) ? fetchedVideos : [];
           setVideos(videoArray);
           
-          // Extract dominant colors from thumbnails
           videoArray.forEach(async (video) => {
             if (video.thumbnail_url) {
               try {
@@ -89,7 +85,6 @@ const Vibezone: React.FC = () => {
     
     loadVideos();
     
-    // Set up real-time subscription for video changes
     const videosChannel = supabase
       .channel('vibezone_videos_changes')
       .on('postgres_changes', 
@@ -109,7 +104,6 @@ const Vibezone: React.FC = () => {
     };
   }, [fetchVideos]);
   
-  // Load comments for the current video
   useEffect(() => {
     const loadComments = async () => {
       if (!videos[currentVideoIndex]) return;
@@ -118,7 +112,6 @@ const Vibezone: React.FC = () => {
         setIsLoadingComments(true);
         setShowComments(false);
         
-        // Fetch comments for the current video
         const { data: commentsData, error: commentsError } = await supabase
           .from('video_comments')
           .select(`
@@ -138,10 +131,8 @@ const Vibezone: React.FC = () => {
           return;
         }
         
-        // Get unique user IDs from comments
         const userIds = commentsData.map(comment => comment.user_id);
         
-        // Fetch user profiles separately
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -149,7 +140,6 @@ const Vibezone: React.FC = () => {
         
         if (profilesError) throw profilesError;
         
-        // Create a lookup map of user profiles by ID
         const userMap = new Map();
         if (profilesData) {
           profilesData.forEach(profile => {
@@ -161,9 +151,7 @@ const Vibezone: React.FC = () => {
           });
         }
         
-        // Map comments with their users
         const formattedComments: VideoComment[] = commentsData.map(comment => {
-          // Get user info from map or use default if not found
           const userInfo = userMap.get(comment.user_id) || {
             id: comment.user_id,
             name: 'Anonymous',
@@ -192,11 +180,9 @@ const Vibezone: React.FC = () => {
     }
   }, [currentVideoIndex, videos]);
   
-  // Preload next and previous videos when currentVideoIndex changes
   useEffect(() => {
     if (videos.length === 0) return;
     
-    // Preload next video
     if (currentVideoIndex < videos.length - 1 && nextVideoRef.current) {
       const nextVideo = videos[currentVideoIndex + 1];
       if (nextVideo && nextVideo.video_url) {
@@ -206,7 +192,6 @@ const Vibezone: React.FC = () => {
       }
     }
     
-    // Preload previous video
     if (currentVideoIndex > 0 && prevVideoRef.current) {
       const prevVideo = videos[currentVideoIndex - 1];
       if (prevVideo && prevVideo.video_url) {
@@ -257,6 +242,17 @@ const Vibezone: React.FC = () => {
   const toggleComments = () => {
     setShowComments(!showComments);
   };
+
+  const toggleVideoPlayback = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
   
   const submitComment = async () => {
     if (!user) {
@@ -273,7 +269,6 @@ const Vibezone: React.FC = () => {
     try {
       setIsSubmittingComment(true);
       
-      // Insert comment into database
       const { data: commentData, error: commentError } = await supabase
         .from('video_comments')
         .insert({
@@ -290,7 +285,6 @@ const Vibezone: React.FC = () => {
         throw new Error('No data returned from comment insert');
       }
       
-      // Create formatted comment with user data
       const newComment: VideoComment = {
         id: commentData.id,
         content: commentData.content,
@@ -302,7 +296,6 @@ const Vibezone: React.FC = () => {
         }
       };
       
-      // Update local comments state with new comment
       setComments(prev => [newComment, ...prev]);
       setCommentContent("");
       toast.success("Comment posted!");
@@ -314,7 +307,6 @@ const Vibezone: React.FC = () => {
     }
   };
 
-  // Skip skeleton state if videos are already loaded
   const shouldShowSkeleton = isInitialLoading && videos.length === 0;
   
   const currentVideo = videos[currentVideoIndex];
@@ -322,7 +314,6 @@ const Vibezone: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Header with Upload Button */}
       <div className="fixed top-0 left-0 right-0 z-10 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Vibezone</h1>
@@ -374,7 +365,6 @@ const Vibezone: React.FC = () => {
         <div className="relative h-screen w-full overflow-hidden">
           {currentVideo && (
             <div className="relative h-full">
-              {/* Hidden video elements for preloading */}
               <video 
                 ref={nextVideoRef}
                 className="hidden"
@@ -384,10 +374,9 @@ const Vibezone: React.FC = () => {
                 className="hidden"
               />
               
-              {/* Video Container */}
               <div 
                 className="h-full w-full cursor-pointer"
-                onClick={() => navigate(`/vibezone/watch/${currentVideo.id}`)}
+                onClick={toggleVideoPlayback}
                 style={{ backgroundColor: 'black' }}
               >
                 {isVideoLoading && (
@@ -426,7 +415,6 @@ const Vibezone: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Navigation Indicators */}
                 <div className="absolute top-1/2 right-4 transform -translate-y-1/2 space-y-4">
                   <button 
                     className="w-10 h-10 bg-black/30 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
@@ -450,7 +438,6 @@ const Vibezone: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Video Information Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
                   <h3 className="font-semibold text-lg text-white line-clamp-2 mb-2">
                     {currentVideo.title || 'Untitled Video'}
@@ -510,7 +497,6 @@ const Vibezone: React.FC = () => {
                 </div>
               </div>
               
-              {/* Comments Panel */}
               {showComments && (
                 <div 
                   className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md h-2/3 rounded-t-3xl z-20 animate-slide-up"
@@ -602,7 +588,6 @@ const Vibezone: React.FC = () => {
                 </div>
               )}
               
-              {/* Video Progress Indicators */}
               <div className="absolute top-16 left-0 right-0 flex justify-center">
                 <div className="flex space-x-1">
                   {videos.map((_, index) => (
