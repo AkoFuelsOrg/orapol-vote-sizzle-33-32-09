@@ -1,10 +1,10 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, User, ChevronUp, ChevronDown } from 'lucide-react';
+import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, User, ChevronUp, ChevronDown, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -14,17 +14,42 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { extractDominantColor } from '@/lib/image-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+
+interface VideoComment {
+  id: string;
+  content: string;
+  created_at: string;
+  user: {
+    id: string;
+    name: string;
+    avatar_url: string | null;
+  };
+}
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
   const { fetchVideos, loading } = useVibezone();
   const navigate = useNavigate();
-  const { user } = useSupabase();
+  const { user, profile } = useSupabase();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [dominantColors, setDominantColors] = useState<Record<string, string>>({});
+  const [comments, setComments] = useState<VideoComment[]>([]);
+  const [commentContent, setCommentContent] = useState("");
+  const [showComments, setShowComments] = useState(false);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  
+  // Ref for the video element to manage loading states
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Preload refs for next and previous videos
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
+  const prevVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -83,6 +108,72 @@ const Vibezone: React.FC = () => {
       supabase.removeChannel(videosChannel);
     };
   }, [fetchVideos]);
+  
+  // Load comments for the current video
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!videos[currentVideoIndex]) return;
+      
+      try {
+        setIsLoadingComments(true);
+        setShowComments(false);
+        
+        // Fetch comments for the current video
+        const { data, error } = await supabase
+          .from('video_comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            user:user_id (
+              id,
+              name:username,
+              avatar_url
+            )
+          `)
+          .eq('video_id', videos[currentVideoIndex].id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        setComments(data || []);
+      } catch (error) {
+        console.error("Error loading comments:", error);
+        toast.error("Failed to load comments");
+      } finally {
+        setIsLoadingComments(false);
+      }
+    };
+    
+    if (videos.length > 0 && currentVideoIndex >= 0) {
+      loadComments();
+    }
+  }, [currentVideoIndex, videos]);
+  
+  // Preload next and previous videos when currentVideoIndex changes
+  useEffect(() => {
+    if (videos.length === 0) return;
+    
+    // Preload next video
+    if (currentVideoIndex < videos.length - 1 && nextVideoRef.current) {
+      const nextVideo = videos[currentVideoIndex + 1];
+      if (nextVideo && nextVideo.video_url) {
+        nextVideoRef.current.src = nextVideo.video_url;
+        nextVideoRef.current.preload = "auto";
+        nextVideoRef.current.load();
+      }
+    }
+    
+    // Preload previous video
+    if (currentVideoIndex > 0 && prevVideoRef.current) {
+      const prevVideo = videos[currentVideoIndex - 1];
+      if (prevVideo && prevVideo.video_url) {
+        prevVideoRef.current.src = prevVideo.video_url;
+        prevVideoRef.current.preload = "auto";
+        prevVideoRef.current.load();
+      }
+    }
+  }, [currentVideoIndex, videos]);
 
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
@@ -105,13 +196,73 @@ const Vibezone: React.FC = () => {
 
   const navigateToNextVideo = () => {
     if (currentVideoIndex < videos.length - 1) {
+      setIsVideoLoading(true);
       setCurrentVideoIndex(currentVideoIndex + 1);
     }
   };
 
   const navigateToPreviousVideo = () => {
     if (currentVideoIndex > 0) {
+      setIsVideoLoading(true);
       setCurrentVideoIndex(currentVideoIndex - 1);
+    }
+  };
+
+  const handleVideoLoad = () => {
+    setIsVideoLoading(false);
+  };
+  
+  const toggleComments = () => {
+    setShowComments(!showComments);
+  };
+  
+  const submitComment = async () => {
+    if (!user) {
+      toast.error("Please sign in to comment");
+      return;
+    }
+    
+    if (!commentContent.trim()) {
+      return;
+    }
+    
+    if (!videos[currentVideoIndex]) return;
+    
+    try {
+      setIsSubmittingComment(true);
+      
+      // Insert comment into database
+      const { data, error } = await supabase
+        .from('video_comments')
+        .insert({
+          video_id: videos[currentVideoIndex].id,
+          user_id: user.id,
+          content: commentContent.trim()
+        })
+        .select(`
+          id,
+          content,
+          created_at,
+          user:user_id (
+            id,
+            name:username,
+            avatar_url
+          )
+        `);
+      
+      if (error) throw error;
+      
+      // Update local comments state with new comment
+      if (data && data[0]) {
+        setComments(prev => [data[0], ...prev]);
+        setCommentContent("");
+        toast.success("Comment posted!");
+      }
+    } catch (error) {
+      console.error("Error posting comment:", error);
+      toast.error("Failed to post comment");
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
@@ -175,13 +326,41 @@ const Vibezone: React.FC = () => {
         <div className="relative h-screen w-full overflow-hidden">
           {currentVideo && (
             <div className="relative h-full">
+              {/* Hidden video elements for preloading */}
+              <video 
+                ref={nextVideoRef}
+                className="hidden"
+              />
+              <video 
+                ref={prevVideoRef}
+                className="hidden"
+              />
+              
               {/* Video Container */}
               <div 
                 className="h-full w-full cursor-pointer"
                 onClick={() => navigate(`/vibezone/watch/${currentVideo.id}`)}
                 style={{ backgroundColor: 'black' }}
               >
-                {currentVideo.thumbnail_url ? (
+                {isVideoLoading && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                  </div>
+                )}
+                
+                {currentVideo.video_url ? (
+                  <video
+                    ref={videoRef}
+                    src={currentVideo.video_url}
+                    poster={currentVideo.thumbnail_url || undefined}
+                    className="absolute inset-0 w-full h-full object-contain"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    onLoadedData={handleVideoLoad}
+                  />
+                ) : currentVideo.thumbnail_url ? (
                   <div className="relative h-full">
                     <img 
                       src={currentVideo.thumbnail_url} 
@@ -192,90 +371,188 @@ const Vibezone: React.FC = () => {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <FilmIcon className="h-16 w-16 text-white/50" />
                     </div>
-                    
-                    {/* Navigation Indicators */}
-                    <div className="absolute top-1/2 right-4 transform -translate-y-1/2 space-y-4">
-                      <button 
-                        className="w-10 h-10 bg-black/30 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigateToNextVideo();
-                        }}
-                        disabled={currentVideoIndex >= videos.length - 1}
-                      >
-                        <ChevronUp className="h-6 w-6" />
-                      </button>
-                      <button 
-                        className="w-10 h-10 bg-black/30 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigateToPreviousVideo();
-                        }}
-                        disabled={currentVideoIndex <= 0}
-                      >
-                        <ChevronDown className="h-6 w-6" />
-                      </button>
-                    </div>
-
-                    {/* Video Information Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                      <h3 className="font-semibold text-lg text-white line-clamp-2 mb-2">
-                        {currentVideo.title || 'Untitled Video'}
-                      </h3>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Avatar className="w-10 h-10 border-2 border-primary/20">
-                            {currentVideo.author?.avatar ? (
-                              <AvatarImage 
-                                src={currentVideo.author.avatar} 
-                                alt={currentVideo.author.name || ''} 
-                              />
-                            ) : (
-                              <AvatarFallback className="bg-primary/10">
-                                <User className="h-5 w-5 text-primary/70" />
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
-                          <div className="ml-2">
-                            <p className="text-sm font-medium text-white">{currentVideo.author?.name || 'Unknown'}</p>
-                            <p className="text-xs text-gray-300">
-                              {formatViews(currentVideo.views || 0)} • {formatDistanceToNow(new Date(currentVideo.created_at), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4">
-                          <button className="flex flex-col items-center">
-                            <div className="w-9 h-9 bg-black/30 rounded-full flex items-center justify-center">
-                              <Heart className="h-5 w-5 text-white" />
-                            </div>
-                            <span className="text-xs text-white mt-1">Like</span>
-                          </button>
-                          
-                          <button className="flex flex-col items-center">
-                            <div className="w-9 h-9 bg-black/30 rounded-full flex items-center justify-center">
-                              <MessageCircle className="h-5 w-5 text-white" />
-                            </div>
-                            <span className="text-xs text-white mt-1">Comment</span>
-                          </button>
-                          
-                          <button className="flex flex-col items-center">
-                            <div className="w-9 h-9 bg-black/30 rounded-full flex items-center justify-center">
-                              <Share2 className="h-5 w-5 text-white" />
-                            </div>
-                            <span className="text-xs text-white mt-1">Share</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
                     <FilmIcon className="h-20 w-20 text-gray-600" />
                   </div>
                 )}
+                
+                {/* Navigation Indicators */}
+                <div className="absolute top-1/2 right-4 transform -translate-y-1/2 space-y-4">
+                  <button 
+                    className="w-10 h-10 bg-black/30 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToNextVideo();
+                    }}
+                    disabled={currentVideoIndex >= videos.length - 1}
+                  >
+                    <ChevronUp className="h-6 w-6" />
+                  </button>
+                  <button 
+                    className="w-10 h-10 bg-black/30 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigateToPreviousVideo();
+                    }}
+                    disabled={currentVideoIndex <= 0}
+                  >
+                    <ChevronDown className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Video Information Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                  <h3 className="font-semibold text-lg text-white line-clamp-2 mb-2">
+                    {currentVideo.title || 'Untitled Video'}
+                  </h3>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Avatar className="w-10 h-10 border-2 border-primary/20">
+                        {currentVideo.author?.avatar ? (
+                          <AvatarImage 
+                            src={currentVideo.author.avatar} 
+                            alt={currentVideo.author.name || ''} 
+                          />
+                        ) : (
+                          <AvatarFallback className="bg-primary/10">
+                            <User className="h-5 w-5 text-primary/70" />
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="ml-2">
+                        <p className="text-sm font-medium text-white">{currentVideo.author?.name || 'Unknown'}</p>
+                        <p className="text-xs text-gray-300">
+                          {formatViews(currentVideo.views || 0)} • {formatDistanceToNow(new Date(currentVideo.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <button className="flex flex-col items-center">
+                        <div className="w-9 h-9 bg-black/30 rounded-full flex items-center justify-center">
+                          <Heart className="h-5 w-5 text-white" />
+                        </div>
+                        <span className="text-xs text-white mt-1">Like</span>
+                      </button>
+                      
+                      <button 
+                        className="flex flex-col items-center"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleComments();
+                        }}
+                      >
+                        <div className="w-9 h-9 bg-black/30 rounded-full flex items-center justify-center">
+                          <MessageCircle className="h-5 w-5 text-white" />
+                        </div>
+                        <span className="text-xs text-white mt-1">Comment</span>
+                      </button>
+                      
+                      <button className="flex flex-col items-center">
+                        <div className="w-9 h-9 bg-black/30 rounded-full flex items-center justify-center">
+                          <Share2 className="h-5 w-5 text-white" />
+                        </div>
+                        <span className="text-xs text-white mt-1">Share</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
+              
+              {/* Comments Panel */}
+              {showComments && (
+                <div 
+                  className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md h-2/3 rounded-t-3xl z-20 animate-slide-up"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-4 border-b border-gray-800">
+                    <div className="w-10 h-1 bg-gray-600 mx-auto rounded-full mb-4" />
+                    <h3 className="text-white text-lg font-bold">Comments</h3>
+                  </div>
+                  
+                  <div className="p-4 overflow-y-auto h-[calc(100%-180px)]">
+                    {isLoadingComments ? (
+                      <div className="flex justify-center my-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : comments.length === 0 ? (
+                      <div className="text-center text-gray-400 my-8">
+                        <p>No comments yet. Be the first to comment!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {comments.map(comment => (
+                          <div key={comment.id} className="flex space-x-3">
+                            <Avatar className="w-8 h-8 flex-shrink-0">
+                              {comment.user.avatar_url ? (
+                                <AvatarImage src={comment.user.avatar_url} alt={comment.user.name || 'User'} />
+                              ) : (
+                                <AvatarFallback className="bg-primary/10">
+                                  <User className="h-4 w-4 text-primary/70" />
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center">
+                                <p className="text-white text-sm font-medium">{comment.user.name || 'Anonymous'}</p>
+                                <span className="text-gray-500 text-xs ml-2">
+                                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
+                              <p className="text-gray-300 text-sm mt-1">{comment.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/95 border-t border-gray-800">
+                    {user ? (
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          {profile?.avatar_url ? (
+                            <AvatarImage src={profile.avatar_url} alt={profile.username || 'User'} />
+                          ) : (
+                            <AvatarFallback className="bg-primary/10">
+                              <User className="h-4 w-4 text-primary/70" />
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div className="flex-1 relative">
+                          <Textarea
+                            placeholder="Add a comment..."
+                            className="resize-none bg-gray-800 border-gray-700 text-white rounded-full min-h-0 py-2 pr-12"
+                            value={commentContent}
+                            onChange={(e) => setCommentContent(e.target.value)}
+                          />
+                          <button
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary disabled:text-gray-500"
+                            disabled={!commentContent.trim() || isSubmittingComment}
+                            onClick={submitComment}
+                          >
+                            {isSubmittingComment ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Send className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        className="w-full py-2.5 bg-primary/10 text-primary rounded-full text-sm"
+                        onClick={() => navigate('/auth')}
+                      >
+                        Sign in to comment
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {/* Video Progress Indicators */}
               <div className="absolute top-16 left-0 right-0 flex justify-center">
