@@ -119,24 +119,66 @@ const Vibezone: React.FC = () => {
         setShowComments(false);
         
         // Fetch comments for the current video
-        const { data, error } = await supabase
+        const { data: commentsData, error: commentsError } = await supabase
           .from('video_comments')
           .select(`
             id,
             content,
             created_at,
-            user:user_id (
-              id,
-              name:username,
-              avatar_url
-            )
+            user_id
           `)
           .eq('video_id', videos[currentVideoIndex].id)
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (commentsError) throw commentsError;
         
-        setComments(data || []);
+        if (!commentsData || commentsData.length === 0) {
+          setComments([]);
+          setIsLoadingComments(false);
+          return;
+        }
+        
+        // Get unique user IDs from comments
+        const userIds = commentsData.map(comment => comment.user_id);
+        
+        // Fetch user profiles separately
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', userIds);
+        
+        if (profilesError) throw profilesError;
+        
+        // Create a lookup map of user profiles by ID
+        const userMap = new Map();
+        if (profilesData) {
+          profilesData.forEach(profile => {
+            userMap.set(profile.id, {
+              id: profile.id,
+              name: profile.username || 'Anonymous',
+              avatar_url: profile.avatar_url
+            });
+          });
+        }
+        
+        // Map comments with their users
+        const formattedComments: VideoComment[] = commentsData.map(comment => {
+          // Get user info from map or use default if not found
+          const userInfo = userMap.get(comment.user_id) || {
+            id: comment.user_id,
+            name: 'Anonymous',
+            avatar_url: null
+          };
+          
+          return {
+            id: comment.id,
+            content: comment.content,
+            created_at: comment.created_at,
+            user: userInfo
+          };
+        });
+        
+        setComments(formattedComments);
       } catch (error) {
         console.error("Error loading comments:", error);
         toast.error("Failed to load comments");
@@ -232,32 +274,38 @@ const Vibezone: React.FC = () => {
       setIsSubmittingComment(true);
       
       // Insert comment into database
-      const { data, error } = await supabase
+      const { data: commentData, error: commentError } = await supabase
         .from('video_comments')
         .insert({
           video_id: videos[currentVideoIndex].id,
           user_id: user.id,
           content: commentContent.trim()
         })
-        .select(`
-          id,
-          content,
-          created_at,
-          user:user_id (
-            id,
-            name:username,
-            avatar_url
-          )
-        `);
+        .select('id, content, created_at')
+        .single();
       
-      if (error) throw error;
+      if (commentError) throw commentError;
+      
+      if (!commentData) {
+        throw new Error('No data returned from comment insert');
+      }
+      
+      // Create formatted comment with user data
+      const newComment: VideoComment = {
+        id: commentData.id,
+        content: commentData.content,
+        created_at: commentData.created_at,
+        user: {
+          id: profile?.id || user.id,
+          name: profile?.username || 'Anonymous',
+          avatar_url: profile?.avatar_url
+        }
+      };
       
       // Update local comments state with new comment
-      if (data && data[0]) {
-        setComments(prev => [data[0], ...prev]);
-        setCommentContent("");
-        toast.success("Comment posted!");
-      }
+      setComments(prev => [newComment, ...prev]);
+      setCommentContent("");
+      toast.success("Comment posted!");
     } catch (error) {
       console.error("Error posting comment:", error);
       toast.error("Failed to post comment");
