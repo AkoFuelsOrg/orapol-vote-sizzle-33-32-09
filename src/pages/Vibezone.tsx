@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, User, ChevronUp, ChevronDown, Send } from 'lucide-react';
+import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, User, ChevronUp, ChevronDown, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -504,7 +504,16 @@ const Vibezone: React.FC = () => {
                 >
                   <div className="p-4 border-b border-gray-800">
                     <div className="w-10 h-1 bg-gray-600 mx-auto rounded-full mb-4" />
-                    <h3 className="text-white text-lg font-bold">Comments</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-white text-lg font-bold">Comments</h3>
+                      <button 
+                        onClick={() => setShowComments(false)} 
+                        className="p-1 rounded-full hover:bg-gray-800 transition-colors"
+                        aria-label="Close comments"
+                      >
+                        <X className="h-5 w-5 text-white" />
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="p-4 overflow-y-auto h-[calc(100%-180px)]">
