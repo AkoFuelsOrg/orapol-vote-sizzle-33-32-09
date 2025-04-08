@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
@@ -7,7 +8,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Card, CardContent, CardFooter } from './ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
 import PostCommentSection from './PostCommentSection';
 import { AspectRatio } from './ui/aspect-ratio';
