@@ -613,4 +613,103 @@ const PostCard: React.FC<PostCardProps> = ({
                   </Avatar>
                 </div>
                 <div>
-                  <p className="text-sm
+                  <p className="text-sm font-semibold group-hover:text-primary transition-colors">{post.author.name}</p>
+                  <p className="text-xs text-gray-500">{formatDate(post.createdAt)}</p>
+                </div>
+              </Link>
+              {isPostOwner ? (
+                <PostOptionsDropdown />
+              ) : (
+                <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor" />
+                    <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" fill="currentColor" />
+                    <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" fill="currentColor" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="p-5 flex-1">
+            <div className="mb-4">
+              <p className="text-sm whitespace-pre-line break-words leading-relaxed">{post.content}</p>
+            </div>
+
+            <div className="mt-auto">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                <div className="flex items-center">
+                  {likeCount > 0 && (
+                    <div className="flex items-center">
+                      <div className="flex items-center justify-center w-4 h-4 rounded-full bg-red-100 mr-1.5">
+                        <Heart size={10} className="text-red-500" />
+                      </div>
+                      <span>{likeCount}</span>
+                    </div>
+                  )}
+                </div>
+                <div>{commentCount > 0 && `${commentCount} comments`}</div>
+              </div>
+
+              <div className="flex border-t border-gray-200 pt-4">
+                <button 
+                  className={`flex-1 py-2.5 flex items-center justify-center space-x-1.5 transition-colors ${
+                    hasLiked ? 'text-red-500' : 'text-gray-600 hover:text-red-500 hover:bg-red-50'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleLike();
+                  }}
+                >
+                  <Heart size={18} className={`${hasLiked ? 'fill-red-500' : ''}`} />
+                  <span className="text-xs font-medium">{hasLiked ? 'Liked' : 'Like'}</span>
+                </button>
+                
+                <button 
+                  className="flex-1 py-2.5 flex items-center justify-center space-x-1.5 text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors"
+                  onClick={toggleCommentForm}
+                >
+                  <MessageCircle size={18} />
+                  <span className="text-xs font-medium">Comment</span>
+                </button>
+                
+                <button 
+                  className="flex-1 py-2.5 flex items-center justify-center space-x-1.5 text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                  onClick={(e) => handleShare(e)}
+                >
+                  <Share2 size={18} />
+                  <span className="text-xs font-medium">Share</span>
+                </button>
+              </div>
+
+              {showCommentForm && (
+                <div className="border-t border-gray-200 mt-4">
+                  <PostCommentSection 
+                    postId={post.id} 
+                    updateCommentCount={updateCommentCount}
+                    showCommentForm={showCommentForm}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <CreatePostModal 
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        groupId={post.groupId}
+        marketplaceId={post.marketplace_id}
+        initialContent={post.content}
+        isEditing={true}
+        postId={post.id}
+        initialImage={post.image}
+        onPostUpdate={onPostUpdate}
+      />
+    </Card>
+  );
+};
+
+export default PostCard;
