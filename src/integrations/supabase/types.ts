@@ -54,6 +54,27 @@ export type Database = {
         }
         Relationships: []
       }
+      channel_subscriptions: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          id: string
+          subscriber_id: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          id?: string
+          subscriber_id: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          id?: string
+          subscriber_id?: string
+        }
+        Relationships: []
+      }
       course_lessons: {
         Row: {
           content: string
@@ -911,6 +932,10 @@ export type Database = {
       calculate_user_earnings: {
         Args: { user_id: string }
         Returns: number
+      }
+      can_message: {
+        Args: { user_id_1: string; user_id_2: string }
+        Returns: boolean
       }
       count_followers: {
         Args: { user_id: string }
