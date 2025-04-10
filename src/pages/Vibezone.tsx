@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -103,7 +104,8 @@ const Vibezone: React.FC = () => {
           schema: 'public',
           table: 'video_comments'
         },
-        async (payload) => {
+        async (payload: { new: Record<string, any> }) => {
+          // Fixed type definition - ensure payload.new is properly typed
           // When comments change, update the count for that video
           if (payload.new && payload.new.video_id) {
             const videoId = payload.new.video_id;
