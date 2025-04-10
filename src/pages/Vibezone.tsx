@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -30,6 +29,7 @@ const Vibezone: React.FC = () => {
   const videoRefs = useRef<HTMLVideoElement[]>([]);
   const scrollPositionRef = useRef(0);
   const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -51,6 +51,20 @@ const Vibezone: React.FC = () => {
             }
             setLikedVideos(likedStatus);
           }
+          
+          // Fetch comment counts for each video
+          const commentCountsData: Record<string, number> = {};
+          for (const video of fetchedVideos) {
+            if (video.id) {
+              const { count } = await supabase
+                .from('video_comments')
+                .select('id', { count: 'exact', head: true })
+                .eq('video_id', video.id);
+              
+              commentCountsData[video.id] = count || 0;
+            }
+          }
+          setCommentCounts(commentCountsData);
         } else {
           setVideos([]);
         }
@@ -80,8 +94,36 @@ const Vibezone: React.FC = () => {
       )
       .subscribe();
       
+    // Set up real-time subscription for comment changes
+    const commentsChannel = supabase
+      .channel('vibezone_comments_changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'video_comments'
+        },
+        async (payload) => {
+          // When comments change, update the count for that video
+          if (payload.new && payload.new.video_id) {
+            const videoId = payload.new.video_id;
+            const { count } = await supabase
+              .from('video_comments')
+              .select('id', { count: 'exact', head: true })
+              .eq('video_id', videoId);
+            
+            setCommentCounts(prev => ({
+              ...prev,
+              [videoId]: count || 0
+            }));
+          }
+        }
+      )
+      .subscribe();
+      
     return () => {
       supabase.removeChannel(videosChannel);
+      supabase.removeChannel(commentsChannel);
     };
   }, [fetchVideos, user, hasLikedVideo]);
 
@@ -252,7 +294,13 @@ const Vibezone: React.FC = () => {
     document.body.style.overflow = 'auto';
   };
 
-  // Skip skeleton state if videos are already loaded
+  const updateCommentCount = (videoId: string, count: number) => {
+    setCommentCounts(prev => ({
+      ...prev,
+      [videoId]: count
+    }));
+  };
+
   const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
@@ -395,8 +443,7 @@ const Vibezone: React.FC = () => {
                       <MessageCircle className="h-6 w-6 text-white" />
                     </div>
                     <span className="text-white text-xs mt-1">
-                      {/* Default to 0 since comments_count doesn't exist */}
-                      {formatViews(0)}
+                      {video.id && formatViews(commentCounts[video.id] || 0)}
                     </span>
                   </button>
                   
@@ -470,7 +517,10 @@ const Vibezone: React.FC = () => {
             
             {/* Comments content */}
             <div className="flex-1 overflow-y-auto p-4">
-              <VideoCommentSection videoId={activeVideoId} />
+              <VideoCommentSection 
+                videoId={activeVideoId} 
+                onCommentCountChange={(count) => updateCommentCount(activeVideoId, count)} 
+              />
             </div>
           </div>
         </div>

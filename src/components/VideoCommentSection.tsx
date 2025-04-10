@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -14,9 +13,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface VideoCommentSectionProps {
   videoId: string;
+  onCommentCountChange?: (count: number) => void;
 }
 
-const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) => {
+const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ 
+  videoId,
+  onCommentCountChange
+}) => {
   const { user } = useSupabase();
   const { fetchVideoComments, addVideoComment } = useVibezone();
   const [comments, setComments] = useState<VideoComment[]>([]);
@@ -46,6 +49,32 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     }
     // We intentionally don't include user in dependencies to prevent refetching on login state changes
     // This prevents flickering when auth state changes
+  }, [videoId]);
+  
+  // Set up real-time subscription for comment changes
+  useEffect(() => {
+    if (!videoId) return;
+    
+    // Subscribe to comment changes for this video
+    const commentsChannel = supabase
+      .channel(`video_comments_${videoId}`)
+      .on('postgres_changes', 
+        {
+          event: '*',
+          schema: 'public',
+          table: 'video_comments',
+          filter: `video_id=eq.${videoId}`
+        },
+        () => {
+          // Refresh comments when there's a change
+          fetchComments();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(commentsChannel);
+    };
   }, [videoId]);
 
   const handleLikeComment = async (comment: VideoComment) => {
@@ -253,6 +282,12 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
         if (inputRef.current) {
           inputRef.current.value = '';
         }
+        
+        // Update comment count
+        const newCommentCount = comments.length + 1;
+        if (onCommentCountChange) {
+          onCommentCountChange(newCommentCount);
+        }
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -276,11 +311,22 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   };
 
   const fetchComments = async () => {
-    if (commentsFetched) return; // Only fetch once to prevent flickering
+    if (commentsFetched && !videoId) return; // Don't fetch if already fetched or no videoId
     
     setLoading(true);
     try {
       const commentsData = await fetchVideoComments(videoId);
+      
+      // Get the total count to report back
+      const { count } = await supabase
+        .from('video_comments')
+        .select('id', { count: 'exact', head: true })
+        .eq('video_id', videoId);
+      
+      // Report comment count back to parent
+      if (onCommentCountChange && typeof count === 'number') {
+        onCommentCountChange(count);
+      }
       
       // If user is logged in, check which comments they've liked
       if (user) {
@@ -368,6 +414,12 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
             // Clear the reply form
             setReplyContent('');
             setReplyingTo(null);
+            
+            // Update comment count
+            if (onCommentCountChange) {
+              const newCommentCount = comments.length + 1; // Include the new reply
+              onCommentCountChange(newCommentCount);
+            }
           }
         }
       }

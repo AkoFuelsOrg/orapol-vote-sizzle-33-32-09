@@ -21,6 +21,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
+// Configure real-time subscriptions
+supabase.realtime.setAuth(SUPABASE_PUBLISHABLE_KEY);
+
 // Enable listening to all real-time changes in the database
 supabase.channel('system')
   .on('presence', { event: 'sync' }, () => {
@@ -29,3 +32,6 @@ supabase.channel('system')
   .subscribe((status) => {
     console.log('Real-time connection status:', status);
   });
+
+// Add empty export to ensure module is recognized
+export default {};
