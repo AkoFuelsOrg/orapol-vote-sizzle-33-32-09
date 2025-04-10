@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, BookmarkIcon, Volume2, VolumeX, Music } from 'lucide-react';
+import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, BookmarkIcon, Volume2, VolumeX, Music, X, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -13,18 +13,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar } from '@/components/ui/avatar';
+import VideoCommentSection from '@/components/VideoCommentSection';
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
+  const [showComments, setShowComments] = useState(false);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const { fetchVideos, loading, hasLikedVideo, likeVideo, unlikeVideo } = useVibezone();
   const navigate = useNavigate();
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
   const videoRefs = useRef<HTMLVideoElement[]>([]);
+  const scrollPositionRef = useRef(0);
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -68,13 +72,20 @@ const Vibezone: React.FC = () => {
     };
   }, [fetchVideos]);
 
+  // Pause videos when comments are shown
+  useEffect(() => {
+    if (showComments && videoRefs.current[currentVideoIndex]) {
+      videoRefs.current[currentVideoIndex].pause();
+    }
+  }, [showComments, currentVideoIndex]);
+
   useEffect(() => {
     const videoElements = videoRefs.current;
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const video = entry.target as HTMLVideoElement;
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && !showComments) {
           // Play the video when it comes into view
           video.play().catch(err => console.error("Error playing video:", err));
           
@@ -103,7 +114,7 @@ const Vibezone: React.FC = () => {
         }
       });
     };
-  }, [videos]);
+  }, [videos, showComments]);
 
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
@@ -161,6 +172,42 @@ const Vibezone: React.FC = () => {
         .then(() => toast.success('Link copied to clipboard'))
         .catch(err => console.error('Could not copy link:', err));
     }
+  };
+
+  const handleShowComments = (e: React.MouseEvent, videoId: string) => {
+    e.stopPropagation();
+    // Save scroll position
+    scrollPositionRef.current = window.scrollY;
+    setActiveVideoId(videoId);
+    setShowComments(true);
+    
+    // Pause all videos when comments are shown
+    videoRefs.current.forEach(video => {
+      if (video) {
+        video.pause();
+      }
+    });
+    
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+  };
+
+  const handleCloseComments = () => {
+    setShowComments(false);
+    setActiveVideoId(null);
+    
+    // Restore scroll position
+    setTimeout(() => {
+      window.scrollTo(0, scrollPositionRef.current);
+      
+      // Resume video playing
+      if (videoRefs.current[currentVideoIndex]) {
+        videoRefs.current[currentVideoIndex].play().catch(err => console.error("Error playing video:", err));
+      }
+    }, 0);
+    
+    // Restore body scrolling
+    document.body.style.overflow = 'auto';
   };
 
   // Skip skeleton state if videos are already loaded
@@ -231,7 +278,6 @@ const Vibezone: React.FC = () => {
             <div 
               key={video.id || `video-${index}`}
               className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative"
-              onClick={() => navigate(`/vibezone/watch/${video.id}`)}
             >
               <div className="relative w-full h-full max-w-md mx-auto bg-black">
                 {/* Video player */}
@@ -299,17 +345,14 @@ const Vibezone: React.FC = () => {
                   {/* Comment button */}
                   <button 
                     className="flex flex-col items-center"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/vibezone/watch/${video.id}`);
-                    }}
+                    onClick={(e) => handleShowComments(e, video.id)}
                   >
                     <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
                       <MessageCircle className="h-6 w-6 text-white" />
                     </div>
                     <span className="text-white text-xs mt-1">
-                      {/* Fix: Access a property that exists in the Video type */}
-                      {formatViews(0)} {/* Default to 0 since comments_count doesn't exist */}
+                      {/* Default to 0 since comments_count doesn't exist */}
+                      {formatViews(0)}
                     </span>
                   </button>
                   
@@ -353,6 +396,39 @@ const Vibezone: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Comments overlay */}
+      {showComments && activeVideoId && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
+          <div className="bg-white dark:bg-gray-900 w-full h-full overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b flex items-center justify-between">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-gray-700 dark:text-gray-300"
+                onClick={handleCloseComments}
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+              <h3 className="font-semibold text-lg flex-1 text-center">Comments</h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-gray-700 dark:text-gray-300"
+                onClick={handleCloseComments}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            
+            {/* Comments content */}
+            <div className="flex-1 overflow-y-auto p-2">
+              <VideoCommentSection videoId={activeVideoId} />
+            </div>
+          </div>
         </div>
       )}
     </div>

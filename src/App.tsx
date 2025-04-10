@@ -39,7 +39,6 @@ import Marketplaces from "./pages/Marketplaces";
 import MarketplaceProfile from "./pages/MarketplaceProfile";
 import Favourites from "./pages/Favourites";
 import Vibezone from "./pages/Vibezone";
-import WatchVideo from "./pages/WatchVideo";
 import UploadVideo from "./pages/UploadVideo";
 
 const queryClient = new QueryClient({
@@ -62,7 +61,7 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   
   const showRightChat = isDesktop && 
     !location.pathname.startsWith('/messages') && 
-    !location.pathname.startsWith('/vibezone/watch/');
+    !location.pathname.startsWith('/vibezone');
   
   const isFullWidthPage = 
     location.pathname === '/profile' || 
@@ -70,7 +69,7 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
     location.pathname.startsWith('/group/') ||
     location.pathname.startsWith('/marketplace/') ||
     location.pathname.startsWith('/poll/') ||
-    location.pathname.startsWith('/vibezone/watch/');
+    location.pathname.startsWith('/vibezone');
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -216,10 +215,6 @@ const App = () => (
                           element={<Vibezone />}
                         />
                         <Route
-                          path="/vibezone/watch/:id"
-                          element={<WatchVideo />}
-                        />
-                        <Route
                           path="/vibezone/upload"
                           element={
                             <ProtectedRoute>
@@ -227,6 +222,8 @@ const App = () => (
                             </ProtectedRoute>
                           }
                         />
+                        {/* Removed the WatchVideo route - all functionality now in main Vibezone page */}
+                        {/* Any /vibezone/watch/:id URLs will go to 404 now */}
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </ResponsiveLayout>
