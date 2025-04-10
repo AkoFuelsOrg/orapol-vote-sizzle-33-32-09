@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, BookmarkIcon, Volume2, VolumeX, Music, X, ArrowLeft } from 'lucide-react';
+import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, BookmarkIcon, Volume2, VolumeX, Music, X, ArrowLeft, UserPlus, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -14,6 +13,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar } from '@/components/ui/avatar';
 import VideoCommentSection from '@/components/VideoCommentSection';
+import { Link } from 'react-router-dom';
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -31,6 +31,9 @@ const Vibezone: React.FC = () => {
   const scrollPositionRef = useRef(0);
   const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
+  const [canMessageUsers, setCanMessageUsers] = useState<Record<string, boolean>>({});
+  const [actionLoadingUsers, setActionLoadingUsers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -41,19 +44,42 @@ const Vibezone: React.FC = () => {
         if (fetchedVideos) {
           setVideos(Array.isArray(fetchedVideos) ? fetchedVideos : []);
           
-          // Check which videos are liked if user is logged in
           if (user) {
             const likedStatus: Record<string, boolean> = {};
+            const following: Record<string, boolean> = {};
+            const canMessage: Record<string, boolean> = {};
+            
             for (const video of fetchedVideos) {
               if (video.id) {
                 const isLiked = await hasLikedVideo(video.id);
                 likedStatus[video.id] = isLiked;
+                
+                if (video.author?.id && user.id !== video.author.id) {
+                  const { data } = await supabase
+                    .from('follows')
+                    .select('id')
+                    .eq('follower_id', user.id)
+                    .eq('following_id', video.author.id)
+                    .maybeSingle();
+                  
+                  following[video.author.id] = !!data;
+                  
+                  const { data: canMessageData } = await supabase
+                    .rpc('can_message', { 
+                      user_id_1: user.id, 
+                      user_id_2: video.author.id 
+                    });
+                  
+                  canMessage[video.author.id] = !!canMessageData;
+                }
               }
             }
+            
             setLikedVideos(likedStatus);
+            setFollowingStatus(following);
+            setCanMessageUsers(canMessage);
           }
           
-          // Fetch comment counts for each video
           const commentCountsData: Record<string, number> = {};
           for (const video of fetchedVideos) {
             if (video.id) {
@@ -80,7 +106,6 @@ const Vibezone: React.FC = () => {
     
     loadVideos();
     
-    // Set up real-time subscription for video changes
     const videosChannel = supabase
       .channel('vibezone_videos_changes')
       .on('postgres_changes', 
@@ -95,7 +120,6 @@ const Vibezone: React.FC = () => {
       )
       .subscribe();
       
-    // Set up real-time subscription for comment changes
     const commentsChannel = supabase
       .channel('vibezone_comments_changes')
       .on('postgres_changes',
@@ -105,8 +129,6 @@ const Vibezone: React.FC = () => {
           table: 'video_comments'
         },
         async (payload: { new: Record<string, any> }) => {
-          // Fixed type definition - ensure payload.new is properly typed
-          // When comments change, update the count for that video
           if (payload.new && payload.new.video_id) {
             const videoId = payload.new.video_id;
             const { count } = await supabase
@@ -123,18 +145,28 @@ const Vibezone: React.FC = () => {
       )
       .subscribe();
       
+    const followsChannel = supabase
+      .channel('vibezone_follows_changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'follows'
+        },
+        async (payload: { new: Record<string, any>, old: Record<string, any>, eventType: string }) => {
+          if (user) {
+            loadVideos();
+          }
+        }
+      )
+      .subscribe();
+      
     return () => {
       supabase.removeChannel(videosChannel);
       supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(followsChannel);
     };
   }, [fetchVideos, user, hasLikedVideo]);
-
-  // Pause videos when comments are shown
-  useEffect(() => {
-    if (showComments && videoRefs.current[currentVideoIndex]) {
-      videoRefs.current[currentVideoIndex].pause();
-    }
-  }, [showComments, currentVideoIndex]);
 
   useEffect(() => {
     const videoElements = videoRefs.current;
@@ -143,21 +175,17 @@ const Vibezone: React.FC = () => {
       entries.forEach(entry => {
         const video = entry.target as HTMLVideoElement;
         if (entry.isIntersecting && !showComments) {
-          // Play the video when it comes into view
           video.play().catch(err => console.error("Error playing video:", err));
-          
-          // Update current video index
           const index = videoElements.indexOf(video);
           if (index !== -1) {
             setCurrentVideoIndex(index);
           }
         } else {
-          // Pause the video when it's out of view
           video.pause();
         }
       });
-    }, { threshold: 0.7 }); // When 70% of the video is visible
-    
+    }, { threshold: 0.7 });
+
     videoElements.forEach(video => {
       if (video) {
         observer.observe(video);
@@ -212,7 +240,6 @@ const Vibezone: React.FC = () => {
     try {
       const isLiked = likedVideos[video.id] || false;
       
-      // Optimistically update UI
       setLikedVideos(prev => ({
         ...prev,
         [video.id]: !isLiked
@@ -220,20 +247,17 @@ const Vibezone: React.FC = () => {
       
       if (isLiked) {
         await unlikeVideo(video.id);
-        // Update likes count in the video object
         setVideos(prev => prev.map(v => 
           v.id === video.id ? { ...v, likes: Math.max((v.likes || 1) - 1, 0) } : v
         ));
       } else {
         await likeVideo(video.id);
-        // Update likes count in the video object
         setVideos(prev => prev.map(v => 
           v.id === video.id ? { ...v, likes: (v.likes || 0) + 1 } : v
         ));
       }
     } catch (error) {
       console.error('Error handling like:', error);
-      // Revert optimistic update on error
       if (video.id) {
         setLikedVideos(prev => ({
           ...prev,
@@ -262,19 +286,16 @@ const Vibezone: React.FC = () => {
 
   const handleShowComments = (e: React.MouseEvent, videoId: string) => {
     e.stopPropagation();
-    // Save scroll position
     scrollPositionRef.current = window.scrollY;
     setActiveVideoId(videoId);
     setShowComments(true);
     
-    // Pause all videos when comments are shown
     videoRefs.current.forEach(video => {
       if (video) {
         video.pause();
       }
     });
     
-    // Prevent body scrolling
     document.body.style.overflow = 'hidden';
   };
 
@@ -282,17 +303,14 @@ const Vibezone: React.FC = () => {
     setShowComments(false);
     setActiveVideoId(null);
     
-    // Restore scroll position
     setTimeout(() => {
       window.scrollTo(0, scrollPositionRef.current);
       
-      // Resume video playing
       if (videoRefs.current[currentVideoIndex]) {
         videoRefs.current[currentVideoIndex].play().catch(err => console.error("Error playing video:", err));
       }
     }, 0);
     
-    // Restore body scrolling
     document.body.style.overflow = 'auto';
   };
 
@@ -303,11 +321,59 @@ const Vibezone: React.FC = () => {
     }));
   };
 
+  const handleFollowUser = async (e: React.MouseEvent, authorId: string) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please sign in to follow users");
+      return;
+    }
+    
+    if (user.id === authorId) {
+      toast.info("You cannot follow yourself");
+      return;
+    }
+    
+    setActionLoadingUsers(prev => ({ ...prev, [authorId]: true }));
+    
+    try {
+      const isFollowing = followingStatus[authorId];
+      
+      setFollowingStatus(prev => ({ ...prev, [authorId]: !isFollowing }));
+      
+      if (isFollowing) {
+        await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', authorId);
+          
+        toast.success("Unfollowed successfully");
+      } else {
+        await supabase
+          .from('follows')
+          .insert({ follower_id: user.id, following_id: authorId });
+          
+        toast.success("Followed successfully");
+        
+        const { data: canMessageData } = await supabase
+          .rpc('can_message', { user_id_1: user.id, user_id_2: authorId });
+        
+        setCanMessageUsers(prev => ({ ...prev, [authorId]: !!canMessageData }));
+      }
+    } catch (error) {
+      console.error("Error updating follow status:", error);
+      toast.error("Failed to update follow status");
+      
+      setFollowingStatus(prev => ({ ...prev, [authorId]: !followingStatus[authorId] }));
+    } finally {
+      setActionLoadingUsers(prev => ({ ...prev, [authorId]: false }));
+    }
+  };
+
   const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
     <div className="bg-black min-h-screen">
-      {/* Fixed header with upload button */}
       <div className="fixed top-16 sm:top-4 left-0 w-full z-30 px-4 flex justify-between items-center">
         <div className="flex items-center">
           <h1 className="text-xl font-bold text-white flex items-center">
@@ -372,7 +438,6 @@ const Vibezone: React.FC = () => {
               className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative"
             >
               <div className="relative w-full h-full max-w-md mx-auto bg-black">
-                {/* Video player */}
                 <video 
                   ref={(el) => handleVideoRef(el, index)}
                   src={video.video_url}
@@ -384,16 +449,14 @@ const Vibezone: React.FC = () => {
                   poster={video.thumbnail_url || undefined}
                 />
                 
-                {/* Video controls overlay */}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60 pointer-events-none" />
                 
-                {/* Video info */}
                 <div className="absolute bottom-4 left-0 p-4 w-full pr-20">
                   <h3 className="font-semibold text-white line-clamp-2 text-lg">
                     {video.title || 'Untitled Video'}
                   </h3>
                   <div className="flex items-center mt-2">
-                    <div className="flex-shrink-0">
+                    <Link to={video.author?.id ? `/user/${video.author.id}` : '#'} className="flex-shrink-0">
                       {video.author?.avatar ? (
                         <Avatar className="w-8 h-8 border-2 border-red-500">
                           <img 
@@ -407,21 +470,62 @@ const Vibezone: React.FC = () => {
                           <FilmIcon className="h-4 w-4 text-red-500" />
                         </div>
                       )}
-                    </div>
+                    </Link>
                     <div className="ml-2 overflow-hidden">
-                      <p className="text-sm font-medium text-white">
+                      <Link 
+                        to={video.author?.id ? `/user/${video.author.id}` : '#'} 
+                        className="text-sm font-medium text-white hover:underline"
+                      >
                         @{video.author?.username || 'unknown'}
-                      </p>
+                      </Link>
                       <p className="text-xs text-gray-300">
                         {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
                       </p>
                     </div>
                   </div>
+                  
+                  {user && video.author?.id && user.id !== video.author.id && (
+                    <div className="flex space-x-2 mt-2">
+                      <Button
+                        onClick={(e) => handleFollowUser(e, video.author?.id || '')}
+                        disabled={!!actionLoadingUsers[video.author?.id || '']}
+                        variant={followingStatus[video.author?.id || ''] ? "secondary" : "default"}
+                        size="sm"
+                        className="h-8 text-xs"
+                      >
+                        {actionLoadingUsers[video.author?.id || ''] ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : followingStatus[video.author?.id || ''] ? (
+                          <>
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            <span>Following</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            <span>Follow</span>
+                          </>
+                        )}
+                      </Button>
+                      
+                      {canMessageUsers[video.author?.id || ''] && (
+                        <Button 
+                          asChild
+                          variant="secondary"
+                          size="sm"
+                          className="h-8 text-xs"
+                        >
+                          <Link to={`/messages/${video.author?.id}`}>
+                            <MessageCircle className="h-3 w-3 mr-1" />
+                            <span>Message</span>
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
-                {/* Action buttons */}
                 <div className="absolute right-3 bottom-16 flex flex-col gap-6">
-                  {/* Like button */}
                   <button 
                     className="flex flex-col items-center"
                     onClick={(e) => handleLikeVideo(e, video)}
@@ -436,7 +540,6 @@ const Vibezone: React.FC = () => {
                     </span>
                   </button>
                   
-                  {/* Comment button */}
                   <button 
                     className="flex flex-col items-center"
                     onClick={(e) => video.id && handleShowComments(e, video.id)}
@@ -449,7 +552,6 @@ const Vibezone: React.FC = () => {
                     </span>
                   </button>
                   
-                  {/* Share button */}
                   <button 
                     className="flex flex-col items-center"
                     onClick={(e) => handleShareVideo(e, video)}
@@ -462,7 +564,6 @@ const Vibezone: React.FC = () => {
                     </span>
                   </button>
                   
-                  {/* Sound button */}
                   <button 
                     className="flex flex-col items-center" 
                     onClick={toggleMute}
@@ -477,7 +578,6 @@ const Vibezone: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Music info */}
                 <div className="absolute bottom-28 left-4 flex items-center">
                   <Music className="h-4 w-4 text-white mr-2 animate-spin-slow" />
                   <div className="overflow-hidden max-w-[60%]">
@@ -492,11 +592,9 @@ const Vibezone: React.FC = () => {
         </div>
       )}
 
-      {/* Comments overlay - improved for desktop and mobile */}
       {showComments && activeVideoId && (
         <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
           <div className="bg-white dark:bg-gray-900 w-full md:w-[450px] h-full md:max-h-[80vh] md:max-w-[450px] md:rounded-xl overflow-hidden flex flex-col md:m-auto animate-fade-in">
-            {/* Header */}
             <div className="p-4 border-b flex items-center justify-between">
               <Button 
                 variant="ghost" 
@@ -517,7 +615,6 @@ const Vibezone: React.FC = () => {
               </Button>
             </div>
             
-            {/* Comments content */}
             <div className="flex-1 overflow-y-auto p-4">
               <VideoCommentSection 
                 videoId={activeVideoId} 
