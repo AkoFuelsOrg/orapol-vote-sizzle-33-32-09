@@ -14,5 +14,18 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10
     }
+  },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true
   }
 });
+
+// Enable listening to all real-time changes in the database
+supabase.channel('system')
+  .on('presence', { event: 'sync' }, () => {
+    console.log('Real-time presence event received');
+  })
+  .subscribe((status) => {
+    console.log('Real-time connection status:', status);
+  });

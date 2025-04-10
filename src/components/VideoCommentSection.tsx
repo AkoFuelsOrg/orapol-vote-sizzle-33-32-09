@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { ThumbsUp, Reply, MoreVertical, Send } from 'lucide-react';
+import { ThumbsUp, Reply, MoreVertical, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,6 +25,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   const [replyingTo, setReplyingTo] = useState<VideoComment | null>(null);
   const [replyContent, setReplyContent] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingLike, setUpdatingLike] = useState<string | null>(null);
   const [commentsFetched, setCommentsFetched] = useState(false);
   const mountedRef = useRef(true);
@@ -244,7 +245,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     if (newComment.trim() === '') return;
     
     try {
-      setLoading(true);
+      setSubmittingComment(true);
       const comment = await addVideoComment(videoId, newComment);
       if (comment && mountedRef.current) {
         setComments(prevComments => [comment, ...prevComments]);
@@ -260,7 +261,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       }
     } finally {
       if (mountedRef.current) {
-        setLoading(false);
+        setSubmittingComment(false);
       }
     }
   };
@@ -386,15 +387,15 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
   if (loading && !commentsFetched) {
     return (
       <div className="py-4 text-center">
-        <div className="inline-block animate-pulse bg-gray-200 h-8 w-48 rounded"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center space-x-2">
-        <Avatar className="h-8 w-8">
+      <div className="flex items-start space-x-2 mb-4">
+        <Avatar className="h-8 w-8 flex-shrink-0">
           {user?.user_metadata?.avatar_url && (
             <img
               src={user?.user_metadata?.avatar_url as string}
@@ -403,79 +404,89 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
             />
           )}
         </Avatar>
-        <Input
-          type="text"
-          placeholder="Add a comment..."
-          className="flex-1"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              addComment();
-            }
-          }}
-          ref={inputRef}
-        />
-        <Button onClick={addComment} disabled={loading || !newComment.trim()}>
-          <Send className="h-4 w-4 mr-2" />
-          Post
-        </Button>
+        <div className="flex-1 flex">
+          <Input
+            type="text"
+            placeholder="Add a comment..."
+            className="flex-1"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                addComment();
+              }
+            }}
+            ref={inputRef}
+          />
+          <Button 
+            onClick={addComment} 
+            disabled={submittingComment || !newComment.trim()} 
+            className="ml-2 whitespace-nowrap"
+          >
+            {submittingComment ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-1 md:mr-2" />
+                <span className="hidden md:inline">Post</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       
       <Separator className="my-4" />
       
       <div>
         {comments.length === 0 ? (
-          <div className="text-center py-4 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             No comments yet. Be the first to comment!
           </div>
         ) : (
-          <div>
+          <div className="space-y-6">
             {comments.map((comment) => (
-              <div key={comment.id} className="mb-4">
-                <div className="flex items-start space-x-3">
-                  <Avatar className="h-8 w-8">
+              <div key={comment.id} className="group">
+                <div className="flex space-x-3">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
                     <img
                       src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/40"}
                       alt={comment.author?.name || comment.author?.username || 'User'}
                       className="rounded-full"
                     />
                   </Avatar>
-                  <div>
+                  <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <p className="text-sm font-semibold">{comment.author?.name || comment.author?.username || 'Unknown'}</p>
                       <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</p>
                     </div>
-                    <p className="text-sm">{comment.content}</p>
+                    <p className="text-sm mt-1">{comment.content}</p>
                     <div className="mt-2 flex items-center space-x-4">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="flex items-center"
+                        className="flex items-center h-8 px-2"
                         onClick={() => handleLikeComment(comment)}
                         disabled={updatingLike === comment.id}
                       >
-                        <ThumbsUp className={`h-4 w-4 mr-1 ${comment.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
-                        {comment.likes && comment.likes > 0 && <span>{comment.likes}</span>}
+                        <ThumbsUp className={`h-4 w-4 mr-1.5 ${comment.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
+                        {comment.likes && comment.likes > 0 && <span className="text-xs">{comment.likes}</span>}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="flex items-center"
+                        className="flex items-center h-8 px-2"
                         onClick={() => replyToComment(comment)}
                       >
-                        <Reply className="h-4 w-4 mr-1" />
-                        Reply
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
+                        <Reply className="h-4 w-4 mr-1.5" />
+                        <span className="text-xs">Reply</span>
                       </Button>
                     </div>
                     
                     {/* Reply Form */}
                     {replyingTo?.id === comment.id && (
-                      <div className="mt-4 flex items-center space-x-2">
-                        <Avatar className="h-6 w-6">
+                      <div className="mt-3 flex items-center space-x-2">
+                        <Avatar className="h-6 w-6 flex-shrink-0">
                           {user?.user_metadata?.avatar_url && (
                             <img
                               src={user?.user_metadata?.avatar_url as string}
@@ -487,32 +498,48 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
                         <Input
                           type="text"
                           placeholder="Add a reply..."
-                          className="flex-1"
+                          className="flex-1 h-8 text-sm"
                           value={replyContent}
                           onChange={(e) => setReplyContent(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
                               submitReply();
                             }
                           }}
                         />
-                        <Button onClick={submitReply} disabled={submittingReply || !replyContent.trim()}>
-                          <Send className="h-4 w-4 mr-2" />
-                          Reply
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={cancelReply}>
-                          Cancel
-                        </Button>
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            onClick={submitReply} 
+                            disabled={submittingReply || !replyContent.trim()} 
+                            className="h-8"
+                          >
+                            {submittingReply ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Reply"
+                            )}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={cancelReply} 
+                            className="h-8"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
                     )}
                     
                     {/* Replies */}
                     {comment.replies && comment.replies.length > 0 && (
-                      <div className="mt-4 ml-6">
+                      <div className="mt-3 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-3">
                         {comment.replies.map((reply) => (
-                          <div key={reply.id} className="mb-4">
-                            <div className="flex items-start space-x-3">
-                              <Avatar className="h-6 w-6">
+                          <div key={reply.id} className="pt-2">
+                            <div className="flex space-x-2">
+                              <Avatar className="h-6 w-6 flex-shrink-0">
                                 <img
                                   src={reply.author?.avatar || reply.author?.avatar_url || "https://via.placeholder.com/40"}
                                   alt={reply.author?.name || reply.author?.username || 'User'}
@@ -521,25 +548,20 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
                               </Avatar>
                               <div>
                                 <div className="flex items-center space-x-2">
-                                  <p className="text-sm font-semibold">{reply.author?.name || reply.author?.username || 'Unknown'}</p>
+                                  <p className="text-xs font-semibold">{reply.author?.name || reply.author?.username || 'Unknown'}</p>
                                   <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</p>
                                 </div>
-                                <p className="text-sm">{reply.content}</p>
-                                <div className="mt-2 flex items-center space-x-4">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="flex items-center"
-                                    onClick={() => handleLikeReply(comment.id, reply)}
-                                    disabled={updatingLike === reply.id}
-                                  >
-                                    <ThumbsUp className={`h-4 w-4 mr-1 ${reply.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
-                                    {reply.likes && reply.likes > 0 && <span>{reply.likes}</span>}
-                                  </Button>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                                <p className="text-xs mt-0.5">{reply.content}</p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="flex items-center h-6 px-1 mt-1"
+                                  onClick={() => handleLikeReply(comment.id, reply)}
+                                  disabled={updatingLike === reply.id}
+                                >
+                                  <ThumbsUp className={`h-3 w-3 mr-1 ${reply.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
+                                  {reply.likes && reply.likes > 0 && <span className="text-xs">{reply.likes}</span>}
+                                </Button>
                               </div>
                             </div>
                           </div>

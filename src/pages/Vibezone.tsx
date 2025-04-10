@@ -29,6 +29,7 @@ const Vibezone: React.FC = () => {
   const isMobile = breakpoint === "mobile";
   const videoRefs = useRef<HTMLVideoElement[]>([]);
   const scrollPositionRef = useRef(0);
+  const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -38,6 +39,18 @@ const Vibezone: React.FC = () => {
         
         if (fetchedVideos) {
           setVideos(Array.isArray(fetchedVideos) ? fetchedVideos : []);
+          
+          // Check which videos are liked if user is logged in
+          if (user) {
+            const likedStatus: Record<string, boolean> = {};
+            for (const video of fetchedVideos) {
+              if (video.id) {
+                const isLiked = await hasLikedVideo(video.id);
+                likedStatus[video.id] = isLiked;
+              }
+            }
+            setLikedVideos(likedStatus);
+          }
         } else {
           setVideos([]);
         }
@@ -70,7 +83,7 @@ const Vibezone: React.FC = () => {
     return () => {
       supabase.removeChannel(videosChannel);
     };
-  }, [fetchVideos]);
+  }, [fetchVideos, user, hasLikedVideo]);
 
   // Pause videos when comments are shown
   useEffect(() => {
@@ -149,12 +162,41 @@ const Vibezone: React.FC = () => {
       toast.error("Please sign in to like videos");
       return;
     }
-
-    const isLiked = await hasLikedVideo(video.id);
-    if (isLiked) {
-      await unlikeVideo(video.id);
-    } else {
-      await likeVideo(video.id);
+    
+    if (!video.id) return;
+    
+    try {
+      const isLiked = likedVideos[video.id] || false;
+      
+      // Optimistically update UI
+      setLikedVideos(prev => ({
+        ...prev,
+        [video.id]: !isLiked
+      }));
+      
+      if (isLiked) {
+        await unlikeVideo(video.id);
+        // Update likes count in the video object
+        setVideos(prev => prev.map(v => 
+          v.id === video.id ? { ...v, likes: Math.max((v.likes || 1) - 1, 0) } : v
+        ));
+      } else {
+        await likeVideo(video.id);
+        // Update likes count in the video object
+        setVideos(prev => prev.map(v => 
+          v.id === video.id ? { ...v, likes: (v.likes || 0) + 1 } : v
+        ));
+      }
+    } catch (error) {
+      console.error('Error handling like:', error);
+      // Revert optimistic update on error
+      if (video.id) {
+        setLikedVideos(prev => ({
+          ...prev,
+          [video.id]: !likedVideos[video.id]
+        }));
+      }
+      toast.error('Failed to update like status');
     }
   };
 
@@ -335,7 +377,9 @@ const Vibezone: React.FC = () => {
                     onClick={(e) => handleLikeVideo(e, video)}
                   >
                     <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
-                      <Heart className="h-6 w-6 text-white" />
+                      <Heart 
+                        className={`h-6 w-6 ${video.id && likedVideos[video.id] ? 'text-red-500 fill-red-500' : 'text-white'}`} 
+                      />
                     </div>
                     <span className="text-white text-xs mt-1">
                       {formatViews(video.likes || 0)}
@@ -345,7 +389,7 @@ const Vibezone: React.FC = () => {
                   {/* Comment button */}
                   <button 
                     className="flex flex-col items-center"
-                    onClick={(e) => handleShowComments(e, video.id)}
+                    onClick={(e) => video.id && handleShowComments(e, video.id)}
                   >
                     <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
                       <MessageCircle className="h-6 w-6 text-white" />
@@ -399,10 +443,10 @@ const Vibezone: React.FC = () => {
         </div>
       )}
 
-      {/* Comments overlay */}
+      {/* Comments overlay - improved for desktop and mobile */}
       {showComments && activeVideoId && (
         <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
-          <div className="bg-white dark:bg-gray-900 w-full h-full overflow-hidden flex flex-col">
+          <div className="bg-white dark:bg-gray-900 w-full md:w-[450px] h-full md:max-h-[80vh] md:max-w-[450px] md:rounded-xl overflow-hidden flex flex-col md:m-auto animate-fade-in">
             {/* Header */}
             <div className="p-4 border-b flex items-center justify-between">
               <Button 
@@ -425,7 +469,7 @@ const Vibezone: React.FC = () => {
             </div>
             
             {/* Comments content */}
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-4">
               <VideoCommentSection videoId={activeVideoId} />
             </div>
           </div>
