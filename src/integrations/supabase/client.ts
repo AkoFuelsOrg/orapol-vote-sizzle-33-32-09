@@ -24,7 +24,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   global: {
     // Set higher fetch timeout to prevent premature request termination
     fetch: (url, options) => {
-      return fetch(url, { ...options, timeout: 20000 });
+      return fetch(url, { ...options, timeout: 30000 }); // Increased timeout for better video loading
     }
   }
 });

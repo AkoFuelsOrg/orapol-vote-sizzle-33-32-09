@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -23,8 +22,10 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from '@/components/ui/pagination';
+import { Progress } from '@/components/ui/progress';
 
 const VIDEOS_PER_PAGE = 4;
+const LOAD_MORE_THRESHOLD = 3; // Load more videos when reaching the 3rd video
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -47,15 +48,14 @@ const Vibezone: React.FC = () => {
   const [actionLoadingUsers, setActionLoadingUsers] = useState<Record<string, boolean>>({});
   const observerRef = useRef<IntersectionObserver | null>(null);
   const isLoadingRef = useRef(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalVideos, setTotalVideos] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
   
-  // Function to load videos with pagination
   const loadVideos = useCallback(async (page: number = 1) => {
     try {
       if ((isLoadingMore && loadingMoreRef.current) || (!hasMore && page > 1)) {
@@ -65,15 +65,20 @@ const Vibezone: React.FC = () => {
       if (page > 1) {
         setIsLoadingMore(true);
         loadingMoreRef.current = true;
+        setLoadingProgress(0);
+        const progressInterval = setInterval(() => {
+          setLoadingProgress(prev => {
+            const newProgress = prev + Math.random() * 15;
+            return newProgress >= 90 ? 90 : newProgress;
+          });
+        }, 200);
       } else {
         setIsInitialLoading(true);
         isLoadingRef.current = true;
       }
       
-      // Calculate offset based on page number
       const offset = (page - 1) * VIDEOS_PER_PAGE;
       
-      // Get total count for pagination
       if (page === 1) {
         const { count } = await supabase
           .from('videos')
@@ -82,7 +87,6 @@ const Vibezone: React.FC = () => {
         setTotalVideos(count || 0);
       }
       
-      // Fetch videos with pagination
       const { data: videosData, error: videosError } = await supabase
         .from('videos')
         .select('*')
@@ -91,17 +95,19 @@ const Vibezone: React.FC = () => {
       
       if (videosError) throw videosError;
       
-      // Check if we've reached the end
       if (!videosData || videosData.length < VIDEOS_PER_PAGE) {
         setHasMore(false);
       }
       
       if (!videosData || videosData.length === 0) {
         if (page === 1) setVideos([]);
+        if (page > 1) {
+          setLoadingProgress(100);
+          setTimeout(() => setLoadingProgress(0), 500);
+        }
         return;
       }
       
-      // Improve performance by doing all author queries in parallel
       const authorPromises = videosData.map(video => {
         if (!video.user_id) return Promise.resolve(null);
         
@@ -111,7 +117,7 @@ const Vibezone: React.FC = () => {
           .eq('id', video.user_id)
           .single())
           .then(({ data }) => data)
-          .catch(() => null); // Explicitly handle promise catch here
+          .catch(() => null);
       });
       
       const authorResults = await Promise.allSettled(authorPromises);
@@ -140,7 +146,6 @@ const Vibezone: React.FC = () => {
         } as Video;
       });
       
-      // Update liked status and comment counts for new videos
       if (user) {
         const likedPromises = transformedVideos.map(async video => {
           if (video.id) {
@@ -169,7 +174,6 @@ const Vibezone: React.FC = () => {
           }
         }
         
-        // Get following status for all new video authors
         const authorIds = transformedVideos
           .map(video => video.author?.id)
           .filter(id => id && id !== user.id) as string[];
@@ -202,7 +206,6 @@ const Vibezone: React.FC = () => {
         setCanMessageUsers(newCanMessage);
       }
       
-      // Get comment counts for new videos
       const commentCountPromises = transformedVideos.map(async video => {
         if (video.id) {
           try {
@@ -234,7 +237,6 @@ const Vibezone: React.FC = () => {
       
       setCommentCounts(newCommentCounts);
       
-      // Update videos state
       if (page === 1) {
         setVideos(transformedVideos);
       } else {
@@ -243,14 +245,22 @@ const Vibezone: React.FC = () => {
       
       setCurrentPage(page);
       
+      if (page > 1) {
+        setLoadingProgress(100);
+        setTimeout(() => setLoadingProgress(0), 1000);
+      }
+      
     } catch (error: any) {
       console.error("Error loading videos:", error);
       toast.error("Failed to load videos");
       if (page === 1) setVideos([]);
+      setLoadingProgress(0);
     } finally {
       if (page > 1) {
-        setIsLoadingMore(false);
-        loadingMoreRef.current = false;
+        setTimeout(() => {
+          setIsLoadingMore(false);
+          loadingMoreRef.current = false;
+        }, 500);
       } else {
         setIsInitialLoading(false);
         isLoadingRef.current = false;
@@ -327,22 +337,24 @@ const Vibezone: React.FC = () => {
     };
   }, [loadVideos, user]);
 
-  // Load more videos when user is at the third video of the current page
   useEffect(() => {
-    const loadMoreThreshold = 3; // Load more after reaching the 3rd video
-    
     if (currentVideoIndex >= 0 && 
         videos.length > 0 && 
-        currentVideoIndex % VIDEOS_PER_PAGE >= loadMoreThreshold && 
-        hasMore && 
         !isLoadingMore && 
-        !loadingMoreRef.current) {
-      const nextPage = Math.floor(currentVideoIndex / VIDEOS_PER_PAGE) + 2;
-      loadVideos(nextPage);
+        !loadingMoreRef.current &&
+        hasMore) {
+      
+      const currentBatch = Math.floor(currentVideoIndex / VIDEOS_PER_PAGE);
+      const positionInBatch = currentVideoIndex % VIDEOS_PER_PAGE;
+      
+      if (positionInBatch >= LOAD_MORE_THRESHOLD && 
+          (currentBatch + 1) * VIDEOS_PER_PAGE >= videos.length) {
+        const nextPage = currentBatch + 2;
+        loadVideos(nextPage);
+      }
     }
   }, [currentVideoIndex, videos.length, hasMore, isLoadingMore, loadVideos]);
 
-  // Setup video observation logic
   useEffect(() => {
     if (isLoadingRef.current || videos.length === 0) {
       return;
@@ -362,23 +374,28 @@ const Vibezone: React.FC = () => {
         if (entry.isIntersecting && !showComments) {
           setCurrentVideoIndex(index);
           
-          videoRefs.current.forEach((ref, i) => {
+          videoRefs.current.forEach((ref) => {
             if (ref) {
-              if (i === index) {
-                if (ref.paused) {
-                  ref.play().catch(err => console.error("Error playing video:", err));
-                }
-              } else {
-                ref.pause();
-                ref.currentTime = 0;
-              }
+              ref.pause();
             }
           });
+          
+          const currentVideo = videoRefs.current[index];
+          if (currentVideo && currentVideo.paused) {
+            currentVideo.currentTime = 0;
+            currentVideo.play().catch(err => console.error("Error playing video:", err));
+          }
+        } else if (!entry.isIntersecting) {
+          const video = videoRefs.current[index];
+          if (video && !video.paused) {
+            video.pause();
+            video.currentTime = 0;
+          }
         }
       });
     }, { 
       threshold: 0.7,
-      rootMargin: "-10%"
+      rootMargin: "-5%"
     });
 
     videoRefs.current.forEach((video, index) => {
@@ -587,6 +604,18 @@ const Vibezone: React.FC = () => {
         </Button>
       </div>
 
+      {loadingProgress > 0 && (
+        <div className="fixed bottom-4 left-0 right-0 z-50 px-4">
+          <div className="bg-black/70 rounded-lg p-3 max-w-md mx-auto">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 text-red-500 animate-spin" />
+              <p className="text-xs text-white">Loading more videos...</p>
+            </div>
+            <Progress value={loadingProgress} className="h-1 mt-2" />
+          </div>
+        </div>
+      )}
+
       {shouldShowSkeleton ? (
         <div className="pt-20 pb-16 px-2 flex flex-col items-center gap-4">
           {[...Array(2)].map((_, index) => (
@@ -788,15 +817,20 @@ const Vibezone: React.FC = () => {
             </div>
           ))}
           
-          {isLoadingMore && (
-            <div className="h-16 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 text-red-500 animate-spin" />
+          {isLoadingMore && videos.length > 0 && (
+            <div className="h-20 flex items-center justify-center">
+              <div className="bg-gray-800/70 p-4 rounded-xl flex flex-col items-center">
+                <Loader2 className="h-6 w-6 text-red-500 animate-spin mb-2" />
+                <p className="text-white text-sm">Loading more videos...</p>
+              </div>
             </div>
           )}
           
-          {!hasMore && videos.length > 0 && (
-            <div className="h-20 flex items-center justify-center text-white text-sm">
-              No more videos to load
+          {!hasMore && videos.length > 0 && !isLoadingMore && (
+            <div className="h-20 flex items-center justify-center">
+              <div className="bg-gray-800/70 p-4 rounded-xl">
+                <p className="text-white text-sm">You've reached the end</p>
+              </div>
             </div>
           )}
         </div>
