@@ -377,13 +377,37 @@ const Vibezone: React.FC = () => {
           videoRefs.current.forEach((ref) => {
             if (ref) {
               ref.pause();
+              ref.currentTime = 0;
             }
           });
           
           const currentVideo = videoRefs.current[index];
-          if (currentVideo && currentVideo.paused) {
+          if (currentVideo) {
+            console.log(`Trying to play video ${index}`);
+            
+            currentVideo.muted = isMuted;
+            
             currentVideo.currentTime = 0;
-            currentVideo.play().catch(err => console.error("Error playing video:", err));
+            
+            const playPromise = currentVideo.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  console.log(`Video ${index} playing successfully`);
+                })
+                .catch(err => {
+                  console.error(`Error playing video ${index}:`, err);
+                  
+                  if (err.name === "NotAllowedError") {
+                    console.log("Autoplay prevented, trying with muted option");
+                    setIsMuted(true);
+                    currentVideo.muted = true;
+                    currentVideo.play().catch(e => 
+                      console.error("Still couldn't play even with muted:", e)
+                    );
+                  }
+                });
+            }
           }
         } else if (!entry.isIntersecting) {
           const video = videoRefs.current[index];
@@ -409,8 +433,15 @@ const Vibezone: React.FC = () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
+      
+      videoRefs.current.forEach(video => {
+        if (video) {
+          video.pause();
+          video.currentTime = 0;
+        }
+      });
     };
-  }, [videos, showComments]);
+  }, [videos, showComments, isMuted]);
 
   useEffect(() => {
     videoRefs.current.forEach(video => {
@@ -433,6 +464,16 @@ const Vibezone: React.FC = () => {
   const handleVideoRef = (element: HTMLVideoElement | null, index: number) => {
     if (element) {
       videoRefs.current[index] = element;
+      
+      if (element.preload !== 'auto') {
+        element.preload = 'auto';
+      }
+      
+      element.muted = isMuted;
+      
+      if (index === currentVideoIndex && !showComments) {
+        element.play().catch(err => console.error("Error playing video on ref assignment:", err));
+      }
     }
   };
 
@@ -670,7 +711,7 @@ const Vibezone: React.FC = () => {
                   loop
                   playsInline
                   muted={isMuted}
-                  preload="metadata"
+                  preload="auto"
                   poster={video.thumbnail_url || undefined}
                   key={`video-element-${video.id || index}`}
                   data-index={index}

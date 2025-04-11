@@ -12,9 +12,9 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   realtime: {
     params: {
-      eventsPerSecond: 10,
-      maxReconnectAttempts: 20,
-      fastConnectAttempts: 3
+      eventsPerSecond: 20, // Increased for better responsiveness
+      maxReconnectAttempts: 30, // More attempts to reconnect
+      fastConnectAttempts: 5  // More attempts for initial connection
     }
   },
   auth: {
@@ -24,7 +24,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   global: {
     // Set higher fetch timeout to prevent premature request termination
     fetch: (url, options) => {
-      return fetch(url, { ...options, timeout: 30000 }); // Increased timeout for better video loading
+      return fetch(url, { 
+        ...options, 
+        timeout: 60000, // Increased timeout to 60 seconds for better video loading
+        cache: 'no-store', // Ensures fresh content 
+      });
     }
   }
 });
