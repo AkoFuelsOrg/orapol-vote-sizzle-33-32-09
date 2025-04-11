@@ -27,18 +27,21 @@ const Vibezone: React.FC = () => {
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
-  const videoRefs = useRef<HTMLVideoElement[]>([]);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const scrollPositionRef = useRef(0);
   const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
   const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
   const [canMessageUsers, setCanMessageUsers] = useState<Record<string, boolean>>({});
   const [actionLoadingUsers, setActionLoadingUsers] = useState<Record<string, boolean>>({});
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const isLoadingRef = useRef(true);
 
   useEffect(() => {
     const loadVideos = async () => {
       try {
         setIsInitialLoading(true);
+        isLoadingRef.current = true;
         const fetchedVideos = await fetchVideos();
         
         if (fetchedVideos) {
@@ -101,6 +104,7 @@ const Vibezone: React.FC = () => {
         setVideos([]);
       } finally {
         setIsInitialLoading(false);
+        isLoadingRef.current = false;
       }
     };
     
@@ -128,7 +132,7 @@ const Vibezone: React.FC = () => {
           schema: 'public',
           table: 'video_comments'
         },
-        async (payload: { new: Record<string, any> }) => {
+        async (payload: { new: { video_id?: string } }) => {
           if (payload.new && payload.new.video_id) {
             const videoId = payload.new.video_id;
             const { count } = await supabase
@@ -153,7 +157,7 @@ const Vibezone: React.FC = () => {
           schema: 'public',
           table: 'follows'
         },
-        async (payload: { new: Record<string, any>, old: Record<string, any>, eventType: string }) => {
+        async () => {
           if (user) {
             loadVideos();
           }
@@ -165,41 +169,71 @@ const Vibezone: React.FC = () => {
       supabase.removeChannel(videosChannel);
       supabase.removeChannel(commentsChannel);
       supabase.removeChannel(followsChannel);
+      
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
     };
   }, [fetchVideos, user, hasLikedVideo]);
 
   useEffect(() => {
-    const videoElements = videoRefs.current;
+    if (isLoadingRef.current || videos.length === 0) {
+      return;
+    }
 
-    const observer = new IntersectionObserver((entries) => {
+    videoRefs.current = videoRefs.current.slice(0, videos.length);
+    
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    
+    observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const video = entry.target as HTMLVideoElement;
+        const index = Array.from(videoRefs.current).findIndex(ref => ref === video);
+        
         if (entry.isIntersecting && !showComments) {
-          video.play().catch(err => console.error("Error playing video:", err));
-          const index = videoElements.indexOf(video);
-          if (index !== -1) {
-            setCurrentVideoIndex(index);
-          }
-        } else {
-          video.pause();
+          setCurrentVideoIndex(index);
+          
+          videoRefs.current.forEach((ref, i) => {
+            if (ref) {
+              if (i === index) {
+                if (ref.paused) {
+                  ref.play().catch(err => console.error("Error playing video:", err));
+                }
+              } else {
+                ref.pause();
+                ref.currentTime = 0;
+              }
+            }
+          });
         }
       });
-    }, { threshold: 0.7 });
+    }, { 
+      threshold: 0.7,
+      rootMargin: "-10%"
+    });
 
-    videoElements.forEach(video => {
+    videoRefs.current.forEach((video) => {
       if (video) {
-        observer.observe(video);
+        observerRef.current!.observe(video);
       }
     });
     
     return () => {
-      videoElements.forEach(video => {
-        if (video) {
-          observer.unobserve(video);
-        }
-      });
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
     };
   }, [videos, showComments]);
+
+  useEffect(() => {
+    videoRefs.current.forEach(video => {
+      if (video) {
+        video.muted = isMuted;
+      }
+    });
+  }, [isMuted]);
 
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
@@ -220,12 +254,6 @@ const Vibezone: React.FC = () => {
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsMuted(prev => !prev);
-    
-    videoRefs.current.forEach(video => {
-      if (video) {
-        video.muted = !isMuted;
-      }
-    });
   };
 
   const handleLikeVideo = async (e: React.MouseEvent, video: Video) => {
@@ -447,6 +475,7 @@ const Vibezone: React.FC = () => {
                   muted={isMuted}
                   preload="metadata"
                   poster={video.thumbnail_url || undefined}
+                  key={`video-element-${video.id || index}`}
                 />
                 
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60 pointer-events-none" />

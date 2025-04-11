@@ -12,7 +12,9 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   realtime: {
     params: {
-      eventsPerSecond: 10
+      eventsPerSecond: 10,
+      maxReconnectAttempts: 20,
+      fastConnectAttempts: 3
     }
   },
   auth: {
@@ -21,10 +23,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Configure real-time subscriptions
+// Configure real-time subscriptions with improved settings
 supabase.realtime.setAuth(SUPABASE_PUBLISHABLE_KEY);
 
 // Enable listening to all real-time changes in the database
+// with improved connection status handling
 supabase.channel('system')
   .on('presence', { event: 'sync' }, () => {
     console.log('Real-time presence event received');
