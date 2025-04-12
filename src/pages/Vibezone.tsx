@@ -53,12 +53,68 @@ const Vibezone: React.FC = () => {
   const viewedVideosRef = useRef<Record<string, boolean>>({});
   const playAttemptedRef = useRef<Record<string, boolean>>({});
   const currentlyPlayingRef = useRef<number | null>(null);
+  const [autoplayBlockedVideos, setAutoplayBlockedVideos] = useState<Record<string, boolean>>({});
+  const lastIntersectionTime = useRef<Record<number, number>>({});
+  const playTimeoutRef = useRef<Record<number, NodeJS.Timeout>>({});
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalVideos, setTotalVideos] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadingMoreRef = useRef(false);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const isVideoPlayingRef = useRef<Record<number, boolean>>({});
+  
+  const preloadVideoFile = useCallback((videoUrl: string, priority: 'high' | 'low' = 'high') => {
+    if (!videoUrl) return;
+    
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'video';
+    link.href = videoUrl;
+    link.fetchPriority = priority;
+    document.head.appendChild(link);
+    
+    setTimeout(() => {
+      document.head.removeChild(link);
+    }, 20000);
+  }, []);
+  
+  const forcePlayVideo = useCallback(async (videoElement: HTMLVideoElement, maxAttempts = 5) => {
+    let attempts = 0;
+    let success = false;
+    
+    const attemptPlay = async (): Promise<boolean> => {
+      try {
+        attempts++;
+        await videoElement.play();
+        console.log(`✅ Video played successfully on attempt ${attempts}`);
+        return true;
+      } catch (error) {
+        console.warn(`❌ Play attempt ${attempts} failed:`, error);
+        
+        if (attempts >= maxAttempts) {
+          console.error(`Failed to play video after ${maxAttempts} attempts`);
+          return false;
+        }
+        
+        if (!videoElement.muted) {
+          console.log("Trying with muted option...");
+          videoElement.muted = true;
+          setIsMuted(true);
+        }
+        
+        if (attempts > 1) {
+          videoElement.currentTime = videoElement.currentTime + 0.1;
+        }
+        
+        await new Promise(r => setTimeout(r, 300 * attempts));
+        return attemptPlay();
+      }
+    };
+    
+    return await attemptPlay();
+  }, []);
   
   const loadVideos = useCallback(async (page: number = 1) => {
     try {
@@ -359,6 +415,91 @@ const Vibezone: React.FC = () => {
     }
   }, [currentVideoIndex, videos.length, hasMore, isLoadingMore, loadVideos]);
 
+  const playVideo = useCallback((index: number, force = false) => {
+    console.log(`⚡️ Attempting to play video ${index}${force ? ' (forced)' : ''}`);
+    
+    if (showComments) {
+      console.log("Not playing - comments are open");
+      return;
+    }
+    
+    Object.values(playTimeoutRef.current).forEach(timeout => {
+      clearTimeout(timeout);
+    });
+    
+    videoRefs.current.forEach((ref, i) => {
+      if (ref && i !== index) {
+        if (!ref.paused) {
+          console.log(`Pausing video ${i}`);
+          ref.pause();
+          isVideoPlayingRef.current[i] = false;
+        }
+        
+        if (Math.abs(i - index) > 1) {
+          ref.currentTime = 0;
+        }
+      }
+    });
+    
+    const videoElement = videoRefs.current[index];
+    if (!videoElement) {
+      console.error(`Video element at index ${index} not found`);
+      return;
+    }
+    
+    setCurrentVideoIndex(index);
+    currentlyPlayingRef.current = index;
+    
+    videoElement.muted = isMuted;
+    
+    const videoId = videos[index]?.id;
+    if (videoId && !viewedVideosRef.current[videoId]) {
+      viewVideo(videoId);
+      viewedVideosRef.current[videoId] = true;
+    }
+    
+    videoElement.preload = 'auto';
+    if (index + 1 < videos.length && videos[index + 1]?.video_url) {
+      preloadVideoFile(videos[index + 1].video_url, 'high');
+      
+      if (videoRefs.current[index + 1]) {
+        videoRefs.current[index + 1].preload = 'auto';
+      }
+    }
+    
+    if (index + 2 < videos.length && videos[index + 2]?.video_url) {
+      preloadVideoFile(videos[index + 2].video_url, 'low');
+    }
+    
+    playAttemptedRef.current[index] = true;
+    
+    if (videoElement.ended) {
+      videoElement.currentTime = 0;
+    }
+    
+    forcePlayVideo(videoElement)
+      .then(success => {
+        if (success) {
+          isVideoPlayingRef.current[index] = true;
+          
+          if (videoId && autoplayBlockedVideos[videoId]) {
+            setAutoplayBlockedVideos(prev => ({
+              ...prev,
+              [videoId]: false
+            }));
+          }
+        } else {
+          console.error(`Could not play video ${index} after multiple attempts`);
+          if (videoId) {
+            setAutoplayBlockedVideos(prev => ({
+              ...prev,
+              [videoId]: true
+            }));
+          }
+        }
+      });
+  }, [videos, viewVideo, isMuted, showComments, autoplayBlockedVideos, preloadVideoFile, forcePlayVideo]);
+
   useEffect(() => {
     if (isLoadingRef.current || videos.length === 0) {
       console.log("Not setting up observer: still loading or no videos");
@@ -370,105 +511,49 @@ const Vibezone: React.FC = () => {
     videoRefs.current = Array(videos.length).fill(null);
     videoContainerRefs.current = Array(videos.length).fill(null);
     playAttemptedRef.current = {};
+    isVideoPlayingRef.current = {};
+    lastIntersectionTime.current = {};
     
     if (observerRef.current) {
       console.log("Disconnecting previous observer");
       observerRef.current.disconnect();
     }
     
-    const playVideo = (index: number) => {
-      console.log(`⚡️ Attempting to play video ${index}`);
-      
-      videoRefs.current.forEach((ref, i) => {
-        if (ref && i !== index) {
-          console.log(`Pausing video ${i} (not current)`);
-          ref.pause();
-          if (i !== index + 1 && i !== index - 1) {
-            ref.currentTime = 0;
-          }
-        }
-      });
-      
-      const currentVideo = videoRefs.current[index];
-      if (currentVideo) {
-        currentlyPlayingRef.current = index;
-        
-        currentVideo.muted = isMuted;
-        
-        const videoId = videos[index]?.id;
-        if (videoId && !viewedVideosRef.current[videoId]) {
-          viewVideo(videoId);
-          viewedVideosRef.current[videoId] = true;
-        }
-        
-        currentVideo.preload = 'auto';
-        if (videoRefs.current[index + 1]) {
-          videoRefs.current[index + 1].preload = 'auto';
-        }
-        
-        playAttemptedRef.current[index] = true;
-        
-        const playPromise = currentVideo.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log(`✅ Video ${index} playing successfully`);
-            })
-            .catch(err => {
-              console.error(`❌ Error playing video ${index}:`, err);
-              
-              if (err.name === "NotAllowedError" || err.name === "AbortError") {
-                console.log("Autoplay prevented, trying with muted option");
-                setIsMuted(true);
-                currentVideo.muted = true;
-                
-                setTimeout(() => {
-                  const retryPlay = currentVideo.play();
-                  if (retryPlay !== undefined) {
-                    retryPlay.catch(e => {
-                      console.error("Still couldn't play even with muted:", e);
-                      
-                      setTimeout(() => {
-                        currentVideo.currentTime = 0.1;
-                        currentVideo.play().catch(finalErr => {
-                          console.error("Final play attempt failed:", finalErr);
-                        });
-                      }, 200);
-                    });
-                  }
-                }, 100);
-              }
-            });
-        }
-      } else {
-        console.error(`Video ref at index ${index} is null`);
-      }
-    };
-    
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const container = entry.target as HTMLDivElement;
         const index = parseInt(container.dataset.index || '0', 10);
+        const now = Date.now();
+        lastIntersectionTime.current[index] = now;
         
-        if (entry.isIntersecting && !showComments) {
-          console.log(`📌 Container ${index} is now in view (ratio: ${entry.intersectionRatio.toFixed(2)})`);
-          
-          setCurrentVideoIndex(index);
-          
-          if (entry.intersectionRatio > 0.7) {
-            setTimeout(() => playVideo(index), 50);
+        if (entry.isIntersecting) {
+          if (entry.intersectionRatio >= 0.75) {
+            if (playTimeoutRef.current[index]) {
+              clearTimeout(playTimeoutRef.current[index]);
+            }
+            
+            playTimeoutRef.current[index] = setTimeout(() => {
+              if (lastIntersectionTime.current[index] === now) {
+                playVideo(index);
+              }
+            }, 50);
           }
-        } else if (!entry.isIntersecting && entry.intersectionRatio < 0.5) {
+        } else {
+          if (playTimeoutRef.current[index]) {
+            clearTimeout(playTimeoutRef.current[index]);
+          }
+          
           const video = videoRefs.current[index];
           if (video && !video.paused && currentlyPlayingRef.current === index) {
-            console.log(`⏸️ Pausing video ${index} - no longer visible enough`);
+            console.log(`⏸️ Pausing video ${index} - no longer visible`);
             video.pause();
+            isVideoPlayingRef.current[index] = false;
           }
         }
       });
     }, { 
-      threshold: [0, 0.1, 0.5, 0.7, 0.9],
-      rootMargin: "-10% 0px"
+      threshold: [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0],
+      rootMargin: "-5% 0px"
     });
 
     videoContainerRefs.current.forEach((container, index) => {
@@ -480,9 +565,9 @@ const Vibezone: React.FC = () => {
     });
     
     setTimeout(() => {
-      if (videoRefs.current[0] && !playAttemptedRef.current[0]) {
+      if (videoRefs.current[0] && !playAttemptedRef.current[0] && !showComments) {
         console.log("Attempting to play initial video");
-        playVideo(0);
+        playVideo(0, true);
       }
     }, 300);
     
@@ -491,13 +576,17 @@ const Vibezone: React.FC = () => {
         observerRef.current.disconnect();
       }
       
+      Object.values(playTimeoutRef.current).forEach(timeout => {
+        clearTimeout(timeout);
+      });
+      
       videoRefs.current.forEach(video => {
         if (video) {
           video.pause();
         }
       });
     };
-  }, [videos, showComments, isMuted, viewVideo]);
+  }, [videos, showComments, playVideo]);
 
   useEffect(() => {
     videoRefs.current.forEach(video => {
@@ -530,45 +619,52 @@ const Vibezone: React.FC = () => {
       
       videoRefs.current[index] = element;
       
-      if (element.preload !== 'auto') {
-        element.preload = 'auto';
-      }
-      
+      element.preload = 'auto';
       element.muted = isMuted;
       element.playsInline = true;
+      element.loop = true;
       element.setAttribute('playsinline', '');
       element.setAttribute('webkit-playsinline', '');
       element.setAttribute('x5-video-player-type', 'h5');
       element.setAttribute('x5-video-player-fullscreen', 'true');
       element.setAttribute('x5-video-orientation', 'portraint');
       element.setAttribute('t7-video-player-type', 'inline');
+      element.crossOrigin = 'anonymous';
+      
+      element.addEventListener('play', () => {
+        console.log(`▶️ Video ${index} started playing`);
+        isVideoPlayingRef.current[index] = true;
+      });
+      
+      element.addEventListener('pause', () => {
+        console.log(`⏸️ Video ${index} paused`);
+        isVideoPlayingRef.current[index] = false;
+      });
+      
+      element.addEventListener('error', (e) => {
+        console.error(`❌ Error with video ${index}:`, e);
+        const videoId = videos[index]?.id;
+        if (videoId) {
+          setAutoplayBlockedVideos(prev => ({
+            ...prev,
+            [videoId]: true
+          }));
+        }
+      });
       
       element.load();
       
-      if (index === currentVideoIndex || index === currentVideoIndex + 1) {
-        console.log(`Preloading video ${index} (current or next)`);
-        element.preload = 'auto';
+      if (index === currentVideoIndex) {
+        console.log(`Auto-playing video ${index} on ref assignment (current video)`);
         
-        if (index === currentVideoIndex && 
-            !playAttemptedRef.current[index] && 
-            !showComments) {
-          console.log(`Auto-playing video ${index} on ref assignment (current video)`);
-          
-          setTimeout(() => {
-            element.play().catch(err => {
-              console.error("Error playing video on ref assignment:", err);
-              
-              if (err.name === "NotAllowedError") {
-                setIsMuted(true);
-                element.muted = true;
-                element.play().catch(e => 
-                  console.error("Still couldn't play with muted:", e)
-                );
-              }
-            });
-            playAttemptedRef.current[index] = true;
-          }, 100);
-        }
+        setTimeout(() => {
+          if (!playAttemptedRef.current[index] && !showComments) {
+            playVideo(index, true);
+          }
+        }, 100);
+      } else if (index === currentVideoIndex + 1) {
+        console.log(`Preloading next video (${index})`);
+        element.preload = 'auto';
       }
     }
   };
@@ -805,12 +901,17 @@ const Vibezone: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="snap-y snap-mandatory h-[calc(100vh-4rem)] overflow-y-scroll scrollbar-hide">
+        <div 
+          className="snap-y snap-mandatory h-[calc(100vh-4rem)] overflow-y-scroll scrollbar-hide"
+          ref={mainScrollRef}
+          onScroll={handleScroll}
+        >
           {videos.map((video, index) => (
             <div 
               key={`video-container-${video.id || index}`}
               className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative"
               ref={(el) => handleVideoContainerRef(el, index)}
+              onClick={() => handleVideoClick(index)}
             >
               <div className="relative w-full h-full max-w-md mx-auto bg-black">
                 <video 
@@ -827,6 +928,27 @@ const Vibezone: React.FC = () => {
                   data-video-id={video.id}
                   onError={(e) => console.error(`Video load error for index ${index}:`, e)}
                 />
+                
+                {video.id && autoplayBlockedVideos[video.id] && (
+                  <div 
+                    className="absolute inset-0 flex items-center justify-center bg-black/70 cursor-pointer"
+                    onClick={() => playVideo(index, true)}
+                  >
+                    <div className="text-center">
+                      <Button 
+                        variant="default" 
+                        size="lg"
+                        className="bg-red-500 hover:bg-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playVideo(index, true);
+                        }}
+                      >
+                        Play Video
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60 pointer-events-none" />
                 
