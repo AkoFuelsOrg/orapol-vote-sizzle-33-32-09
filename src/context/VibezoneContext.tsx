@@ -31,7 +31,7 @@ const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined
 // Helper function to fetch with timeout - updated to handle PromiseLike
 const fetchWithTimeout = async <T,>(
   promiseFn: () => Promise<T> | PromiseLike<T>, 
-  timeoutMs: number = 20000 // Increased timeout for video operations
+  timeoutMs: number = 10000
 ): Promise<T> => {
   let timeoutId: NodeJS.Timeout;
   
@@ -54,8 +54,8 @@ const fetchWithTimeout = async <T,>(
 // Helper function for retrying failed requests - updated to handle PromiseLike
 const withRetry = async <T,>(
   fn: () => Promise<T> | PromiseLike<T>,
-  retries: number = 3, // Increased retries
-  delay: number = 800  // Decreased initial delay for faster recovery
+  retries: number = 2,
+  delay: number = 1000
 ): Promise<T> => {
   try {
     return await Promise.resolve(fn());
@@ -424,10 +424,9 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         viewData.ip_address = '127.0.0.1';
       }
       
-      // Use the retry mechanism for view recording
-      const { error } = await withRetry(() => supabase
+      const { error } = await supabase
         .from('video_views')
-        .insert(viewData));
+        .insert(viewData);
       
       if (error) throw error;
       
