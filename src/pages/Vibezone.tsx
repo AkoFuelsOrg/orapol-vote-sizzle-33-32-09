@@ -828,6 +828,20 @@ const Vibezone: React.FC = () => {
     }
   };
 
+  const handleScroll = () => {
+    if (mainScrollRef.current) {
+      const scrollPosition = mainScrollRef.current.scrollTop;
+      console.log("Scroll position:", scrollPosition);
+    }
+  };
+
+  const handleVideoClick = (index: number) => {
+    if (index !== currentVideoIndex || 
+        (videoRefs.current[index] && videoRefs.current[index]?.paused)) {
+      playVideo(index, true);
+    }
+  };
+
   const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
