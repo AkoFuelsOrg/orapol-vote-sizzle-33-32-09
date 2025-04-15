@@ -20,12 +20,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     persistSession: true,
     autoRefreshToken: true
-  },
-  global: {
-    // Set higher fetch timeout to prevent premature request termination
-    fetch: (url, options) => {
-      return fetch(url, { ...options, timeout: 20000 });
-    }
   }
 });
 
