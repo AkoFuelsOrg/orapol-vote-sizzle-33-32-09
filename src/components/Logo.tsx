@@ -15,7 +15,7 @@ export const Logo: React.FC<LogoProps> = ({ className = "", size = 'md' }) => {
 
   return (
     <img
-      src="/lovable-uploads/e75d5e1d-7b70-4d61-9955-995f071eeaad.png"
+      src="/lovable-uploads/420f4044-9fc3-4ea9-855e-859f2581c74b.png"
       alt="Tuwaye Logo"
       className={`${sizeClasses[size]} ${className} transition-all duration-300`}
     />

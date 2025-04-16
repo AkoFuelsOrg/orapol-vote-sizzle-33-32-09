@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '../hooks/use-mobile';
@@ -16,21 +15,18 @@ const TopHeader: React.FC = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Don't render on mobile
   if (!isDesktop) {
     return null;
   }
 
   const handleSearchClick = () => {
     if (showSearch) {
-      // If search box is already visible, handle search submission
       if (searchQuery.trim()) {
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
         setShowSearch(false);
       }
     } else {
-      // If search box is not visible, show it
       setShowSearch(true);
     }
   };
@@ -57,7 +53,7 @@ const TopHeader: React.FC = () => {
         <Link to="/" className="flex items-center gap-3 group ml-0">
           <div className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm shadow-inner transition-all duration-300 group-hover:bg-white/30">
             <img 
-              src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+              src="/lovable-uploads/420f4044-9fc3-4ea9-855e-859f2581c74b.png" 
               alt="Tuwaye Logo" 
               className="h-8 w-auto"
             />
@@ -141,7 +137,7 @@ const TopHeader: React.FC = () => {
                     <AvatarImage 
                       src={profile.avatar_url} 
                       alt={profile.username || "Profile"} 
-                      key={profile.avatar_url} // Add key to force re-render when URL changes
+                      key={profile.avatar_url}
                     />
                     <AvatarFallback><User size={18} /></AvatarFallback>
                   </Avatar>
