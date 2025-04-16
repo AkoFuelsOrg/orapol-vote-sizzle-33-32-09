@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
+import { X, Image, Loader2, BarChart2, Smile, Crop } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -11,6 +12,7 @@ import CreatePollModal from './CreatePollModal';
 import EmojiPicker from './EmojiPicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import UserAvatar from './UserAvatar';
+import ImageCropper from './ImageCropper';
 
 export interface CreatePostModalProps {
   isOpen?: boolean;
@@ -42,6 +44,8 @@ const CreatePostModal = ({
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const [keepExistingImage, setKeepExistingImage] = useState(!!initialImage);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user, profile } = useSupabase();
@@ -68,14 +72,36 @@ const CreatePostModal = ({
       return;
     }
     
-    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const imageUrl = event.target?.result as string;
+      setOriginalImageUrl(imageUrl);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleCropComplete = (croppedBlob: Blob) => {
+    // Create a file from the blob
+    const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' });
+    setImageFile(croppedFile);
     setKeepExistingImage(false);
     
+    // Create a preview URL for the cropped image
     const reader = new FileReader();
     reader.onload = (event) => {
       setImagePreview(event.target?.result as string);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(croppedBlob);
+    
+    setCropperOpen(false);
+  };
+  
+  const handleCropCancel = () => {
+    setCropperOpen(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   
   const removeImage = () => {
@@ -272,13 +298,27 @@ const CreatePostModal = ({
                     alt="Post preview" 
                     className="w-full h-auto max-h-[300px] object-contain bg-gray-100"
                   />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOriginalImageUrl(imagePreview);
+                        setCropperOpen(true);
+                      }}
+                      className="bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                      title="Crop image"
+                    >
+                      <Crop size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                      title="Remove image"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -343,6 +383,15 @@ const CreatePostModal = ({
           onClose={handlePollModalClose}
           groupId={groupId}
           marketplaceId={marketplaceId}
+        />
+      )}
+
+      {originalImageUrl && (
+        <ImageCropper 
+          imageUrl={originalImageUrl}
+          onCrop={handleCropComplete}
+          onCancel={handleCropCancel}
+          isOpen={cropperOpen}
         />
       )}
     </>
