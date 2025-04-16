@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, MessageCircle, Search } from 'lucide-react';
@@ -41,14 +40,12 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
       setLoading(true);
       
       try {
-        // Fetch users matching the query
         const { data: users } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
           .ilike('username', `%${debouncedQuery}%`)
           .limit(3);
         
-        // Fetch polls matching the query
         const { data: polls } = await supabase
           .from('polls')
           .select('id, question')
@@ -119,7 +116,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
             suggestions.map((suggestion) => (
               <div
                 key={`${suggestion.type}-${suggestion.id}`}
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2 text-primary"
                 onClick={() => handleSuggestionClick(suggestion)}
               >
                 {suggestion.type === 'user' ? (
@@ -146,14 +143,14 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
           )}
           
           <div
-            className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2 border-t border-gray-100"
+            className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2 border-t border-gray-100 text-primary"
             onClick={() => {
               navigate(`/search?q=${encodeURIComponent(debouncedQuery)}`);
               onClose();
             }}
           >
             <Search className="h-4 w-4 text-primary" />
-            <div className="text-sm font-medium text-primary">
+            <div className="text-sm font-medium">
               Search for "{debouncedQuery}"
             </div>
           </div>
