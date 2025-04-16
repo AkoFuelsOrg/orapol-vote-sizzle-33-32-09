@@ -25,10 +25,19 @@ const Auth = () => {
         await signIn(email, password);
       }
     } catch (err: any) {
-      // Silently handle errors - don't show any alerts to user
       console.error("Authentication error:", err);
     }
   };
+
+  React.useEffect(() => {
+    if (error) {
+      toast.error('Authentication Failed', {
+        description: error,
+        position: 'top-right',
+        duration: 4000,
+      });
+    }
+  }, [error]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 overflow-hidden relative">

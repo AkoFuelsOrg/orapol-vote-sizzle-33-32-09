@@ -66,9 +66,20 @@ export const useAuth = () => {
         email,
         password,
       });
-      if (error) throw error;
+      if (error) {
+        switch (error.message) {
+          case 'Invalid login credentials':
+            setError('The email or password you entered is incorrect. Please try again.');
+            break;
+          case 'Email not confirmed':
+            setError('Please confirm your email before logging in.');
+            break;
+          default:
+            setError('An unexpected error occurred. Please try again later.');
+        }
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An unexpected error occurred during login.');
     } finally {
       setLoading(false);
     }
