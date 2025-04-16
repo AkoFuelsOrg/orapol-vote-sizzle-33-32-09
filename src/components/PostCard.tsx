@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
@@ -5,7 +6,7 @@ import { Post } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogTitle, DialogClose } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Card, CardContent, CardFooter } from './ui/card';
 import { useIsMobile, useBreakpoint } from '@/hooks/use-mobile';
@@ -405,6 +406,7 @@ const PostCard: React.FC<PostCardProps> = ({
                   <button 
                     onClick={closeExpandedImage}
                     className="absolute top-2 right-2 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
+                    aria-label="Close"
                   >
                     <X size={24} />
                   </button>
@@ -571,6 +573,7 @@ const PostCard: React.FC<PostCardProps> = ({
                   <button 
                     onClick={closeExpandedImage}
                     className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
+                    aria-label="Close"
                   >
                     <X size={24} />
                   </button>
