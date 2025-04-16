@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Bot } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AIChatModal } from '@/components/AIChatModal';
 import { useSupabase } from '../context/SupabaseContext';
 import { Link } from 'react-router-dom';
 import PollCard from '../components/PollCard';
@@ -19,6 +22,7 @@ const Index: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [animateItems, setAnimateItems] = useState(false);
+  const [isAIChatOpen, setAIChatOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
@@ -409,6 +413,14 @@ const Index: React.FC = () => {
             <Sparkles className="h-5 w-5 text-primary/70 animate-pulse-slow" />
           </div>
           <p className="text-muted-foreground text-base">Join the conversation and share your thoughts</p>
+          <Button 
+            variant="outline" 
+            className="ml-4 bg-white hover:bg-primary/5"
+            onClick={() => setAIChatOpen(true)}
+          >
+            <Bot className="w-5 h-5 mr-2 text-primary" />
+            Tuwaye AI Gen 0
+          </Button>
         </div>
         
         {!user && (
@@ -489,6 +501,7 @@ const Index: React.FC = () => {
             )}
           </div>
         )}
+      <AIChatModal isOpen={isAIChatOpen} onClose={() => setAIChatOpen(false)} />
       </main>
       
       <footer className="py-8 mt-16 border-t bg-gradient-to-b from-white to-gray-50">
