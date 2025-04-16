@@ -408,14 +408,30 @@ const Index: React.FC = () => {
       
       <main className={`${isDesktop ? 'pt-5' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
         <div className="mb-6 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-1">Discover</h2>
-            <Sparkles className="h-5 w-5 text-primary/70 animate-pulse-slow" />
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-1">Discover</h2>
+                <Sparkles className="h-5 w-5 text-primary/70 animate-pulse-slow" />
+              </div>
+              <p className="text-muted-foreground text-base">Join the conversation and share your thoughts</p>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              className="hidden sm:flex bg-white hover:bg-primary/5 border border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 group"
+              onClick={() => setAIChatOpen(true)}
+            >
+              <Bot className="w-5 h-5 mr-2 text-primary group-hover:scale-110 transition-transform" />
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent font-medium">
+                Tuwaye AI Gen 0
+              </span>
+            </Button>
           </div>
-          <p className="text-muted-foreground text-base">Join the conversation and share your thoughts</p>
+          
           <Button 
             variant="outline" 
-            className="ml-4 bg-white hover:bg-primary/5"
+            className="sm:hidden w-full mt-4 bg-white hover:bg-primary/5 border border-primary/20"
             onClick={() => setAIChatOpen(true)}
           >
             <Bot className="w-5 h-5 mr-2 text-primary" />
