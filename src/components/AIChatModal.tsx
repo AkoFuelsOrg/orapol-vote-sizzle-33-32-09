@@ -1,11 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent } from './ui/dialog';
 import { Button } from './ui/button';
 import { Loader2, Send, Bot } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 
-const OPENROUTER_TOKEN = "balirunoxxx";
+const OPENROUTER_TOKEN = "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";
 
 interface Message {
   role: 'user' | 'assistant';
