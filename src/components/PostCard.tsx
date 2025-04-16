@@ -254,6 +254,10 @@ const PostCard: React.FC<PostCardProps> = ({
 
   const authorAvatarUrl = getAvatarUrl(post.author.avatar);
 
+  const closeExpandedImage = () => {
+    setIsImageExpanded(false);
+  };
+
   const PostOptionsDropdown = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -398,9 +402,12 @@ const PostCard: React.FC<PostCardProps> = ({
               <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
                 <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
                   <DialogTitle className="sr-only">Post Image</DialogTitle>
-                  <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+                  <button 
+                    onClick={closeExpandedImage}
+                    className="absolute top-2 right-2 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
+                  >
                     <X size={24} />
-                  </DialogClose>
+                  </button>
                   <div className="relative w-full overflow-hidden rounded-lg p-1">
                     <img 
                       src={post.image} 
@@ -561,9 +568,12 @@ const PostCard: React.FC<PostCardProps> = ({
               <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
                 <DialogContent className="max-w-5xl p-0 overflow-hidden bg-white rounded-xl border-none shadow-2xl">
                   <DialogTitle className="sr-only">Post Image</DialogTitle>
-                  <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none">
+                  <button 
+                    onClick={closeExpandedImage}
+                    className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
+                  >
                     <X size={24} />
-                  </DialogClose>
+                  </button>
                   <div className="relative w-full overflow-hidden rounded-lg p-1">
                     <img 
                       src={post.image} 
