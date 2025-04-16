@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Loader2, BarChart2, Smile, Crop } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
@@ -82,12 +81,10 @@ const CreatePostModal = ({
   };
   
   const handleCropComplete = (croppedBlob: Blob) => {
-    // Create a file from the blob
     const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' });
     setImageFile(croppedFile);
     setKeepExistingImage(false);
     
-    // Create a preview URL for the cropped image
     const reader = new FileReader();
     reader.onload = (event) => {
       setImagePreview(event.target?.result as string);
@@ -95,6 +92,43 @@ const CreatePostModal = ({
     reader.readAsDataURL(croppedBlob);
     
     setCropperOpen(false);
+  };
+  
+  const handleSkipCropping = (originalUrl: string) => {
+    const originalImageBlob = dataURLtoBlob(originalUrl);
+    if (originalImageBlob) {
+      const originalFile = new File([originalImageBlob], 'original-image.jpg', { 
+        type: originalImageBlob.type || 'image/jpeg' 
+      });
+      
+      setImageFile(originalFile);
+      setKeepExistingImage(false);
+      setImagePreview(originalUrl);
+    }
+    
+    setCropperOpen(false);
+  };
+  
+  const dataURLtoBlob = (dataURL: string): Blob | null => {
+    try {
+      if (dataURL.startsWith('data:')) {
+        const arr = dataURL.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        
+        return new Blob([u8arr], { type: mime });
+      }
+      return null;
+    } catch (error) {
+      console.error('Error converting data URL to Blob:', error);
+      return null;
+    }
   };
   
   const handleCropCancel = () => {
@@ -392,6 +426,7 @@ const CreatePostModal = ({
           onCrop={handleCropComplete}
           onCancel={handleCropCancel}
           isOpen={cropperOpen}
+          onSkipCropping={handleSkipCropping}
         />
       )}
     </>

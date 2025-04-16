@@ -5,7 +5,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Slider } from './ui/slider';
-import { X, ZoomIn } from 'lucide-react';
+import { X, ZoomIn, Image } from 'lucide-react';
 
 interface ImageCropperProps {
   imageUrl: string;
@@ -13,6 +13,7 @@ interface ImageCropperProps {
   onCancel: () => void;
   isOpen: boolean;
   aspectRatio?: number;
+  onSkipCropping?: (imageUrl: string) => void;
 }
 
 function centerAspectCrop(
@@ -40,7 +41,8 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   onCrop, 
   onCancel, 
   isOpen,
-  aspectRatio = 16 / 9
+  aspectRatio = 16 / 9,
+  onSkipCropping
 }) => {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -106,6 +108,22 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     }, 'image/jpeg', 0.95);
   };
 
+  const handleSkipCropping = () => {
+    if (onSkipCropping) {
+      // Create a blob from the original image URL to maintain the same workflow
+      fetch(imageUrl)
+        .then(response => response.blob())
+        .then(blob => {
+          onSkipCropping(imageUrl);
+        })
+        .catch(error => {
+          console.error('Error fetching image for skip cropping:', error);
+          // Fallback to just passing the URL
+          onSkipCropping(imageUrl);
+        });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onCancel();
@@ -160,6 +178,18 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
             <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
+          
+          {onSkipCropping && (
+            <Button 
+              variant="outline" 
+              onClick={handleSkipCropping}
+              className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+            >
+              <Image className="mr-2 h-4 w-4" />
+              Use Original
+            </Button>
+          )}
+          
           <Button onClick={handleCropImage} className="bg-primary text-primary-foreground">
             Apply Crop
           </Button>
