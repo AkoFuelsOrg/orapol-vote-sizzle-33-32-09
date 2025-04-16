@@ -13,15 +13,15 @@ import PostCommentSection from './PostCommentSection';
 import { AspectRatio } from './ui/aspect-ratio';
 import { getAvatarUrl } from '../lib/avatar-utils';
 import { 
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger 
-} from './ui/sheet';
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger 
+} from './ui/drawer';
 import { Button } from './ui/button';
 import { 
   DropdownMenu,
@@ -395,22 +395,21 @@ const PostCard: React.FC<PostCardProps> = ({
             </div>
             
             {isImageExpanded && (
-              <Sheet open={isImageExpanded} onOpenChange={setIsImageExpanded}>
-                <SheetContent side="bottom" className="h-[90vh] rounded-t-2xl p-0">
-                  <div className="relative w-full h-full flex items-center justify-center bg-black/95 overflow-hidden">
-                    <SheetClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60">
-                      <X size={24} />
-                    </SheetClose>
-                    <div className="w-full h-full flex items-center justify-center p-4">
-                      <img 
-                        src={post.image} 
-                        alt="Post" 
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
+              <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
+                <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
+                  <DialogTitle className="sr-only">Post Image</DialogTitle>
+                  <DialogClose className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white">
+                    <X size={24} />
+                  </DialogClose>
+                  <div className="relative w-full overflow-hidden rounded-lg p-1">
+                    <img 
+                      src={post.image} 
+                      alt="Post" 
+                      className="w-full h-auto max-h-[80vh] object-contain"
+                    />
                   </div>
-                </SheetContent>
-              </Sheet>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
         )}
@@ -452,8 +451,8 @@ const PostCard: React.FC<PostCardProps> = ({
             <span className="text-xs font-medium">Comment</span>
           </button>
           
-          <Sheet>
-            <SheetTrigger asChild>
+          <Drawer open={isShareOpen} onOpenChange={setIsShareOpen}>
+            <DrawerTrigger asChild>
               <button 
                 className="flex-1 py-2.5 flex items-center justify-center space-x-1.5 text-gray-600 hover:text-blue-500 hover:bg-blue-50 transition-colors"
                 onClick={(e) => handleShare(e)}
@@ -461,24 +460,24 @@ const PostCard: React.FC<PostCardProps> = ({
                 <Share2 size={18} />
                 <span className="text-xs font-medium">Share</span>
               </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-xl">
-              <SheetHeader className="border-b border-gray-100">
-                <SheetTitle className="text-center">Share This Post</SheetTitle>
-                <SheetDescription className="text-center text-sm">
+            </DrawerTrigger>
+            <DrawerContent className="rounded-t-xl">
+              <DrawerHeader className="border-b border-gray-100">
+                <DrawerTitle className="text-center">Share This Post</DrawerTitle>
+                <DrawerDescription className="text-center text-sm">
                   Choose a platform to share
-                </SheetDescription>
-              </SheetHeader>
+                </DrawerDescription>
+              </DrawerHeader>
               <div className="px-4">
                 <ShareOptions />
               </div>
-              <SheetFooter>
-                <SheetClose asChild>
+              <DrawerFooter>
+                <DrawerClose asChild>
                   <Button variant="outline" className="w-full border-gray-200">Cancel</Button>
-                </SheetClose>
-              </SheetFooter>
-            </SheetContent>
-          </Sheet>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
         </div>
         
         {showCommentForm && (
@@ -683,32 +682,32 @@ const PostCard: React.FC<PostCardProps> = ({
               </button>
               
               {isMobile ? (
-                <Sheet>
-                  <SheetTrigger asChild>
+                <Drawer open={isShareOpen} onOpenChange={setIsShareOpen}>
+                  <DrawerTrigger asChild>
                     <button 
                       className="flex items-center justify-center p-2 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
                       onClick={(e) => handleShare(e)}
                     >
                       <Share2 size={20} />
                     </button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="rounded-t-xl">
-                    <SheetHeader className="border-b border-gray-100">
-                      <SheetTitle className="text-center">Share This Post</SheetTitle>
-                      <SheetDescription className="text-center text-sm">
+                  </DrawerTrigger>
+                  <DrawerContent className="rounded-t-xl">
+                    <DrawerHeader className="border-b border-gray-100">
+                      <DrawerTitle className="text-center">Share This Post</DrawerTitle>
+                      <DrawerDescription className="text-center text-sm">
                         Choose a platform to share
-                      </SheetDescription>
-                    </SheetHeader>
+                      </DrawerDescription>
+                    </DrawerHeader>
                     <div className="px-4">
                       <ShareOptions />
                     </div>
-                    <SheetFooter>
-                      <SheetClose asChild>
+                    <DrawerFooter>
+                      <DrawerClose asChild>
                         <Button variant="outline" className="w-full border-gray-200">Cancel</Button>
-                      </SheetClose>
-                    </SheetFooter>
-                  </SheetContent>
-                </Sheet>
+                      </DrawerClose>
+                    </DrawerFooter>
+                  </DrawerContent>
+                </Drawer>
               ) : (
                 <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
                   <button 
