@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
@@ -28,6 +29,7 @@ import {
   DrawerTrigger
 } from './ui/drawer';
 import CreatePostModal from './CreatePostModal';
+import SearchSuggestions from './SearchSuggestions';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -37,7 +39,9 @@ const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [postModalOpen, setPostModalOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   if (breakpoint === "desktop") {
     return null;
@@ -49,9 +53,13 @@ const Header: React.FC = () => {
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
         setShowSearch(false);
+        setShowSuggestions(false);
       }
     } else {
       setShowSearch(true);
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
     }
   };
 
@@ -61,14 +69,27 @@ const Header: React.FC = () => {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setShowSearch(false);
+      setShowSuggestions(false);
     }
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       setShowSearch(false);
+      setShowSuggestions(false);
       setSearchQuery('');
     }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSuggestions(value.length >= 2);
+  };
+
+  const handleSuggestionSelect = (query: string) => {
+    setSearchQuery(query);
+    setShowSuggestions(false);
   };
 
   const navItems = [
@@ -98,14 +119,16 @@ const Header: React.FC = () => {
             </span>
           </Link>
         ) : (
-          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xs">
+          <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xs relative">
             <div className="relative">
               <Input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 onKeyDown={handleSearchKeyDown}
+                onFocus={() => setShowSuggestions(searchQuery.length >= 2)}
                 autoFocus
                 className="pl-9 pr-8 py-2 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full focus-visible:ring-white/30"
               />
@@ -117,11 +140,20 @@ const Header: React.FC = () => {
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-white/70 hover:text-white hover:bg-transparent"
                 onClick={() => {
                   setShowSearch(false);
+                  setShowSuggestions(false);
                   setSearchQuery('');
                 }}
               >
                 <X size={16} />
               </Button>
+              
+              {showSuggestions && (
+                <SearchSuggestions
+                  query={searchQuery}
+                  onSelect={handleSuggestionSelect}
+                  onClose={() => setShowSuggestions(false)}
+                />
+              )}
             </div>
           </form>
         )}
