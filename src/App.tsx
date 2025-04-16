@@ -16,6 +16,7 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import TopHeader from "./components/TopHeader";
 import RightChatColumn from "./components/RightChatColumn";
+import NetworkStatusHandler from "./components/NetworkStatusHandler";
 import { useBreakpoint } from "./hooks/use-mobile";
 
 // Import all page components
@@ -100,6 +101,7 @@ const App = () => (
                   {/* Setting toaster components to not display any alerts */}
                   <Toaster />
                   <Sonner position="top-center" closeButton={true} />
+                  <NetworkStatusHandler />
                   <AppLoader>
                     <ResponsiveLayout>
                       <Routes>
