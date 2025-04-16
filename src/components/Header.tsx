@@ -87,7 +87,7 @@ const Header: React.FC = () => {
           <Link to="/" className="flex items-center gap-3 group">
             <div className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm shadow-inner group-hover:bg-white/30 transition-all duration-300">
               <img 
-                src="/lovable-uploads/420f4044-9fc3-4ea9-855e-859f2581c74b.png" 
+                src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
                 alt="Tuwaye Logo" 
                 className="h-7 w-auto"
               />
