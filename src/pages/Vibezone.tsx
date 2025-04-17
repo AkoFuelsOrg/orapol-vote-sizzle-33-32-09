@@ -43,6 +43,11 @@ const Vibezone: React.FC = () => {
   const videoElementsRef = useRef<Record<string, HTMLVideoElement>>({});
   const videoDataRef = useRef<Record<string, Video>>({});
   const isMounted = useRef(true);
+  const videosRef = useRef<Video[]>([]);
+
+  useEffect(() => {
+    videosRef.current = videos;
+  }, [videos]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -70,17 +75,31 @@ const Vibezone: React.FC = () => {
         setIsInitialLoading(true);
         isLoadingRef.current = true;
         const fetchedVideos = await fetchVideos();
+        console.log("Fetched videos:", fetchedVideos?.length || 0);
         
         if (!isMounted.current) return;
         
-        if (fetchedVideos) {
+        if (fetchedVideos && fetchedVideos.length > 0) {
           fetchedVideos.forEach(video => {
             if (video.id) {
               videoDataRef.current[video.id] = video;
             }
           });
           
-          setVideos(Array.isArray(fetchedVideos) ? fetchedVideos : []);
+          setVideos(prevVideos => {
+            if (!prevVideos.length && fetchedVideos.length > 0) {
+              return [...fetchedVideos];
+            }
+            if (prevVideos.length !== fetchedVideos.length) {
+              return [...fetchedVideos]; 
+            }
+            
+            const hasChanges = fetchedVideos.some((video, index) => {
+              return !prevVideos[index] || prevVideos[index].id !== video.id;
+            });
+            
+            return hasChanges ? [...fetchedVideos] : prevVideos;
+          });
           
           if (user && isMounted.current) {
             const likedStatus: Record<string, boolean> = {};
@@ -180,13 +199,12 @@ const Vibezone: React.FC = () => {
             setCommentCounts(commentCountsData);
           }
         } else if (isMounted.current) {
-          setVideos([]);
+          console.log("No videos returned or empty array");
         }
       } catch (error) {
         console.error("Error loading videos:", error);
         if (isMounted.current) {
           toast.error("Failed to load videos");
-          setVideos([]);
         }
       } finally {
         if (isMounted.current) {
@@ -254,7 +272,7 @@ const Vibezone: React.FC = () => {
           if (user && isMounted.current) {
             const following: Record<string, boolean> = {};
             
-            for (const video of videos) {
+            for (const video of videosRef.current) {
               if (video.author?.id && user.id !== video.author.id) {
                 const { data } = await supabase
                   .from('follows')
@@ -280,7 +298,7 @@ const Vibezone: React.FC = () => {
       supabase.removeChannel(commentsChannel);
       supabase.removeChannel(followsChannel);
     };
-  }, [fetchVideos, user, hasLikedVideo, videos.length]);
+  }, [fetchVideos, user, hasLikedVideo]);
 
   const setupVideoObservers = useCallback(() => {
     if (isLoadingRef.current || videos.length === 0 || showComments) {

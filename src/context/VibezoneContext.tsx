@@ -67,6 +67,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useSupabase();
+  const [cachedVideos, setCachedVideos] = useState<Video[]>([]);
 
   const fetchVideos = async (limit = 20): Promise<Video[]> => {
     try {
@@ -84,7 +85,8 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (videosError) throw videosError;
       
       if (!videosData || videosData.length === 0) {
-        return [];
+        console.log("No videos data returned from database");
+        return cachedVideos;
       }
       
       const authorPromises = videosData.map(video => {
@@ -125,10 +127,20 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         } as Video;
       });
       
+      if (transformedVideos.length > 0) {
+        setCachedVideos(transformedVideos);
+      }
+      
       return transformedVideos;
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching videos:', error);
+      
+      if (cachedVideos.length > 0) {
+        console.log("Returning cached videos due to fetch error");
+        return cachedVideos;
+      }
+      
       return [];
     } finally {
       setLoading(false);
@@ -631,6 +643,17 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     toast.success('Download started');
   };
+
+  useEffect(() => {
+    const initialLoad = async () => {
+      const videos = await fetchVideos();
+      if (videos && videos.length > 0) {
+        setCachedVideos(videos);
+      }
+    };
+    
+    initialLoad();
+  }, []);
 
   const value = {
     fetchVideos,
