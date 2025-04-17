@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +27,6 @@ type VibezoneContextType = {
 
 const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined);
 
-// Helper function to fetch with timeout - updated to handle PromiseLike
 const fetchWithTimeout = async <T,>(
   promiseFn: () => Promise<T> | PromiseLike<T>, 
   timeoutMs: number = 10000
@@ -40,7 +38,6 @@ const fetchWithTimeout = async <T,>(
   });
 
   try {
-    // Convert PromiseLike to Promise if needed
     const promise = Promise.resolve(promiseFn());
     const result = await Promise.race([promise, timeoutPromise]) as T;
     clearTimeout(timeoutId!);
@@ -51,7 +48,6 @@ const fetchWithTimeout = async <T,>(
   }
 };
 
-// Helper function for retrying failed requests - updated to handle PromiseLike
 const withRetry = async <T,>(
   fn: () => Promise<T> | PromiseLike<T>,
   retries: number = 2,
@@ -91,7 +87,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return [];
       }
       
-      // Improve performance by doing all author queries in parallel
       const authorPromises = videosData.map(video => {
         if (!video.user_id) return Promise.resolve(null);
         
@@ -101,7 +96,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .eq('id', video.user_id)
           .single())
           .then(({ data }) => data)
-          .catch(() => null); // Explicitly handle promise catch here
+          .catch(() => null);
       });
       
       const authorResults = await Promise.allSettled(authorPromises);
@@ -145,7 +140,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       
-      // First fetch video data with retry
       const { data, error } = await withRetry(
         () => supabase
             .from('videos')
@@ -157,7 +151,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (error) throw error;
       if (!data) return null;
       
-      // Separately fetch author data with retry
       let authorInfo = null;
       if (data.user_id) {
         try {
@@ -180,7 +173,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         } catch (err) {
           console.error('Error fetching author info:', err);
-          // Continue with default author info if author fetch fails
         }
       }
       
@@ -221,24 +213,28 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const transformedComments = await Promise.all(commentsData.map(async (comment) => {
         let authorInfo = null;
         if (comment.user_id) {
-          const { data: userData, error: userError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', comment.user_id)
-            .single();
-          
-          if (!userError && userData) {
-            authorInfo = {
-              id: userData.id || '',
-              name: userData.username || 'Unknown User',
-              avatar: userData.avatar_url || '',
-              username: userData.username || 'Unknown User',
-              avatar_url: userData.avatar_url || ''
-            };
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', comment.user_id)
+              .single();
+            
+            if (!userError && userData) {
+              authorInfo = {
+                id: userData.id || '',
+                name: userData.username || 'Unknown User',
+                avatar: userData.avatar_url || '',
+                username: userData.username || 'Unknown User',
+                avatar_url: userData.avatar_url || ''
+              };
+            }
+          } catch (err) {
+            console.error('Error fetching author for comment:', err);
           }
         }
         
-        const commentWithAuthor = {
+        return {
           ...comment,
           author: authorInfo || { 
             id: '', 
@@ -248,8 +244,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             avatar_url: '' 
           }
         } as VideoComment;
-        
-        return commentWithAuthor;
       }));
       
       return transformedComments;

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -41,23 +40,53 @@ const Vibezone: React.FC = () => {
   const videoPlayingStateRef = useRef<Record<string, boolean>>({});
   const loadedMetadataRef = useRef<Set<string>>(new Set());
   const initialRenderCompleteRef = useRef(false);
+  const videoElementsRef = useRef<Record<string, HTMLVideoElement>>({});
+  const videoDataRef = useRef<Record<string, Video>>({});
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    
+    return () => {
+      isMounted.current = false;
+      
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+      
+      Object.values(videoElementsRef.current).forEach(video => {
+        video.pause();
+        video.src = '';
+        video.load();
+      });
+    };
+  }, []);
 
   useEffect(() => {
     const loadVideos = async () => {
       try {
+        if (!isMounted.current) return;
+        
         setIsInitialLoading(true);
         isLoadingRef.current = true;
         const fetchedVideos = await fetchVideos();
         
+        if (!isMounted.current) return;
+        
         if (fetchedVideos) {
+          fetchedVideos.forEach(video => {
+            if (video.id) {
+              videoDataRef.current[video.id] = video;
+            }
+          });
+          
           setVideos(Array.isArray(fetchedVideos) ? fetchedVideos : []);
           
-          if (user) {
+          if (user && isMounted.current) {
             const likedStatus: Record<string, boolean> = {};
             const following: Record<string, boolean> = {};
             const canMessage: Record<string, boolean> = {};
             
-            // Use Promise.all to fetch all likes status in parallel
             const likePromises = fetchedVideos.map(async video => {
               if (video.id) {
                 const isLiked = await hasLikedVideo(video.id);
@@ -67,13 +96,16 @@ const Vibezone: React.FC = () => {
             });
             
             const likeResults = await Promise.all(likePromises);
-            likeResults.forEach(result => {
-              if (result) {
-                likedStatus[result.id] = result.isLiked;
-              }
-            });
+            if (isMounted.current) {
+              likeResults.forEach(result => {
+                if (result) {
+                  likedStatus[result.id] = result.isLiked;
+                }
+              });
+              
+              setLikedVideos(likedStatus);
+            }
             
-            // Use Promise.all for following status
             const followPromises = fetchedVideos.map(async video => {
               if (video.author?.id && user.id !== video.author.id) {
                 const { data } = await supabase
@@ -89,13 +121,16 @@ const Vibezone: React.FC = () => {
             });
             
             const followResults = await Promise.all(followPromises);
-            followResults.forEach(result => {
-              if (result) {
-                following[result.authorId] = result.isFollowing;
-              }
-            });
+            if (isMounted.current) {
+              followResults.forEach(result => {
+                if (result) {
+                  following[result.authorId] = result.isFollowing;
+                }
+              });
+              
+              setFollowingStatus(following);
+            }
             
-            // Use Promise.all for messaging permissions
             const messagePromises = fetchedVideos.map(async video => {
               if (video.author?.id && user.id !== video.author.id) {
                 const { data } = await supabase
@@ -110,18 +145,17 @@ const Vibezone: React.FC = () => {
             });
             
             const messageResults = await Promise.all(messagePromises);
-            messageResults.forEach(result => {
-              if (result) {
-                canMessage[result.authorId] = result.canMessage;
-              }
-            });
-            
-            setLikedVideos(likedStatus);
-            setFollowingStatus(following);
-            setCanMessageUsers(canMessage);
+            if (isMounted.current) {
+              messageResults.forEach(result => {
+                if (result) {
+                  canMessage[result.authorId] = result.canMessage;
+                }
+              });
+              
+              setCanMessageUsers(canMessage);
+            }
           }
           
-          // Fetch comment counts in parallel
           const commentPromises = fetchedVideos.map(async video => {
             if (video.id) {
               const { count } = await supabase
@@ -135,25 +169,31 @@ const Vibezone: React.FC = () => {
           });
           
           const commentResults = await Promise.all(commentPromises);
-          const commentCountsData: Record<string, number> = {};
-          commentResults.forEach(result => {
-            if (result) {
-              commentCountsData[result.id] = result.count;
-            }
-          });
-          
-          setCommentCounts(commentCountsData);
-        } else {
+          if (isMounted.current) {
+            const commentCountsData: Record<string, number> = {};
+            commentResults.forEach(result => {
+              if (result) {
+                commentCountsData[result.id] = result.count;
+              }
+            });
+            
+            setCommentCounts(commentCountsData);
+          }
+        } else if (isMounted.current) {
           setVideos([]);
         }
       } catch (error) {
         console.error("Error loading videos:", error);
-        toast.error("Failed to load videos");
-        setVideos([]);
+        if (isMounted.current) {
+          toast.error("Failed to load videos");
+          setVideos([]);
+        }
       } finally {
-        setIsInitialLoading(false);
-        isLoadingRef.current = false;
-        initialRenderCompleteRef.current = true;
+        if (isMounted.current) {
+          setIsInitialLoading(false);
+          isLoadingRef.current = false;
+          initialRenderCompleteRef.current = true;
+        }
       }
     };
     
@@ -168,7 +208,9 @@ const Vibezone: React.FC = () => {
           table: 'videos'
         }, 
         () => {
-          loadVideos();
+          if (isMounted.current) {
+            loadVideos();
+          }
         }
       )
       .subscribe();
@@ -182,17 +224,19 @@ const Vibezone: React.FC = () => {
           table: 'video_comments'
         },
         async (payload: { new: { video_id?: string } }) => {
-          if (payload.new && payload.new.video_id) {
+          if (payload.new && payload.new.video_id && isMounted.current) {
             const videoId = payload.new.video_id;
             const { count } = await supabase
               .from('video_comments')
               .select('id', { count: 'exact', head: true })
               .eq('video_id', videoId);
             
-            setCommentCounts(prev => ({
-              ...prev,
-              [videoId]: count || 0
-            }));
+            if (isMounted.current) {
+              setCommentCounts(prev => ({
+                ...prev,
+                [videoId]: count || 0
+              }));
+            }
           }
         }
       )
@@ -207,8 +251,7 @@ const Vibezone: React.FC = () => {
           table: 'follows'
         },
         async () => {
-          if (user) {
-            // Just update follow status without reloading all videos
+          if (user && isMounted.current) {
             const following: Record<string, boolean> = {};
             
             for (const video of videos) {
@@ -224,7 +267,9 @@ const Vibezone: React.FC = () => {
               }
             }
             
-            setFollowingStatus(following);
+            if (isMounted.current) {
+              setFollowingStatus(following);
+            }
           }
         }
       )
@@ -234,22 +279,14 @@ const Vibezone: React.FC = () => {
       supabase.removeChannel(videosChannel);
       supabase.removeChannel(commentsChannel);
       supabase.removeChannel(followsChannel);
-      
-      // Clean up intersection observer
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
     };
-  }, [fetchVideos, user, hasLikedVideo]);
+  }, [fetchVideos, user, hasLikedVideo, videos.length]);
 
-  // Handle video elements changes and setup intersection observer  
   const setupVideoObservers = useCallback(() => {
     if (isLoadingRef.current || videos.length === 0 || showComments) {
       return;
     }
 
-    videoRefs.current = videoRefs.current.slice(0, videos.length);
-    
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
@@ -257,66 +294,62 @@ const Vibezone: React.FC = () => {
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         const video = entry.target as HTMLVideoElement;
-        const index = Array.from(videoRefs.current).findIndex(ref => ref === video);
+        const videoId = video.dataset.videoId;
         
-        if (index === -1) return;
-        
-        const videoId = videos[index]?.id;
         if (!videoId) return;
+        
+        const index = videos.findIndex(v => v.id === videoId);
+        if (index === -1) return;
         
         if (entry.isIntersecting) {
           setCurrentVideoIndex(index);
           
           if (!showComments && video && loadedMetadataRef.current.has(videoId)) {
-            // Prevent reloading if already playing
-            if (!videoPlayingStateRef.current[videoId]) {
+            if (video.paused) {
               videoPlayingStateRef.current[videoId] = true;
-              
-              // Only attempt to play if not already playing
-              if (video.paused) {
-                video.play().catch(err => {
-                  console.error("Error playing video:", err);
-                  videoPlayingStateRef.current[videoId] = false;
+              video.muted = isMuted;
+              const playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                  video.muted = true;
+                  video.play().catch(err => {
+                    console.error("Still couldn't play video:", err);
+                    videoPlayingStateRef.current[videoId] = false;
+                  });
                 });
               }
             }
           }
-        } else {
-          // Only pause videos that are out of view and currently playing
-          if (video && !video.paused && videoPlayingStateRef.current[videoId]) {
-            video.pause();
-            videoPlayingStateRef.current[videoId] = false;
-          }
+        } else if (videoPlayingStateRef.current[videoId]) {
+          video.pause();
+          videoPlayingStateRef.current[videoId] = false;
         }
       });
     }, { 
-      threshold: 0.7,
-      rootMargin: "-10%"
+      threshold: 0.6,
+      rootMargin: "-5%"
     });
 
-    // Wait a moment to let video elements stabilize
     setTimeout(() => {
       videoRefs.current.forEach((video) => {
-        if (video) {
+        if (video && video.dataset.videoId) {
           observerRef.current!.observe(video);
         }
       });
-    }, 100);
+    }, 50);
     
-  }, [videos, showComments]);
+  }, [videos, showComments, isMuted]);
 
   useEffect(() => {
     setupVideoObservers();
     
     return () => {
-      // Cleanup observer on effect cleanup
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
     };
   }, [setupVideoObservers]);
 
-  // Update mute state for all videos
   useEffect(() => {
     videoRefs.current.forEach(video => {
       if (video) {
@@ -325,42 +358,65 @@ const Vibezone: React.FC = () => {
     });
   }, [isMuted]);
 
-  // Handles metadata loading for videos
   const handleVideoMetadataLoaded = (video: HTMLVideoElement, videoId: string, index: number) => {
-    if (video && videoId) {
-      // Mark this video as having loaded metadata
-      loadedMetadataRef.current.add(videoId);
+    if (!video || !videoId || !isMounted.current) return;
+    
+    videoElementsRef.current[videoId] = video;
+    
+    videosLoadedRef.current.add(videoId);
+    loadedMetadataRef.current.add(videoId);
+    
+    if (index === currentVideoIndex && !showComments) {
+      videoPlayingStateRef.current[videoId] = true;
+      video.muted = isMuted;
       
-      // Play the video if it's the current one in view
-      if (index === currentVideoIndex && !showComments) {
-        videoPlayingStateRef.current[videoId] = true;
-        video.play().catch(err => {
-          console.error("Error playing video on metadata load:", err);
-          videoPlayingStateRef.current[videoId] = false;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          video.muted = true;
+          video.play().catch(err => {
+            console.error("Error playing video on metadata load:", err);
+            videoPlayingStateRef.current[videoId] = false;
+          });
         });
       }
     }
   };
 
-  // Handle video element reference
   const handleVideoRef = (element: HTMLVideoElement | null, index: number) => {
-    if (element) {
-      videoRefs.current[index] = element;
+    if (!element || !videos[index]?.id || !isMounted.current) return;
+    
+    videoRefs.current[index] = element;
+    const videoId = videos[index].id;
+    
+    element.dataset.videoId = videoId;
+    
+    videoElementsRef.current[videoId] = element;
+    
+    if (!loadedMetadataRef.current.has(videoId)) {
+      const handleMetadata = () => {
+        handleVideoMetadataLoaded(element, videoId, index);
+        element.removeEventListener('loadedmetadata', handleMetadata);
+      };
       
-      // Add metadata loaded event listener
-      if (videos[index]?.id) {
-        const videoId = videos[index].id;
+      element.addEventListener('loadedmetadata', handleMetadata);
+      
+      if (element.readyState >= 2) {
+        handleMetadata();
+      }
+    } else if (index === currentVideoIndex && !showComments) {
+      if (element.paused && !videoPlayingStateRef.current[videoId]) {
+        videoPlayingStateRef.current[videoId] = true;
+        element.muted = isMuted;
         
-        if (!loadedMetadataRef.current.has(videoId)) {
-          element.addEventListener('loadedmetadata', () => {
-            handleVideoMetadataLoaded(element, videoId, index);
-          }, { once: true });
-        } else if (index === currentVideoIndex && !showComments) {
-          // If metadata was already loaded, play it if current
-          videoPlayingStateRef.current[videoId] = true;
-          element.play().catch(err => {
-            console.error("Error playing video on ref assignment:", err);
-            videoPlayingStateRef.current[videoId] = false;
+        const playPromise = element.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            video.muted = true;
+            video.play().catch(err => {
+              console.error("Error playing video on ref assignment:", err);
+              videoPlayingStateRef.current[videoId] = false;
+            });
           });
         }
       }
@@ -439,8 +495,12 @@ const Vibezone: React.FC = () => {
     setActiveVideoId(videoId);
     setShowComments(true);
     
-    videoRefs.current.forEach(video => {
+    Object.values(videoElementsRef.current).forEach(video => {
       if (video) {
+        const videoId = video.dataset.videoId;
+        if (videoId) {
+          videoPlayingStateRef.current[videoId] = false;
+        }
         video.pause();
       }
     });
@@ -452,18 +512,30 @@ const Vibezone: React.FC = () => {
     setShowComments(false);
     setActiveVideoId(null);
     
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       window.scrollTo(0, scrollPositionRef.current);
       
       if (videoRefs.current[currentVideoIndex] && videos[currentVideoIndex]?.id) {
         const videoId = videos[currentVideoIndex].id;
-        videoPlayingStateRef.current[videoId] = true;
-        videoRefs.current[currentVideoIndex].play().catch(err => {
-          console.error("Error playing video after closing comments:", err);
-          videoPlayingStateRef.current[videoId] = false;
-        });
+        const video = videoRefs.current[currentVideoIndex];
+        
+        if (video) {
+          videoPlayingStateRef.current[videoId] = true;
+          video.muted = isMuted;
+          
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              video.muted = true;
+              video.play().catch(err => {
+                console.error("Error playing video after closing comments:", err);
+                videoPlayingStateRef.current[videoId] = false;
+              });
+            });
+          }
+        }
       }
-    }, 0);
+    });
     
     document.body.style.overflow = 'auto';
   };
@@ -585,11 +657,11 @@ const Vibezone: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="snap-y snap-mandatory h-[calc(100vh-4rem)] overflow-y-scroll scrollbar-hide">
+        <div className="snap-y snap-mandatory h-[calc(100vh-4rem)] overflow-y-scroll scrollbar-hide will-change-transform">
           {videos.map((video, index) => (
             <div 
               key={video.id || `video-${index}`}
-              className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative"
+              className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative will-change-transform"
             >
               <div className="relative w-full h-full max-w-md mx-auto bg-black">
                 <video 
@@ -601,6 +673,7 @@ const Vibezone: React.FC = () => {
                   muted={isMuted}
                   preload="metadata"
                   poster={video.thumbnail_url || undefined}
+                  data-video-id={video.id}
                   key={`video-element-${video.id || index}`}
                 />
                 
