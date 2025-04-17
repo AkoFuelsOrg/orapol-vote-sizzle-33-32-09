@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -320,25 +321,60 @@ const Vibezone: React.FC = () => {
         if (index === -1) return;
         
         if (entry.isIntersecting) {
+          console.log(`Video ${videoId} is intersecting, index: ${index}`);
           setCurrentVideoIndex(index);
           
+          // Pause all other videos first
+          Object.entries(videoElementsRef.current).forEach(([id, videoEl]) => {
+            if (id !== videoId && !videoEl.paused) {
+              console.log(`Pausing video ${id}`);
+              videoEl.pause();
+              videoPlayingStateRef.current[id] = false;
+            }
+          });
+          
           if (!showComments && video && loadedMetadataRef.current.has(videoId)) {
+            console.log(`Attempting to play video ${videoId}`);
             if (video.paused) {
-              videoPlayingStateRef.current[videoId] = true;
               video.muted = isMuted;
-              const playPromise = video.play();
-              if (playPromise !== undefined) {
-                playPromise.catch(() => {
-                  video.muted = true;
-                  video.play().catch(err => {
-                    console.error("Still couldn't play video:", err);
-                    videoPlayingStateRef.current[videoId] = false;
+              videoPlayingStateRef.current[videoId] = true;
+              
+              // Ensure the video is ready to play
+              if (video.readyState >= 2) {
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch((err) => {
+                    console.error(`Error playing video ${videoId}:`, err);
+                    // Try with muted as fallback
+                    video.muted = true;
+                    video.play().catch(err => {
+                      console.error(`Still couldn't play video ${videoId}:`, err);
+                      videoPlayingStateRef.current[videoId] = false;
+                    });
                   });
-                });
+                }
+              } else {
+                // If video is not ready, set up event listener
+                const handleCanPlay = () => {
+                  console.log(`Video ${videoId} can play now`);
+                  const playPromise = video.play();
+                  if (playPromise !== undefined) {
+                    playPromise.catch(() => {
+                      video.muted = true;
+                      video.play().catch(err => {
+                        console.error(`Error playing video on canplay event:`, err);
+                      });
+                    });
+                  }
+                  video.removeEventListener('canplay', handleCanPlay);
+                };
+                
+                video.addEventListener('canplay', handleCanPlay);
               }
             }
           }
         } else if (videoPlayingStateRef.current[videoId]) {
+          console.log(`Video ${videoId} is no longer intersecting, pausing`);
           video.pause();
           videoPlayingStateRef.current[videoId] = false;
         }
@@ -348,6 +384,7 @@ const Vibezone: React.FC = () => {
       rootMargin: "-5%"
     });
 
+    // Add a small delay to ensure DOM is ready
     setTimeout(() => {
       videoRefs.current.forEach((video) => {
         if (video && video.dataset.videoId) {
@@ -359,6 +396,7 @@ const Vibezone: React.FC = () => {
   }, [videos, showComments, isMuted]);
 
   useEffect(() => {
+    console.log("Setting up video observers");
     setupVideoObservers();
     
     return () => {
@@ -379,6 +417,7 @@ const Vibezone: React.FC = () => {
   const handleVideoMetadataLoaded = (video: HTMLVideoElement, videoId: string, index: number) => {
     if (!video || !videoId || !isMounted.current) return;
     
+    console.log(`Video ${videoId} metadata loaded, index: ${index}`);
     videoElementsRef.current[videoId] = video;
     
     videosLoadedRef.current.add(videoId);
@@ -390,10 +429,11 @@ const Vibezone: React.FC = () => {
       
       const playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
+        playPromise.catch((err) => {
+          console.error(`Error playing video ${videoId} on metadata load:`, err);
           video.muted = true;
           video.play().catch(err => {
-            console.error("Error playing video on metadata load:", err);
+            console.error("Still couldn't play video on metadata load:", err);
             videoPlayingStateRef.current[videoId] = false;
           });
         });
@@ -404,9 +444,10 @@ const Vibezone: React.FC = () => {
   const handleVideoRef = (element: HTMLVideoElement | null, index: number) => {
     if (!element || !videos[index]?.id || !isMounted.current) return;
     
-    videoRefs.current[index] = element;
     const videoId = videos[index].id;
+    videoRefs.current[index] = element;
     
+    console.log(`Video ref set for index ${index}, id: ${videoId}`);
     element.dataset.videoId = videoId;
     
     videoElementsRef.current[videoId] = element;
@@ -427,12 +468,14 @@ const Vibezone: React.FC = () => {
         videoPlayingStateRef.current[videoId] = true;
         element.muted = isMuted;
         
+        console.log(`Playing video ${videoId} on ref assignment`);
         const playPromise = element.play();
         if (playPromise !== undefined) {
-          playPromise.catch(() => {
+          playPromise.catch((err) => {
+            console.error(`Error playing video ${videoId} on ref assignment:`, err);
             element.muted = true;
             element.play().catch(err => {
-              console.error("Error playing video on ref assignment:", err);
+              console.error(`Still couldn't play video ${videoId}:`, err);
               videoPlayingStateRef.current[videoId] = false;
             });
           });
@@ -680,6 +723,7 @@ const Vibezone: React.FC = () => {
             <div 
               key={video.id || `video-${index}`}
               className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative will-change-transform"
+              data-index={index}
             >
               <div className="relative w-full h-full max-w-md mx-auto bg-black">
                 <video 
