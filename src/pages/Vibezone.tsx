@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Share2, BookmarkIcon, Volume2, VolumeX, Music, X, ArrowLeft, UserPlus, UserCheck } from 'lucide-react';
+import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Download, BookmarkIcon, Volume2, VolumeX, Music, X, ArrowLeft, UserPlus, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -22,7 +23,7 @@ const Vibezone: React.FC = () => {
   const [isMuted, setIsMuted] = useState(true);
   const [showComments, setShowComments] = useState(false);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
-  const { fetchVideos, loading, hasLikedVideo, likeVideo, unlikeVideo } = useVibezone();
+  const { fetchVideos, loading, hasLikedVideo, likeVideo, unlikeVideo, downloadVideo } = useVibezone();
   const navigate = useNavigate();
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
@@ -36,6 +37,7 @@ const Vibezone: React.FC = () => {
   const [actionLoadingUsers, setActionLoadingUsers] = useState<Record<string, boolean>>({});
   const observerRef = useRef<IntersectionObserver | null>(null);
   const isLoadingRef = useRef(true);
+  const videosLoadedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const loadVideos = async () => {
@@ -191,22 +193,28 @@ const Vibezone: React.FC = () => {
       entries.forEach(entry => {
         const video = entry.target as HTMLVideoElement;
         const index = Array.from(videoRefs.current).findIndex(ref => ref === video);
+        const videoId = videos[index]?.id;
         
         if (entry.isIntersecting && !showComments) {
           setCurrentVideoIndex(index);
           
-          videoRefs.current.forEach((ref, i) => {
-            if (ref) {
-              if (i === index) {
-                if (ref.paused) {
-                  ref.play().catch(err => console.error("Error playing video:", err));
-                }
-              } else {
-                ref.pause();
-                ref.currentTime = 0;
-              }
+          if (video && !video.paused && videosLoadedRef.current.has(videoId)) {
+            // Skip if video is already playing and loaded
+            return;
+          }
+          
+          if (video) {
+            // Mark this video as loaded to prevent reloading
+            if (videoId) {
+              videosLoadedRef.current.add(videoId);
             }
-          });
+            
+            // Play the video that is in view
+            video.play().catch(err => console.error("Error playing video:", err));
+          }
+        } else if (!entry.isIntersecting && video) {
+          // Pause videos that are not in view
+          video.pause();
         }
       });
     }, { 
@@ -235,6 +243,18 @@ const Vibezone: React.FC = () => {
     });
   }, [isMuted]);
 
+  // Preload handler function
+  const handleVideoLoad = (video: HTMLVideoElement | null, index: number) => {
+    if (video && videos[index]?.id) {
+      // Add metadata loaded event listener
+      video.addEventListener('loadedmetadata', () => {
+        if (videos[index]?.id) {
+          videosLoadedRef.current.add(videos[index].id);
+        }
+      });
+    }
+  };
+
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
       return `${(views / 1000000).toFixed(1)}M`;
@@ -248,6 +268,7 @@ const Vibezone: React.FC = () => {
   const handleVideoRef = (element: HTMLVideoElement | null, index: number) => {
     if (element) {
       videoRefs.current[index] = element;
+      handleVideoLoad(element, index);
     }
   };
 
@@ -296,20 +317,15 @@ const Vibezone: React.FC = () => {
     }
   };
 
-  const handleShareVideo = (e: React.MouseEvent, video: Video) => {
+  const handleDownloadVideo = (e: React.MouseEvent, video: Video) => {
     e.stopPropagation();
-    const videoUrl = `${window.location.origin}/vibezone/watch/${video.id}`;
     
-    if (navigator.share) {
-      navigator.share({
-        title: video.title || 'Check out this video',
-        url: videoUrl,
-      }).catch(err => console.error('Error sharing:', err));
-    } else {
-      navigator.clipboard.writeText(videoUrl)
-        .then(() => toast.success('Link copied to clipboard'))
-        .catch(err => console.error('Could not copy link:', err));
+    if (!video.video_url || !video.title) {
+      toast.error("Video information is incomplete");
+      return;
     }
+    
+    downloadVideo(video.video_url, video.title);
   };
 
   const handleShowComments = (e: React.MouseEvent, videoId: string) => {
@@ -583,13 +599,13 @@ const Vibezone: React.FC = () => {
                   
                   <button 
                     className="flex flex-col items-center"
-                    onClick={(e) => handleShareVideo(e, video)}
+                    onClick={(e) => handleDownloadVideo(e, video)}
                   >
                     <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
-                      <Share2 className="h-6 w-6 text-white" />
+                      <Download className="h-6 w-6 text-white" />
                     </div>
                     <span className="text-white text-xs mt-1">
-                      Share
+                      Download
                     </span>
                   </button>
                   
