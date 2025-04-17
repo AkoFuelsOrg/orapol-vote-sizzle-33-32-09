@@ -412,7 +412,7 @@ const Vibezone: React.FC = () => {
         const playPromise = element.play();
         if (playPromise !== undefined) {
           playPromise.catch(() => {
-            video.muted = true;
+            element.muted = true;
             element.play().catch(err => {
               console.error("Error playing video on ref assignment:", err);
               videoPlayingStateRef.current[videoId] = false;
