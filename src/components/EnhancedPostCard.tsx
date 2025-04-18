@@ -41,7 +41,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         if (onPostClick) onPostClick(post.id);
       }}
       onPostDeleted={() => {}}
-      onUserClick={onUserClick}
     />
   );
 };
