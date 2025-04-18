@@ -1,9 +1,9 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
-import ImageCropper from '../components/ImageCropper'; // Fixed import path
 
 interface ProfileUpdateData {
   username?: string;
@@ -42,11 +42,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [cropperOpen, setCropperOpen] = useState(false);
-  const [imageToProcess, setImageToProcess] = useState<{
-    file: File;
-    type: 'profile' | 'cover';
-  } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -110,15 +105,39 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       if (data.profileFile) {
-        setImageToProcess({ file: data.profileFile, type: 'profile' });
-        setCropperOpen(true);
-        return; // Wait for crop completion
+        const fileExt = data.profileFile.name.split('.').pop();
+        const filePath = `${user.id}/profile-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, data.profileFile, { upsert: true });
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        avatarUrl = urlData.publicUrl;
+        updates.avatar_url = avatarUrl;
       }
       
       if (data.coverFile) {
-        setImageToProcess({ file: data.coverFile, type: 'cover' });
-        setCropperOpen(true);
-        return; // Wait for crop completion
+        const fileExt = data.coverFile.name.split('.').pop();
+        const filePath = `${user.id}/cover-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, data.coverFile, { upsert: true });
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: urlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        coverUrl = urlData.publicUrl;
+        updates.cover_url = coverUrl;
       }
       
       const { error: updateError } = await supabase
@@ -143,67 +162,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCropComplete = async (croppedBlob: Blob) => {
-    if (!imageToProcess || !user) return;
-    
-    try {
-      setLoading(true);
-      const file = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' });
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${imageToProcess.type}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-        
-      if (uploadError) throw uploadError;
-      
-      const { data: urlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-        
-      const updates: any = {
-        id: user.id,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (imageToProcess.type === 'profile') {
-        updates.avatar_url = urlData.publicUrl;
-      } else {
-        updates.cover_url = urlData.publicUrl;
-      }
-      
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-        
-      if (updateError) throw updateError;
-      
-      setProfile(prev => ({
-        ...prev,
-        ...(imageToProcess.type === 'profile' 
-          ? { avatar_url: urlData.publicUrl }
-          : { cover_url: urlData.publicUrl }),
-      }));
-      
-      toast.success('Image updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Error updating image');
-      console.error('Error updating image:', error);
-    } finally {
-      setLoading(false);
-      setCropperOpen(false);
-      setImageToProcess(null);
-    }
-  };
-
-  const handleCropCancel = () => {
-    setCropperOpen(false);
-    setImageToProcess(null);
-    setLoading(false);
   };
 
   const updatePassword = async (currentPassword: string, newPassword: string) => {
@@ -440,15 +398,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }}
     >
       {children}
-      {imageToProcess && (
-        <ImageCropper 
-          imageUrl={URL.createObjectURL(imageToProcess.file)}
-          onCrop={handleCropComplete}
-          onCancel={handleCropCancel}
-          isOpen={cropperOpen}
-          aspectRatio={imageToProcess.type === 'profile' ? 1 : 16/9}
-        />
-      )}
     </SupabaseContext.Provider>
   );
 };
