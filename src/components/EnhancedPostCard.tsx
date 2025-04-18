@@ -6,7 +6,6 @@ import { getAvatarUrl } from "../lib/avatar-utils";
 
 interface EnhancedPostCardProps {
   post: Post;
-  showComments?: boolean;
   onLike?: (postId: string) => void;
   onFavorite?: (postId: string) => void;
   onComment?: (postId: string) => void;
@@ -17,7 +16,6 @@ interface EnhancedPostCardProps {
 
 export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   post,
-  showComments,
   onLike,
   onFavorite,
   onComment,
@@ -34,7 +32,7 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
   };
 
-  // Pass all relevant props to PostCard component
+  // Pass all relevant props to PostCard component, removing showComments which isn't supported
   return (
     <PostCard
       post={enhancedPost}
@@ -42,7 +40,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         if (onPostClick) onPostClick(post.id);
       }}
       onPostDeleted={() => {}}
-      showComments={showComments}
       onLike={onLike ? () => onLike(post.id) : undefined}
       onComment={onComment ? () => onComment(post.id) : undefined}
       onShare={onShare ? () => onShare(post.id) : undefined}
