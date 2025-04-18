@@ -3,7 +3,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
-import ImageCropper from './ImageCropper'; // Assuming ImageCropper is a component you have
+import ImageCropper from '../components/ImageCropper'; // Fixed import path
 
 interface ProfileUpdateData {
   username?: string;
