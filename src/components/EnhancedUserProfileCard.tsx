@@ -22,7 +22,7 @@ export const EnhancedUserProfileCard: React.FC<EnhancedUserProfileCardProps> = (
   // Ensure the avatar URL is properly set
   const enhancedAvatarUrl = getAvatarUrl(user.avatar_url);
   
-  // Pass props that match UserProfileCard requirements
+  // Pass all the relevant props to UserProfileCard
   return (
     <UserProfileCard
       userId={user.id}
@@ -30,6 +30,9 @@ export const EnhancedUserProfileCard: React.FC<EnhancedUserProfileCardProps> = (
       avatarUrl={enhancedAvatarUrl}
       hideFollowButton={isCurrentUser}
       minimal={false}
+      isFollowing={isFollowing}
+      onFollow={onFollow}
+      onUnfollow={onUnfollow}
     />
   );
 };

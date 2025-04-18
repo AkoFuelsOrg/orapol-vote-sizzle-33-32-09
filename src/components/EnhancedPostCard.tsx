@@ -17,6 +17,7 @@ interface EnhancedPostCardProps {
 
 export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   post,
+  showComments,
   onLike,
   onFavorite,
   onComment,
@@ -33,12 +34,19 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
   };
 
-  // Pass only the props that PostCard accepts
+  // Pass all relevant props to PostCard component
   return (
     <PostCard
       post={enhancedPost}
-      onPostUpdate={() => {}}
+      onPostUpdate={() => {
+        if (onPostClick) onPostClick(post.id);
+      }}
       onPostDeleted={() => {}}
+      showComments={showComments}
+      onLike={onLike ? () => onLike(post.id) : undefined}
+      onComment={onComment ? () => onComment(post.id) : undefined}
+      onShare={onShare ? () => onShare(post.id) : undefined}
+      onUserClick={onUserClick}
     />
   );
 };
