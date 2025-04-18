@@ -22,8 +22,7 @@ export const EnhancedUserProfileCard: React.FC<EnhancedUserProfileCardProps> = (
   // Ensure the avatar URL is properly set
   const enhancedAvatarUrl = getAvatarUrl(user.avatar_url);
   
-  // UserProfileCard handles its own follow/unfollow logic internally
-  // Only pass props it actually accepts according to its interface
+  // Pass props that match UserProfileCard requirements
   return (
     <UserProfileCard
       userId={user.id}

@@ -6,6 +6,7 @@ import { getAvatarUrl } from "../lib/avatar-utils";
 
 interface EnhancedPostCardProps {
   post: Post;
+  showComments?: boolean;
   onLike?: (postId: string) => void;
   onFavorite?: (postId: string) => void;
   onComment?: (postId: string) => void;
@@ -32,14 +33,11 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
   };
 
-  // PostCard does not directly accept onLike, onComment, and onShare with the same signature
-  // We need to adapt them to match what PostCard expects
+  // Pass only the props that PostCard accepts
   return (
     <PostCard
       post={enhancedPost}
-      onPostUpdate={() => {
-        if (onPostClick) onPostClick(post.id);
-      }}
+      onPostUpdate={() => {}}
       onPostDeleted={() => {}}
     />
   );

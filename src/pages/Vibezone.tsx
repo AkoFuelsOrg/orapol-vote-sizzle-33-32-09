@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
 import { Video } from '@/lib/types';
@@ -28,23 +28,13 @@ const Vibezone: React.FC = () => {
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
-  
-  // Stable references for video elements
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const scrollPositionRef = useRef(0);
-  
-  // State stored in refs to avoid triggering re-renders
-  const likedVideosRef = useRef<Record<string, boolean>>({});
   const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
-  const commentCountsRef = useRef<Record<string, number>>({});
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
-  const followingStatusRef = useRef<Record<string, boolean>>({});
   const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
-  const canMessageUsersRef = useRef<Record<string, boolean>>({});
   const [canMessageUsers, setCanMessageUsers] = useState<Record<string, boolean>>({});
   const [actionLoadingUsers, setActionLoadingUsers] = useState<Record<string, boolean>>({});
-  
-  // Refs for stable interaction with video elements
   const observerRef = useRef<IntersectionObserver | null>(null);
   const isLoadingRef = useRef(true);
   const videosLoadedRef = useRef<Set<string>>(new Set());
@@ -56,12 +46,10 @@ const Vibezone: React.FC = () => {
   const isMounted = useRef(true);
   const videosRef = useRef<Video[]>([]);
 
-  // Track videos in a ref to avoid missing dependency warnings
   useEffect(() => {
     videosRef.current = videos;
   }, [videos]);
 
-  // Cleanup when unmounting
   useEffect(() => {
     isMounted.current = true;
     
@@ -80,23 +68,6 @@ const Vibezone: React.FC = () => {
     };
   }, []);
 
-  // Update state refs when state changes to avoid unnecessary re-renders
-  useEffect(() => {
-    likedVideosRef.current = likedVideos;
-  }, [likedVideos]);
-
-  useEffect(() => {
-    commentCountsRef.current = commentCounts;
-  }, [commentCounts]);
-
-  useEffect(() => {
-    followingStatusRef.current = followingStatus;
-  }, [followingStatus]);
-
-  useEffect(() => {
-    canMessageUsersRef.current = canMessageUsers;
-  }, [canMessageUsers]);
-
   useEffect(() => {
     const loadVideos = async () => {
       try {
@@ -110,7 +81,6 @@ const Vibezone: React.FC = () => {
         if (!isMounted.current) return;
         
         if (fetchedVideos && fetchedVideos.length > 0) {
-          // Cache video data in ref to avoid triggering re-renders
           fetchedVideos.forEach(video => {
             if (video.id) {
               videoDataRef.current[video.id] = video;
@@ -118,7 +88,6 @@ const Vibezone: React.FC = () => {
           });
           
           setVideos(prevVideos => {
-            // Only update state if videos actually changed
             if (!prevVideos.length && fetchedVideos.length > 0) {
               return [...fetchedVideos];
             }
@@ -134,12 +103,10 @@ const Vibezone: React.FC = () => {
           });
           
           if (user && isMounted.current) {
-            // Batch state updates to minimize re-renders
-            const likedStatus: Record<string, boolean> = {...likedVideosRef.current};
-            const following: Record<string, boolean> = {...followingStatusRef.current};
-            const canMessage: Record<string, boolean> = {...canMessageUsersRef.current};
+            const likedStatus: Record<string, boolean> = {};
+            const following: Record<string, boolean> = {};
+            const canMessage: Record<string, boolean> = {};
             
-            // Fetch like status for all videos in parallel
             const likePromises = fetchedVideos.map(async video => {
               if (video.id) {
                 const isLiked = await hasLikedVideo(video.id);
@@ -150,22 +117,15 @@ const Vibezone: React.FC = () => {
             
             const likeResults = await Promise.all(likePromises);
             if (isMounted.current) {
-              let hasChanges = false;
               likeResults.forEach(result => {
                 if (result) {
-                  if (likedStatus[result.id] !== result.isLiked) {
-                    likedStatus[result.id] = result.isLiked;
-                    hasChanges = true;
-                  }
+                  likedStatus[result.id] = result.isLiked;
                 }
               });
               
-              if (hasChanges) {
-                setLikedVideos(likedStatus);
-              }
+              setLikedVideos(likedStatus);
             }
             
-            // Fetch following status for all authors in parallel
             const followPromises = fetchedVideos.map(async video => {
               if (video.author?.id && user.id !== video.author.id) {
                 const { data } = await supabase
@@ -182,20 +142,15 @@ const Vibezone: React.FC = () => {
             
             const followResults = await Promise.all(followPromises);
             if (isMounted.current) {
-              let hasFollowChanges = false;
               followResults.forEach(result => {
-                if (result && following[result.authorId] !== result.isFollowing) {
+                if (result) {
                   following[result.authorId] = result.isFollowing;
-                  hasFollowChanges = true;
                 }
               });
               
-              if (hasFollowChanges) {
-                setFollowingStatus(following);
-              }
+              setFollowingStatus(following);
             }
             
-            // Check which users can be messaged
             const messagePromises = fetchedVideos.map(async video => {
               if (video.author?.id && user.id !== video.author.id) {
                 const { data } = await supabase
@@ -211,21 +166,16 @@ const Vibezone: React.FC = () => {
             
             const messageResults = await Promise.all(messagePromises);
             if (isMounted.current) {
-              let hasMessageChanges = false;
               messageResults.forEach(result => {
-                if (result && canMessage[result.authorId] !== result.canMessage) {
+                if (result) {
                   canMessage[result.authorId] = result.canMessage;
-                  hasMessageChanges = true;
                 }
               });
               
-              if (hasMessageChanges) {
-                setCanMessageUsers(canMessage);
-              }
+              setCanMessageUsers(canMessage);
             }
           }
           
-          // Get comment counts for all videos in parallel
           const commentPromises = fetchedVideos.map(async video => {
             if (video.id) {
               const { count } = await supabase
@@ -240,19 +190,14 @@ const Vibezone: React.FC = () => {
           
           const commentResults = await Promise.all(commentPromises);
           if (isMounted.current) {
-            const commentCountsData = {...commentCountsRef.current};
-            let hasCountChanges = false;
-            
+            const commentCountsData: Record<string, number> = {};
             commentResults.forEach(result => {
-              if (result && commentCountsData[result.id] !== result.count) {
+              if (result) {
                 commentCountsData[result.id] = result.count;
-                hasCountChanges = true;
               }
             });
             
-            if (hasCountChanges) {
-              setCommentCounts(commentCountsData);
-            }
+            setCommentCounts(commentCountsData);
           }
         } else if (isMounted.current) {
           console.log("No videos returned or empty array");
@@ -273,7 +218,6 @@ const Vibezone: React.FC = () => {
     
     loadVideos();
     
-    // Setup real-time subscriptions
     const videosChannel = supabase
       .channel('vibezone_videos_changes')
       .on('postgres_changes', 
@@ -327,8 +271,7 @@ const Vibezone: React.FC = () => {
         },
         async () => {
           if (user && isMounted.current) {
-            const following: Record<string, boolean> = {...followingStatusRef.current};
-            let hasChanges = false;
+            const following: Record<string, boolean> = {};
             
             for (const video of videosRef.current) {
               if (video.author?.id && user.id !== video.author.id) {
@@ -339,15 +282,11 @@ const Vibezone: React.FC = () => {
                   .eq('following_id', video.author.id)
                   .maybeSingle();
                 
-                const isFollowing = !!data;
-                if (following[video.author.id] !== isFollowing) {
-                  following[video.author.id] = isFollowing;
-                  hasChanges = true;
-                }
+                following[video.author.id] = !!data;
               }
             }
             
-            if (isMounted.current && hasChanges) {
+            if (isMounted.current) {
               setFollowingStatus(following);
             }
           }
@@ -362,7 +301,6 @@ const Vibezone: React.FC = () => {
     };
   }, [fetchVideos, user, hasLikedVideo]);
 
-  // Improved video observer setup with stability fixes
   const setupVideoObservers = useCallback(() => {
     if (isLoadingRef.current || videos.length === 0 || showComments) {
       return;
@@ -374,8 +312,8 @@ const Vibezone: React.FC = () => {
     
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        const element = entry.target as HTMLVideoElement;
-        const videoId = element.dataset.videoId;
+        const video = entry.target as HTMLVideoElement;
+        const videoId = video.dataset.videoId;
         
         if (!videoId) return;
         
@@ -395,52 +333,49 @@ const Vibezone: React.FC = () => {
             }
           });
           
-          if (!showComments && element && loadedMetadataRef.current.has(videoId)) {
+          if (!showComments && video && loadedMetadataRef.current.has(videoId)) {
             console.log(`Attempting to play video ${videoId}`);
-            if (element.paused) {
-              element.muted = isMuted;
+            if (video.paused) {
+              video.muted = isMuted;
               videoPlayingStateRef.current[videoId] = true;
               
-              // Wait to ensure any pending state updates complete
-              setTimeout(() => {
-                // Ensure the video is ready to play
-                if (element.readyState >= 2) {
-                  const playPromise = element.play();
+              // Ensure the video is ready to play
+              if (video.readyState >= 2) {
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch((err) => {
+                    console.error(`Error playing video ${videoId}:`, err);
+                    // Try with muted as fallback
+                    video.muted = true;
+                    video.play().catch(err => {
+                      console.error(`Still couldn't play video ${videoId}:`, err);
+                      videoPlayingStateRef.current[videoId] = false;
+                    });
+                  });
+                }
+              } else {
+                // If video is not ready, set up event listener
+                const handleCanPlay = () => {
+                  console.log(`Video ${videoId} can play now`);
+                  const playPromise = video.play();
                   if (playPromise !== undefined) {
-                    playPromise.catch((err) => {
-                      console.error(`Error playing video ${videoId}:`, err);
-                      // Try with muted as fallback
-                      element.muted = true;
-                      element.play().catch(err => {
-                        console.error(`Still couldn't play video ${videoId}:`, err);
-                        videoPlayingStateRef.current[videoId] = false;
+                    playPromise.catch(() => {
+                      video.muted = true;
+                      video.play().catch(err => {
+                        console.error(`Error playing video on canplay event:`, err);
                       });
                     });
                   }
-                } else {
-                  // If video is not ready, set up event listener
-                  const handleCanPlay = () => {
-                    console.log(`Video ${videoId} can play now`);
-                    const playPromise = element.play();
-                    if (playPromise !== undefined) {
-                      playPromise.catch(() => {
-                        element.muted = true;
-                        element.play().catch(err => {
-                          console.error(`Error playing video on canplay event:`, err);
-                        });
-                      });
-                    }
-                    element.removeEventListener('canplay', handleCanPlay);
-                  };
-                  
-                  element.addEventListener('canplay', handleCanPlay);
-                }
-              }, 0);
+                  video.removeEventListener('canplay', handleCanPlay);
+                };
+                
+                video.addEventListener('canplay', handleCanPlay);
+              }
             }
           }
         } else if (videoPlayingStateRef.current[videoId]) {
           console.log(`Video ${videoId} is no longer intersecting, pausing`);
-          element.pause();
+          video.pause();
           videoPlayingStateRef.current[videoId] = false;
         }
       });
@@ -449,16 +384,14 @@ const Vibezone: React.FC = () => {
       rootMargin: "-5%"
     });
 
-    // Delay observer setup to ensure DOM has stabilized
+    // Add a small delay to ensure DOM is ready
     setTimeout(() => {
-      if (!isMounted.current) return;
-      
-      videoRefs.current.forEach((videoEl) => {
-        if (videoEl && videoEl.dataset.videoId) {
-          observerRef.current!.observe(videoEl);
+      videoRefs.current.forEach((video) => {
+        if (video && video.dataset.videoId) {
+          observerRef.current!.observe(video);
         }
       });
-    }, 100);
+    }, 50);
     
   }, [videos, showComments, isMuted]);
 
@@ -473,7 +406,6 @@ const Vibezone: React.FC = () => {
     };
   }, [setupVideoObservers]);
 
-  // Apply mute setting to all videos
   useEffect(() => {
     videoRefs.current.forEach(video => {
       if (video) {
@@ -495,22 +427,17 @@ const Vibezone: React.FC = () => {
       videoPlayingStateRef.current[videoId] = true;
       video.muted = isMuted;
       
-      // Add a small delay to ensure state has stabilized
-      setTimeout(() => {
-        if (!isMounted.current) return;
-        
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((err) => {
-            console.error(`Error playing video ${videoId} on metadata load:`, err);
-            video.muted = true;
-            video.play().catch(err => {
-              console.error("Still couldn't play video on metadata load:", err);
-              videoPlayingStateRef.current[videoId] = false;
-            });
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.error(`Error playing video ${videoId} on metadata load:`, err);
+          video.muted = true;
+          video.play().catch(err => {
+            console.error("Still couldn't play video on metadata load:", err);
+            videoPlayingStateRef.current[videoId] = false;
           });
-        }
-      }, 0);
+        });
+      }
     }
   };
 
@@ -542,23 +469,17 @@ const Vibezone: React.FC = () => {
         element.muted = isMuted;
         
         console.log(`Playing video ${videoId} on ref assignment`);
-        
-        // Wait for React rendering to finish before playing
-        setTimeout(() => {
-          if (!isMounted.current) return;
-          
-          const playPromise = element.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((err) => {
-              console.error(`Error playing video ${videoId} on ref assignment:`, err);
-              element.muted = true;
-              element.play().catch(err => {
-                console.error(`Still couldn't play video ${videoId}:`, err);
-                videoPlayingStateRef.current[videoId] = false;
-              });
+        const playPromise = element.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.error(`Error playing video ${videoId} on ref assignment:`, err);
+            element.muted = true;
+            element.play().catch(err => {
+              console.error(`Still couldn't play video ${videoId}:`, err);
+              videoPlayingStateRef.current[videoId] = false;
             });
-          }
-        }, 0);
+          });
+        }
       }
     }
   };
@@ -578,7 +499,6 @@ const Vibezone: React.FC = () => {
     setIsMuted(prev => !prev);
   };
 
-  // Stabilized like video handler
   const handleLikeVideo = async (e: React.MouseEvent, video: Video) => {
     e.stopPropagation();
     if (!user) {
@@ -589,9 +509,8 @@ const Vibezone: React.FC = () => {
     if (!video.id) return;
     
     try {
-      const isLiked = likedVideosRef.current[video.id] || false;
+      const isLiked = likedVideos[video.id] || false;
       
-      // Optimistic UI update
       setLikedVideos(prev => ({
         ...prev,
         [video.id]: !isLiked
@@ -611,10 +530,9 @@ const Vibezone: React.FC = () => {
     } catch (error) {
       console.error('Error handling like:', error);
       if (video.id) {
-        // Revert optimistic update on error
         setLikedVideos(prev => ({
           ...prev,
-          [video.id]: !prev[video.id]
+          [video.id]: !likedVideos[video.id]
         }));
       }
       toast.error('Failed to update like status');
@@ -666,20 +584,16 @@ const Vibezone: React.FC = () => {
           videoPlayingStateRef.current[videoId] = true;
           video.muted = isMuted;
           
-          setTimeout(() => {
-            if (!isMounted.current) return;
-            
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-              playPromise.catch(() => {
-                video.muted = true;
-                video.play().catch(err => {
-                  console.error("Error playing video after closing comments:", err);
-                  videoPlayingStateRef.current[videoId] = false;
-                });
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              video.muted = true;
+              video.play().catch(err => {
+                console.error("Error playing video after closing comments:", err);
+                videoPlayingStateRef.current[videoId] = false;
               });
-            }
-          }, 0);
+            });
+          }
         }
       }
     });
@@ -694,7 +608,6 @@ const Vibezone: React.FC = () => {
     }));
   };
 
-  // Stabilized follow handler to prevent flickering
   const handleFollowUser = async (e: React.MouseEvent, authorId: string) => {
     e.stopPropagation();
     if (!user) {
@@ -707,17 +620,11 @@ const Vibezone: React.FC = () => {
       return;
     }
     
-    // Prevent multiple clicks while action is loading
-    if (actionLoadingUsers[authorId]) {
-      return;
-    }
-    
     setActionLoadingUsers(prev => ({ ...prev, [authorId]: true }));
     
     try {
-      const isFollowing = followingStatusRef.current[authorId];
+      const isFollowing = followingStatus[authorId];
       
-      // Optimistic UI update
       setFollowingStatus(prev => ({ ...prev, [authorId]: !isFollowing }));
       
       if (isFollowing) {
@@ -744,134 +651,13 @@ const Vibezone: React.FC = () => {
       console.error("Error updating follow status:", error);
       toast.error("Failed to update follow status");
       
-      // Revert optimistic update on error
-      setFollowingStatus(prev => ({ ...prev, [authorId]: !prev[authorId] }));
+      setFollowingStatus(prev => ({ ...prev, [authorId]: !followingStatus[authorId] }));
     } finally {
-      // Add a short delay before removing loading state to prevent flicker
-      setTimeout(() => {
-        if (isMounted.current) {
-          setActionLoadingUsers(prev => ({ ...prev, [authorId]: false }));
-        }
-      }, 300);
+      setActionLoadingUsers(prev => ({ ...prev, [authorId]: false }));
     }
   };
 
-  // Memoize values to prevent unnecessary re-renders
-  const shouldShowSkeleton = useMemo(() => 
-    isInitialLoading && videos.length === 0, [isInitialLoading, videos.length]
-  );
-  
-  // Render video-related buttons in a stable way
-  const renderInteractionButtons = (video: Video) => {
-    const isLiked = video.id ? likedVideosRef.current[video.id] || false : false;
-    const commentCount = video.id ? commentCountsRef.current[video.id] || 0 : 0;
-    
-    return (
-      <div className="absolute right-3 bottom-16 flex flex-col gap-6">
-        <button 
-          className="flex flex-col items-center"
-          onClick={(e) => handleLikeVideo(e, video)}
-        >
-          <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
-            <Heart 
-              className={`h-6 w-6 ${video.id && isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} 
-            />
-          </div>
-          <span className="text-white text-xs mt-1">
-            {formatViews(video.likes || 0)}
-          </span>
-        </button>
-        
-        <button 
-          className="flex flex-col items-center"
-          onClick={(e) => video.id && handleShowComments(e, video.id)}
-        >
-          <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
-            <MessageCircle className="h-6 w-6 text-white" />
-          </div>
-          <span className="text-white text-xs mt-1">
-            {formatViews(commentCount)}
-          </span>
-        </button>
-        
-        <button 
-          className="flex flex-col items-center"
-          onClick={(e) => handleDownloadVideo(e, video)}
-        >
-          <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
-            <Download className="h-6 w-6 text-white" />
-          </div>
-          <span className="text-white text-xs mt-1">
-            Download
-          </span>
-        </button>
-        
-        <button 
-          className="flex flex-col items-center" 
-          onClick={toggleMute}
-        >
-          <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
-            {isMuted ? (
-              <VolumeX className="h-6 w-6 text-white" />
-            ) : (
-              <Volume2 className="h-6 w-6 text-white" />
-            )}
-          </div>
-        </button>
-      </div>
-    );
-  };
-  
-  // Render author follow/message buttons in a stable way
-  const renderAuthorButtons = (video: Video) => {
-    if (!user || !video.author?.id || user.id === video.author.id) {
-      return null;
-    }
-    
-    const isFollowing = followingStatusRef.current[video.author.id] || false;
-    const canMessage = canMessageUsersRef.current[video.author.id] || false;
-    const isLoading = actionLoadingUsers[video.author.id] || false;
-    
-    return (
-      <div className="flex space-x-2 mt-2">
-        <Button
-          onClick={(e) => handleFollowUser(e, video.author?.id || '')}
-          disabled={isLoading}
-          variant={isFollowing ? "secondary" : "default"}
-          size="sm"
-          className="h-8 text-xs"
-        >
-          {isLoading ? (
-            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-          ) : isFollowing ? (
-            <>
-              <UserCheck className="h-3 w-3 mr-1" />
-              <span>Following</span>
-            </>
-          ) : (
-            <>
-              <UserPlus className="h-3 w-3 mr-1" />
-              <span>Follow</span>
-            </>
-          )}
-        </Button>
-        
-        {canMessage && (
-          <Button 
-            asChild
-            variant="secondary"
-            size="sm"
-            className="h-8 text-xs"
-          >
-            <Link to={`/messages/${video.author?.id}`}>
-              <MessageCircle className="h-3 w-3 mr-1" />
-              <span>Message</span>
-            </Link>
-          </Button>
-        )}
-      </div>
-    );
-  };
+  const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
     <div className="bg-black min-h-screen">
@@ -988,10 +774,99 @@ const Vibezone: React.FC = () => {
                     </div>
                   </div>
                   
-                  {renderAuthorButtons(video)}
+                  {user && video.author?.id && user.id !== video.author.id && (
+                    <div className="flex space-x-2 mt-2">
+                      <Button
+                        onClick={(e) => handleFollowUser(e, video.author?.id || '')}
+                        disabled={!!actionLoadingUsers[video.author?.id || '']}
+                        variant={followingStatus[video.author?.id || ''] ? "secondary" : "default"}
+                        size="sm"
+                        className="h-8 text-xs"
+                      >
+                        {actionLoadingUsers[video.author?.id || ''] ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : followingStatus[video.author?.id || ''] ? (
+                          <>
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            <span>Following</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            <span>Follow</span>
+                          </>
+                        )}
+                      </Button>
+                      
+                      {canMessageUsers[video.author?.id || ''] && (
+                        <Button 
+                          asChild
+                          variant="secondary"
+                          size="sm"
+                          className="h-8 text-xs"
+                        >
+                          <Link to={`/messages/${video.author?.id}`}>
+                            <MessageCircle className="h-3 w-3 mr-1" />
+                            <span>Message</span>
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
-                {renderInteractionButtons(video)}
+                <div className="absolute right-3 bottom-16 flex flex-col gap-6">
+                  <button 
+                    className="flex flex-col items-center"
+                    onClick={(e) => handleLikeVideo(e, video)}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      <Heart 
+                        className={`h-6 w-6 ${video.id && likedVideos[video.id] ? 'text-red-500 fill-red-500' : 'text-white'}`} 
+                      />
+                    </div>
+                    <span className="text-white text-xs mt-1">
+                      {formatViews(video.likes || 0)}
+                    </span>
+                  </button>
+                  
+                  <button 
+                    className="flex flex-col items-center"
+                    onClick={(e) => video.id && handleShowComments(e, video.id)}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      <MessageCircle className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-white text-xs mt-1">
+                      {video.id && formatViews(commentCounts[video.id] || 0)}
+                    </span>
+                  </button>
+                  
+                  <button 
+                    className="flex flex-col items-center"
+                    onClick={(e) => handleDownloadVideo(e, video)}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      <Download className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-white text-xs mt-1">
+                      Download
+                    </span>
+                  </button>
+                  
+                  <button 
+                    className="flex flex-col items-center" 
+                    onClick={toggleMute}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      {isMuted ? (
+                        <VolumeX className="h-6 w-6 text-white" />
+                      ) : (
+                        <Volume2 className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                  </button>
+                </div>
 
                 <div className="absolute bottom-28 left-4 flex items-center">
                   <Music className="h-4 w-4 text-white mr-2 animate-spin-slow" />
