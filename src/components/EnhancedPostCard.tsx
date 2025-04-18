@@ -32,7 +32,8 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
   };
 
-  // Pass all relevant props to PostCard component, removing showComments which isn't supported
+  // PostCard does not directly accept onLike, onComment, and onShare with the same signature
+  // We need to adapt them to match what PostCard expects
   return (
     <PostCard
       post={enhancedPost}
@@ -40,9 +41,6 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         if (onPostClick) onPostClick(post.id);
       }}
       onPostDeleted={() => {}}
-      onLike={onLike ? () => onLike(post.id) : undefined}
-      onComment={onComment ? () => onComment(post.id) : undefined}
-      onShare={onShare ? () => onShare(post.id) : undefined}
       onUserClick={onUserClick}
     />
   );
