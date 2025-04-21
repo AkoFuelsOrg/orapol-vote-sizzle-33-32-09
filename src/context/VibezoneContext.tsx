@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,6 +26,13 @@ type VibezoneContextType = {
 };
 
 const VibezoneContext = createContext<VibezoneContextType | undefined>(undefined);
+
+type LikedStatusCache = Record<string, { status: boolean, timestamp: number }>;
+type SubscriptionStatusCache = Record<string, { status: boolean, timestamp: number }>;
+
+const CACHE_DURATION = 5 * 60 * 1000;
+const likedStatusCache: LikedStatusCache = {};
+const subscriptionStatusCache: SubscriptionStatusCache = {};
 
 const fetchWithTimeout = async <T,>(
   promiseFn: () => Promise<T> | PromiseLike<T>, 
@@ -68,6 +75,22 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const { user } = useSupabase();
   const [cachedVideos, setCachedVideos] = useState<Video[]>([]);
+  const [pendingOperations, setPendingOperations] = useState<Set<string>>(new Set());
+
+  const addPendingOperation = useCallback((opId: string) => {
+    setPendingOperations(prev => new Set(prev).add(opId));
+    return () => {
+      setPendingOperations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(opId);
+        return newSet;
+      });
+    };
+  }, []);
+
+  const isOperationPending = useCallback((opId: string) => {
+    return pendingOperations.has(opId);
+  }, [pendingOperations]);
 
   const fetchVideos = async (limit = 20): Promise<Video[]> => {
     try {
@@ -332,15 +355,23 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const likeVideo = async (videoId: string): Promise<boolean> => {
+  const likeVideo = useCallback(async (videoId: string): Promise<boolean> => {
     if (!user) {
       toast.error('You must be logged in to like videos');
       return false;
     }
     
+    const opId = `like_${videoId}`;
+    if (isOperationPending(opId)) {
+      return false;
+    }
+    
     try {
+      const cleanup = addPendingOperation(opId);
       setLoading(true);
       setError(null);
+      
+      likedStatusCache[videoId] = { status: true, timestamp: Date.now() };
       
       const { error } = await supabase
         .from('video_likes')
@@ -351,6 +382,7 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
+      cleanup();
       return true;
     } catch (error: any) {
       if (error.code === '23505') {
@@ -359,21 +391,31 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       setError(error.message);
       console.error('Error liking video:', error);
+      
+      delete likedStatusCache[videoId];
       return false;
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, addPendingOperation, isOperationPending]);
 
-  const unlikeVideo = async (videoId: string): Promise<boolean> => {
+  const unlikeVideo = useCallback(async (videoId: string): Promise<boolean> => {
     if (!user) {
       toast.error('You must be logged in to unlike videos');
       return false;
     }
     
+    const opId = `unlike_${videoId}`;
+    if (isOperationPending(opId)) {
+      return false;
+    }
+    
     try {
+      const cleanup = addPendingOperation(opId);
       setLoading(true);
       setError(null);
+      
+      likedStatusCache[videoId] = { status: false, timestamp: Date.now() };
       
       const { error } = await supabase
         .from('video_likes')
@@ -383,18 +425,26 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (error) throw error;
       
+      cleanup();
       return true;
     } catch (error: any) {
       setError(error.message);
       console.error('Error unliking video:', error);
+      
+      delete likedStatusCache[videoId];
       return false;
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, addPendingOperation, isOperationPending]);
 
-  const hasLikedVideo = async (videoId: string): Promise<boolean> => {
+  const hasLikedVideo = useCallback(async (videoId: string): Promise<boolean> => {
     if (!user) return false;
+    
+    const cachedStatus = likedStatusCache[videoId];
+    if (cachedStatus && Date.now() - cachedStatus.timestamp < CACHE_DURATION) {
+      return cachedStatus.status;
+    }
     
     try {
       const { data, error } = await Promise.resolve(supabase
@@ -408,12 +458,132 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         throw error;
       }
       
-      return !!data;
+      const liked = !!data;
+      
+      likedStatusCache[videoId] = { status: liked, timestamp: Date.now() };
+      
+      return liked;
     } catch (error: any) {
       console.error('Error checking if user liked video:', error);
       return false;
     }
-  };
+  }, [user]);
+
+  const subscribeToChannel = useCallback(async (channelUserId: string): Promise<boolean> => {
+    if (!user) {
+      toast.error('You must be logged in to subscribe');
+      return false;
+    }
+    
+    const opId = `subscribe_${channelUserId}`;
+    if (isOperationPending(opId)) {
+      return false;
+    }
+    
+    try {
+      const cleanup = addPendingOperation(opId);
+      setLoading(true);
+      setError(null);
+      
+      subscriptionStatusCache[channelUserId] = { status: true, timestamp: Date.now() };
+      
+      const { error } = await supabase
+        .from('channel_subscriptions')
+        .insert({
+          channel_id: channelUserId,
+          subscriber_id: user.id
+        });
+      
+      if (error) throw error;
+      
+      toast.success('Subscribed successfully');
+      cleanup();
+      return true;
+    } catch (error: any) {
+      if (error.code === '23505') {
+        return true;
+      }
+      
+      setError(error.message);
+      console.error('Error subscribing to channel:', error);
+      toast.error('Failed to subscribe');
+      
+      delete subscriptionStatusCache[channelUserId];
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, addPendingOperation, isOperationPending]);
+
+  const unsubscribeFromChannel = useCallback(async (channelUserId: string): Promise<boolean> => {
+    if (!user) {
+      toast.error('You must be logged in to unsubscribe');
+      return false;
+    }
+    
+    const opId = `unsubscribe_${channelUserId}`;
+    if (isOperationPending(opId)) {
+      return false;
+    }
+    
+    try {
+      const cleanup = addPendingOperation(opId);
+      setLoading(true);
+      setError(null);
+      
+      subscriptionStatusCache[channelUserId] = { status: false, timestamp: Date.now() };
+      
+      const { error } = await supabase
+        .from('channel_subscriptions')
+        .delete()
+        .eq('channel_id', channelUserId)
+        .eq('subscriber_id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success('Unsubscribed successfully');
+      cleanup();
+      return true;
+    } catch (error: any) {
+      setError(error.message);
+      console.error('Error unsubscribing from channel:', error);
+      toast.error('Failed to unsubscribe');
+      
+      delete subscriptionStatusCache[channelUserId];
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user, addPendingOperation, isOperationPending]);
+
+  const hasSubscribedToChannel = useCallback(async (channelUserId: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    const cachedStatus = subscriptionStatusCache[channelUserId];
+    if (cachedStatus && Date.now() - cachedStatus.timestamp < CACHE_DURATION) {
+      return cachedStatus.status;
+    }
+    
+    try {
+      const { data, error } = await Promise.resolve(supabase
+        .from('channel_subscriptions')
+        .select('id')
+        .eq('channel_id', channelUserId)
+        .eq('subscriber_id', user.id)
+        .maybeSingle());
+      
+      if (error) throw error;
+      
+      const subscribed = !!data;
+      
+      subscriptionStatusCache[channelUserId] = { status: subscribed, timestamp: Date.now() };
+      
+      return subscribed;
+    } catch (error: any) {
+      console.error('Error checking subscription status:', error);
+      return false;
+    }
+  }, [user]);
 
   const viewVideo = async (videoId: string): Promise<boolean> => {
     try {
@@ -529,91 +699,6 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return null;
     } finally {
       setLoading(false);
-    }
-  };
-
-  const subscribeToChannel = async (channelUserId: string): Promise<boolean> => {
-    if (!user) {
-      toast.error('You must be logged in to subscribe');
-      return false;
-    }
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { error } = await supabase
-        .from('channel_subscriptions')
-        .insert({
-          channel_id: channelUserId,
-          subscriber_id: user.id
-        });
-      
-      if (error) throw error;
-      
-      toast.success('Subscribed successfully');
-      return true;
-    } catch (error: any) {
-      if (error.code === '23505') {
-        return true;
-      }
-      
-      setError(error.message);
-      console.error('Error subscribing to channel:', error);
-      toast.error('Failed to subscribe');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const unsubscribeFromChannel = async (channelUserId: string): Promise<boolean> => {
-    if (!user) {
-      toast.error('You must be logged in to unsubscribe');
-      return false;
-    }
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { error } = await supabase
-        .from('channel_subscriptions')
-        .delete()
-        .eq('channel_id', channelUserId)
-        .eq('subscriber_id', user.id);
-      
-      if (error) throw error;
-      
-      toast.success('Unsubscribed successfully');
-      return true;
-    } catch (error: any) {
-      setError(error.message);
-      console.error('Error unsubscribing from channel:', error);
-      toast.error('Failed to unsubscribe');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const hasSubscribedToChannel = async (channelUserId: string): Promise<boolean> => {
-    if (!user) return false;
-    
-    try {
-      const { data, error } = await Promise.resolve(supabase
-        .from('channel_subscriptions')
-        .select('id')
-        .eq('channel_id', channelUserId)
-        .eq('subscriber_id', user.id)
-        .maybeSingle());
-      
-      if (error) throw error;
-      
-      return !!data;
-    } catch (error: any) {
-      console.error('Error checking subscription status:', error);
-      return false;
     }
   };
 

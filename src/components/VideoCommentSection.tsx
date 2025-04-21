@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useVibezone } from '@/context/VibezoneContext';
 import { VideoComment } from '@/lib/types';
@@ -33,7 +33,8 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
   const [commentsFetched, setCommentsFetched] = useState(false);
   const mountedRef = useRef(true);
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const previousCommentsRef = useRef<VideoComment[]>([]);
+  
   // Setup mount/unmount tracking
   useEffect(() => {
     mountedRef.current = true;
@@ -42,14 +43,87 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     };
   }, []);
 
+  // Memoize fetchComments to prevent unnecessary re-renders
+  const fetchComments = useCallback(async () => {
+    if (commentsFetched && !videoId) return;
+    
+    setLoading(true);
+    try {
+      const commentsData = await fetchVideoComments(videoId);
+      
+      // Get the total count to report back
+      const { count } = await supabase
+        .from('video_comments')
+        .select('id', { count: 'exact', head: true })
+        .eq('video_id', videoId);
+      
+      // Report comment count back to parent
+      if (onCommentCountChange && typeof count === 'number') {
+        onCommentCountChange(count);
+      }
+      
+      // If user is logged in, check which comments they've liked
+      if (user) {
+        const { data: userLikes } = await supabase
+          .from('video_comment_likes')
+          .select('comment_id')
+          .eq('user_id', user.id);
+        
+        const likedCommentsMap = new Map();
+        if (userLikes) {
+          userLikes.forEach(like => {
+            likedCommentsMap.set(like.comment_id, true);
+          });
+        }
+        
+        // Mark comments as liked by the user
+        const commentsWithLikeStatus = commentsData.map(comment => ({
+          ...comment,
+          user_has_liked: likedCommentsMap.has(comment.id)
+        }));
+        
+        if (mountedRef.current) {
+          // Only update if the comments have actually changed
+          if (JSON.stringify(commentsWithLikeStatus) !== JSON.stringify(previousCommentsRef.current)) {
+            setComments(commentsWithLikeStatus);
+            previousCommentsRef.current = commentsWithLikeStatus;
+          }
+          setCommentsFetched(true);
+        }
+      } else {
+        // If no user, no comments are liked
+        const commentsWithLikeStatus = commentsData.map(comment => ({
+          ...comment,
+          user_has_liked: false
+        }));
+        
+        if (mountedRef.current) {
+          // Only update if the comments have actually changed
+          if (JSON.stringify(commentsWithLikeStatus) !== JSON.stringify(previousCommentsRef.current)) {
+            setComments(commentsWithLikeStatus);
+            previousCommentsRef.current = commentsWithLikeStatus;
+          }
+          setCommentsFetched(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      if (mountedRef.current) {
+        toast.error('Failed to load comments');
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [videoId, user, fetchVideoComments, onCommentCountChange, commentsFetched]);
+
   // Fetch comments only once when component mounts or videoId changes
   useEffect(() => {
     if (videoId) {
       fetchComments();
     }
-    // We intentionally don't include user in dependencies to prevent refetching on login state changes
-    // This prevents flickering when auth state changes
-  }, [videoId]);
+  }, [videoId, fetchComments]);
   
   // Set up real-time subscription for comment changes
   useEffect(() => {
@@ -66,16 +140,26 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           filter: `video_id=eq.${videoId}`
         },
         () => {
-          // Refresh comments when there's a change
-          fetchComments();
+          // Use throttling to prevent rapid UI updates
+          // This helps reduce flickering when multiple events occur in quick succession
+          if (window.commentUpdateTimeout) {
+            clearTimeout(window.commentUpdateTimeout);
+          }
+          
+          window.commentUpdateTimeout = setTimeout(() => {
+            fetchComments();
+          }, 500); // Debounce updates by 500ms
         }
       )
       .subscribe();
     
     return () => {
+      if (window.commentUpdateTimeout) {
+        clearTimeout(window.commentUpdateTimeout);
+      }
       supabase.removeChannel(commentsChannel);
     };
-  }, [videoId]);
+  }, [videoId, fetchComments]);
 
   const handleLikeComment = async (comment: VideoComment) => {
     if (!user) {
@@ -96,11 +180,13 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
         const isCurrentlyLiked = updatedComments[commentIndex].user_has_liked;
         
         // Optimistic update
+        const newLikesCount = isCurrentlyLiked 
+          ? Math.max(0, (updatedComments[commentIndex].likes || 1) - 1) 
+          : (updatedComments[commentIndex].likes || 0) + 1;
+          
         updatedComments[commentIndex] = {
           ...updatedComments[commentIndex],
-          likes: isCurrentlyLiked 
-            ? Math.max(0, (updatedComments[commentIndex].likes || 1) - 1) 
-            : (updatedComments[commentIndex].likes || 0) + 1,
+          likes: newLikesCount,
           user_has_liked: !isCurrentlyLiked
         };
         
@@ -125,8 +211,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           }
           
           // Update likes count in video_comments table
-          const newLikesCount = Math.max(0, (comment.likes || 0) - 1);
-          
           await supabase
             .from('video_comments')
             .update({ likes: newLikesCount })
@@ -149,8 +233,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           }
           
           // Update likes count in video_comments table
-          const newLikesCount = (comment.likes || 0) + 1;
-          
           await supabase
             .from('video_comments')
             .update({ likes: newLikesCount })
@@ -164,7 +246,10 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
       }
     } finally {
       if (mountedRef.current) {
-        setUpdatingLike(null);
+        // Use setTimeout to prevent rapid toggling of the like state
+        setTimeout(() => {
+          setUpdatingLike(null);
+        }, 300);
       }
     }
   };
@@ -310,72 +395,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     setReplyContent('');
   };
 
-  const fetchComments = async () => {
-    if (commentsFetched && !videoId) return; // Don't fetch if already fetched or no videoId
-    
-    setLoading(true);
-    try {
-      const commentsData = await fetchVideoComments(videoId);
-      
-      // Get the total count to report back
-      const { count } = await supabase
-        .from('video_comments')
-        .select('id', { count: 'exact', head: true })
-        .eq('video_id', videoId);
-      
-      // Report comment count back to parent
-      if (onCommentCountChange && typeof count === 'number') {
-        onCommentCountChange(count);
-      }
-      
-      // If user is logged in, check which comments they've liked
-      if (user) {
-        const { data: userLikes } = await supabase
-          .from('video_comment_likes')
-          .select('comment_id')
-          .eq('user_id', user.id);
-        
-        const likedCommentsMap = new Map();
-        if (userLikes) {
-          userLikes.forEach(like => {
-            likedCommentsMap.set(like.comment_id, true);
-          });
-        }
-        
-        // Mark comments as liked by the user
-        const commentsWithLikeStatus = commentsData.map(comment => ({
-          ...comment,
-          user_has_liked: likedCommentsMap.has(comment.id)
-        }));
-        
-        if (mountedRef.current) {
-          setComments(commentsWithLikeStatus);
-          setCommentsFetched(true);
-        }
-      } else {
-        // If no user, no comments are liked
-        const commentsWithLikeStatus = commentsData.map(comment => ({
-          ...comment,
-          user_has_liked: false
-        }));
-        
-        if (mountedRef.current) {
-          setComments(commentsWithLikeStatus);
-          setCommentsFetched(true);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      if (mountedRef.current) {
-        toast.error('Failed to load comments');
-      }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-    }
-  };
-
   const submitReply = async () => {
     if (!replyContent.trim()) return;
     if (!replyingTo) return;
@@ -517,7 +536,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="flex items-center h-8 px-2"
+                        className={`flex items-center h-8 px-2 ${updatingLike === comment.id ? 'pointer-events-none' : ''}`}
                         onClick={() => handleLikeComment(comment)}
                         disabled={updatingLike === comment.id}
                       >
@@ -607,7 +626,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="flex items-center h-6 px-1 mt-1"
+                                  className={`flex items-center h-6 px-1 mt-1 ${updatingLike === reply.id ? 'pointer-events-none' : ''}`}
                                   onClick={() => handleLikeReply(comment.id, reply)}
                                   disabled={updatingLike === reply.id}
                                 >
