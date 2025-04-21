@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
@@ -9,6 +8,7 @@ interface ProfileUpdateData {
   username?: string;
   profileFile?: File;
   coverFile?: File;
+  avatar_url?: string;
 }
 
 interface SupabaseContextType {

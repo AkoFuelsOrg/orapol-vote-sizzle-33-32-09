@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -325,7 +326,8 @@ const Profile: React.FC = () => {
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       setLocalAvatarUrl(data.publicUrl);
       
-      await updateProfile({ avatarUrl: data.publicUrl });
+      // Fix: Use 'avatar_url' property instead of 'avatarUrl'
+      await updateProfile({ avatar_url: data.publicUrl });
       
       toast.success('Profile image updated successfully!');
       setCropperOpen(false);
