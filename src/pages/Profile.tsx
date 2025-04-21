@@ -14,6 +14,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import UserAvatar from '../components/UserAvatar';
 import { useBreakpoint } from '../hooks/use-mobile';
+import ImageCropper from '../components/ImageCropper';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
@@ -37,6 +38,9 @@ const Profile: React.FC = () => {
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   const [localCoverUrl, setLocalCoverUrl] = useState<string | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+  const [selectedFileExt, setSelectedFileExt] = useState<string | null>(null);
   
   const profileFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
@@ -274,7 +278,6 @@ const Profile: React.FC = () => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     try {
-      setUploading(true);
       const file = e.target.files[0];
       
       if (!file.type.startsWith('image/')) {
@@ -287,19 +290,60 @@ const Profile: React.FC = () => {
         return;
       }
       
-      const tempUrl = URL.createObjectURL(file);
-      setLocalAvatarUrl(tempUrl);
+      setSelectedFileExt(file.name.split('.').pop() || null);
       
-      await updateProfile({ profileFile: file });
-      toast.success('Profile image updated successfully');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setOriginalImageUrl(e.target?.result as string);
+        setCropperOpen(true);
+      };
+      reader.readAsDataURL(file);
+      
     } catch (error: any) {
+      toast.error('Failed to process image');
+      console.error('Error processing image:', error);
+    } finally {
+      if (profileFileInputRef.current) profileFileInputRef.current.value = '';
+    }
+  };
+  
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setUploading(true);
+    try {
+      const fileExt = selectedFileExt || 'jpg';
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, croppedBlob, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      setLocalAvatarUrl(data.publicUrl);
+      
+      await updateProfile({ avatarUrl: data.publicUrl });
+      
+      toast.success('Profile image updated successfully!');
+      setCropperOpen(false);
+      setOriginalImageUrl(null);
+      setSelectedFileExt(null);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
       toast.error('Failed to upload image');
-      console.error('Error uploading image:', error);
       setLocalAvatarUrl(profile?.avatar_url || null);
     } finally {
       setUploading(false);
-      if (profileFileInputRef.current) profileFileInputRef.current.value = '';
     }
+  };
+  
+  const handleCropCancel = () => {
+    setCropperOpen(false);
+    setOriginalImageUrl(null);
+    setSelectedFileExt(null);
   };
   
   const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -683,6 +727,17 @@ const Profile: React.FC = () => {
           </Tabs>
         </div>
       </main>
+      
+      {/* Image Cropper Dialog */}
+      {originalImageUrl && (
+        <ImageCropper 
+          imageUrl={originalImageUrl}
+          onCrop={handleCropComplete}
+          isOpen={cropperOpen}
+          onCancel={handleCropCancel}
+          aspectRatio={1}
+        />
+      )}
     </div>
   );
 };
