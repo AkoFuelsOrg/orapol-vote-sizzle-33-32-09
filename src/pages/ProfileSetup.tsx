@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import ImageCropper from '@/components/ImageCropper';
 
 const ProfileSetup = () => {
   const { session, profile, loading } = useSupabase();
@@ -23,6 +24,10 @@ const ProfileSetup = () => {
     username?: string;
     avatar?: string;
   }>({});
+  // Cropping State
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+  const [selectedFileExt, setSelectedFileExt] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -31,36 +36,64 @@ const ProfileSetup = () => {
     }
   }, [profile]);
 
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setUploading(true);
-      setErrors(prev => ({ ...prev, avatar: undefined }));
-      
-      if (!event.target.files || event.target.files.length === 0) {
-        return;
-      }
+  const handleProfileImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setErrors(prev => ({ ...prev, avatar: undefined }));
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+      toast.error('Only JPEG, PNG, GIF, and WEBP images are allowed');
+      return;
+    }
+
+    setSelectedFileExt(file.name.split('.').pop() || null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setOriginalImageUrl(e.target?.result as string);
+      setCropperOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setUploading(true);
+    try {
+      const fileExt = selectedFileExt || 'jpg';
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${session?.user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
+      // Upload the cropped image
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, croppedBlob, { upsert: true });
 
       if (uploadError) {
         throw uploadError;
       }
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      
       setAvatarUrl(data.publicUrl);
       toast.success('Avatar uploaded successfully!');
+      setCropperOpen(false);
+      setOriginalImageUrl(null);
+      setSelectedFileExt(null);
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast.error('Error uploading avatar');
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleCropCancel = () => {
+    setCropperOpen(false);
+    setOriginalImageUrl(null);
+    setSelectedFileExt(null);
   };
 
   const validateForm = () => {
@@ -83,7 +116,6 @@ const ProfileSetup = () => {
 
   const fetchUserProfile = async () => {
     if (!session?.user.id) return;
-    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -101,11 +133,11 @@ const ProfileSetup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     try {
       setSaving(true);
       const { error } = await supabase
@@ -140,9 +172,7 @@ const ProfileSetup = () => {
             Set up your TUWAYE profile to get started.
           </p>
         </div>
-        
         <Separator />
-        
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="flex flex-col items-center space-y-4">
             <div className="relative w-32 h-32">
@@ -158,7 +188,6 @@ const ProfileSetup = () => {
                   <User className="h-16 w-16 text-gray-400" />
                 </div>
               )}
-              
               <div className="absolute bottom-0 right-0">
                 <Label 
                   htmlFor="avatar" 
@@ -175,7 +204,7 @@ const ProfileSetup = () => {
                   type="file" 
                   accept="image/*" 
                   className="hidden" 
-                  onChange={uploadAvatar}
+                  onChange={handleProfileImageChange}
                   disabled={uploading}
                 />
               </div>
@@ -187,7 +216,6 @@ const ProfileSetup = () => {
               Profile image is required
             </p>
           </div>
-          
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
@@ -207,7 +235,6 @@ const ProfileSetup = () => {
               )}
             </div>
           </div>
-          
           <Button 
             type="submit" 
             className="w-full"
@@ -224,8 +251,19 @@ const ProfileSetup = () => {
           </Button>
         </form>
       </div>
+      {/* Image Cropper Dialog */}
+      {originalImageUrl && (
+        <ImageCropper 
+          imageUrl={originalImageUrl}
+          onCrop={handleCropComplete}
+          isOpen={cropperOpen}
+          onCancel={handleCropCancel}
+          aspectRatio={1}
+        />
+      )}
     </div>
   );
 };
 
 export default ProfileSetup;
+
