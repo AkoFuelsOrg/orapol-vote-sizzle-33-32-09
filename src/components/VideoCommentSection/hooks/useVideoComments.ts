@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -235,6 +234,7 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
     loading,
     submittingComment,
     updatingLike,
+    setUpdatingLike,
     handleLikeComment,
     addComment,
     setComments,

@@ -36,6 +36,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     handleLikeComment,
     addComment,
     setComments,
+    setUpdatingLike,
   } = useVideoComments(videoId, onCommentCountChange);
 
   const { addVideoComment } = useVibezone();
@@ -49,7 +50,7 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     if (updatingLike === reply.id) return;
     
     try {
-      updatingLike === reply.id;
+      setUpdatingLike(reply.id);
       
       const updatedComments = [...comments];
       const parentIndex = updatedComments.findIndex(c => c.id === parentId);
