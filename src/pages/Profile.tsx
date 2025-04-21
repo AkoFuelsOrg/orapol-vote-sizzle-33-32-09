@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { usePollContext } from '../context/PollContext';
 import PollCard from '../components/PollCard';
@@ -16,6 +15,7 @@ import { Input } from '../components/ui/input';
 import UserAvatar from '../components/UserAvatar';
 import { useBreakpoint } from '../hooks/use-mobile';
 import ImageCropper from '../components/ImageCropper';
+import { getAvatarUrl } from '../lib/avatar-utils';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
@@ -56,6 +56,7 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     if (profile) {
+      setUsername(profile.username || '');
       setLocalAvatarUrl(profile.avatar_url);
       setLocalCoverUrl(profile.cover_url);
     }
@@ -324,10 +325,18 @@ const Profile: React.FC = () => {
       }
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      setLocalAvatarUrl(data.publicUrl);
+      const publicUrl = data.publicUrl;
       
-      // Fix: Use 'avatar_url' property instead of 'avatarUrl'
-      await updateProfile({ avatar_url: data.publicUrl });
+      setLocalAvatarUrl(publicUrl);
+      
+      await updateProfile({ avatar_url: publicUrl });
+      
+      if (profile) {
+        setProfile({
+          ...profile,
+          avatar_url: publicUrl
+        });
+      }
       
       toast.success('Profile image updated successfully!');
       setCropperOpen(false);
@@ -414,7 +423,7 @@ const Profile: React.FC = () => {
     return dateB - dateA; // Sort by newest first
   });
   
-  const avatarUrl = localAvatarUrl || (user?.id ? `https://i.pravatar.cc/150?u=${user.id}` : '');
+  const avatarUrl = localAvatarUrl ? getAvatarUrl(localAvatarUrl) : null;
   const coverUrl = localCoverUrl || '';
   
   return (
@@ -470,11 +479,19 @@ const Profile: React.FC = () => {
                     </div>
                   ) : (
                     <>
-                      <UserAvatar 
-                        user={profile}
-                        size="xl"
-                        className="w-full h-full"
-                      />
+                      {avatarUrl ? (
+                        <img 
+                          src={avatarUrl} 
+                          alt={profile?.username || 'User'} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <UserAvatar 
+                          user={profile}
+                          size="xl"
+                          className="w-full h-full"
+                        />
+                      )}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
                         <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                       </div>

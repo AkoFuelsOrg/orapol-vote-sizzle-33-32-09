@@ -10,12 +10,14 @@ interface UserAvatarProps {
   } | null;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  forceAvatarUrl?: string | null; // Add optional prop to force a specific avatar URL
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({ 
   user, 
   size = 'md',
-  className = '' 
+  className = '',
+  forceAvatarUrl = null
 }) => {
   const getSize = () => {
     switch (size) {
@@ -27,8 +29,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   };
 
-  // Get the appropriate avatar URL using our utility function
-  const avatarUrl = getAvatarUrl(user?.avatar_url);
+  // Use forced avatar URL if provided, otherwise get from user
+  const avatarUrl = forceAvatarUrl !== null 
+    ? getAvatarUrl(forceAvatarUrl) 
+    : getAvatarUrl(user?.avatar_url);
   
   const initials = user?.username 
     ? user.username.substring(0, 2).toUpperCase() 
