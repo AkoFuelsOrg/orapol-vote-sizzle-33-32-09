@@ -34,8 +34,8 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
   const mountedRef = useRef(true);
   const inputRef = useRef<HTMLInputElement>(null);
   const previousCommentsRef = useRef<VideoComment[]>([]);
-  
-  // Setup mount/unmount tracking
+  const commentUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -43,7 +43,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     };
   }, []);
 
-  // Memoize fetchComments to prevent unnecessary re-renders
   const fetchComments = useCallback(async () => {
     if (commentsFetched && !videoId) return;
     
@@ -51,18 +50,15 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     try {
       const commentsData = await fetchVideoComments(videoId);
       
-      // Get the total count to report back
       const { count } = await supabase
         .from('video_comments')
         .select('id', { count: 'exact', head: true })
         .eq('video_id', videoId);
       
-      // Report comment count back to parent
       if (onCommentCountChange && typeof count === 'number') {
         onCommentCountChange(count);
       }
       
-      // If user is logged in, check which comments they've liked
       if (user) {
         const { data: userLikes } = await supabase
           .from('video_comment_likes')
@@ -76,14 +72,12 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           });
         }
         
-        // Mark comments as liked by the user
         const commentsWithLikeStatus = commentsData.map(comment => ({
           ...comment,
           user_has_liked: likedCommentsMap.has(comment.id)
         }));
         
         if (mountedRef.current) {
-          // Only update if the comments have actually changed
           if (JSON.stringify(commentsWithLikeStatus) !== JSON.stringify(previousCommentsRef.current)) {
             setComments(commentsWithLikeStatus);
             previousCommentsRef.current = commentsWithLikeStatus;
@@ -91,14 +85,12 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           setCommentsFetched(true);
         }
       } else {
-        // If no user, no comments are liked
         const commentsWithLikeStatus = commentsData.map(comment => ({
           ...comment,
           user_has_liked: false
         }));
         
         if (mountedRef.current) {
-          // Only update if the comments have actually changed
           if (JSON.stringify(commentsWithLikeStatus) !== JSON.stringify(previousCommentsRef.current)) {
             setComments(commentsWithLikeStatus);
             previousCommentsRef.current = commentsWithLikeStatus;
@@ -118,18 +110,15 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     }
   }, [videoId, user, fetchVideoComments, onCommentCountChange, commentsFetched]);
 
-  // Fetch comments only once when component mounts or videoId changes
   useEffect(() => {
     if (videoId) {
       fetchComments();
     }
   }, [videoId, fetchComments]);
   
-  // Set up real-time subscription for comment changes
   useEffect(() => {
     if (!videoId) return;
     
-    // Subscribe to comment changes for this video
     const commentsChannel = supabase
       .channel(`video_comments_${videoId}`)
       .on('postgres_changes', 
@@ -140,22 +129,20 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           filter: `video_id=eq.${videoId}`
         },
         () => {
-          // Use throttling to prevent rapid UI updates
-          // This helps reduce flickering when multiple events occur in quick succession
-          if (window.commentUpdateTimeout) {
-            clearTimeout(window.commentUpdateTimeout);
+          if (commentUpdateTimeoutRef.current) {
+            clearTimeout(commentUpdateTimeoutRef.current);
           }
           
-          window.commentUpdateTimeout = setTimeout(() => {
+          commentUpdateTimeoutRef.current = setTimeout(() => {
             fetchComments();
-          }, 500); // Debounce updates by 500ms
+          }, 500);
         }
       )
       .subscribe();
     
     return () => {
-      if (window.commentUpdateTimeout) {
-        clearTimeout(window.commentUpdateTimeout);
+      if (commentUpdateTimeoutRef.current) {
+        clearTimeout(commentUpdateTimeoutRef.current);
       }
       supabase.removeChannel(commentsChannel);
     };
@@ -167,19 +154,17 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
       return;
     }
     
-    if (updatingLike === comment.id) return; // Prevent duplicate operations
+    if (updatingLike === comment.id) return;
     
     try {
       setUpdatingLike(comment.id);
       
-      // Find the comment in our state
       const updatedComments = [...comments];
       const commentIndex = updatedComments.findIndex(c => c.id === comment.id);
       
       if (commentIndex !== -1) {
         const isCurrentlyLiked = updatedComments[commentIndex].user_has_liked;
         
-        // Optimistic update
         const newLikesCount = isCurrentlyLiked 
           ? Math.max(0, (updatedComments[commentIndex].likes || 1) - 1) 
           : (updatedComments[commentIndex].likes || 0) + 1;
@@ -195,7 +180,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
         }
         
         if (isCurrentlyLiked) {
-          // Unlike the comment
           const { error } = await supabase
             .from('video_comment_likes')
             .delete()
@@ -203,20 +187,17 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
             .eq('user_id', user.id);
             
           if (error && mountedRef.current) {
-            // Revert optimistic update if server operation fails
             const revertedComments = [...comments];
             revertedComments[commentIndex] = comment;
             setComments(revertedComments);
             throw error;
           }
           
-          // Update likes count in video_comments table
           await supabase
             .from('video_comments')
             .update({ likes: newLikesCount })
             .eq('id', comment.id);
         } else {
-          // Like the comment
           const { error } = await supabase
             .from('video_comment_likes')
             .insert({
@@ -225,14 +206,12 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
             });
             
           if (error && mountedRef.current) {
-            // Revert optimistic update if server operation fails
             const revertedComments = [...comments];
             revertedComments[commentIndex] = comment;
             setComments(revertedComments);
             throw error;
           }
           
-          // Update likes count in video_comments table
           await supabase
             .from('video_comments')
             .update({ likes: newLikesCount })
@@ -246,7 +225,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
       }
     } finally {
       if (mountedRef.current) {
-        // Use setTimeout to prevent rapid toggling of the like state
         setTimeout(() => {
           setUpdatingLike(null);
         }, 300);
@@ -260,12 +238,11 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
       return;
     }
     
-    if (updatingLike === reply.id) return; // Prevent duplicate operations
+    if (updatingLike === reply.id) return;
     
     try {
       setUpdatingLike(reply.id);
       
-      // Find the parent comment and the reply
       const updatedComments = [...comments];
       const parentIndex = updatedComments.findIndex(c => c.id === parentId);
       
@@ -275,7 +252,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
         if (replyIndex !== -1) {
           const isCurrentlyLiked = updatedComments[parentIndex].replies![replyIndex].user_has_liked;
           
-          // Optimistic update
           const updatedReply = {
             ...updatedComments[parentIndex].replies![replyIndex],
             likes: isCurrentlyLiked 
@@ -291,7 +267,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           }
           
           if (isCurrentlyLiked) {
-            // Unlike the reply
             const { error } = await supabase
               .from('video_comment_likes')
               .delete()
@@ -299,13 +274,11 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
               .eq('user_id', user.id);
               
             if (error && mountedRef.current) {
-              // Revert on error
               const revertedComments = [...comments];
               setComments(revertedComments);
               throw error;
             }
             
-            // Update likes count in video_comments table
             const newLikesCount = Math.max(0, (reply.likes || 0) - 1);
             
             await supabase
@@ -313,7 +286,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
               .update({ likes: newLikesCount })
               .eq('id', reply.id);
           } else {
-            // Like the reply
             const { error } = await supabase
               .from('video_comment_likes')
               .insert({
@@ -322,13 +294,11 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
               });
               
             if (error && mountedRef.current) {
-              // Revert on error
               const revertedComments = [...comments];
               setComments(revertedComments);
               throw error;
             }
             
-            // Update likes count in video_comments table
             const newLikesCount = (reply.likes || 0) + 1;
             
             await supabase
@@ -368,7 +338,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           inputRef.current.value = '';
         }
         
-        // Update comment count
         const newCommentCount = comments.length + 1;
         if (onCommentCountChange) {
           onCommentCountChange(newCommentCount);
@@ -405,7 +374,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
       const newReply = await addVideoComment(videoId, replyContent);
       
       if (newReply && mountedRef.current) {
-        // Add parent_id to the reply
         const { error } = await supabase
           .from('video_comments')
           .update({ parent_id: replyingTo.id })
@@ -413,7 +381,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
         
         if (error) throw error;
         
-        // Add the reply to the comments array with user_has_liked = false
         const updatedComments = [...comments];
         const parentIndex = updatedComments.findIndex(c => c.id === replyingTo.id);
         
@@ -430,13 +397,11 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
           if (mountedRef.current) {
             setComments(updatedComments);
             
-            // Clear the reply form
             setReplyContent('');
             setReplyingTo(null);
             
-            // Update comment count
+            const newCommentCount = comments.length + 1;
             if (onCommentCountChange) {
-              const newCommentCount = comments.length + 1; // Include the new reply
               onCommentCountChange(newCommentCount);
             }
           }
@@ -454,7 +419,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
     }
   };
 
-  // If component is in initial loading state, show a minimal loader instead of flickering UI
   if (loading && !commentsFetched) {
     return (
       <div className="py-4 text-center">
@@ -554,7 +518,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
                       </Button>
                     </div>
                     
-                    {/* Reply Form */}
                     {replyingTo?.id === comment.id && (
                       <div className="mt-3 flex items-center space-x-2">
                         <Avatar className="h-6 w-6 flex-shrink-0">
@@ -604,7 +567,6 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({
                       </div>
                     )}
                     
-                    {/* Replies */}
                     {comment.replies && comment.replies.length > 0 && (
                       <div className="mt-3 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-3">
                         {comment.replies.map((reply) => (
