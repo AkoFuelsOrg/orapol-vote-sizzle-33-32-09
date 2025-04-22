@@ -335,6 +335,11 @@ const Profile: React.FC = () => {
       setCropperOpen(false);
       setOriginalImageUrl(null);
       setSelectedFileExt(null);
+
+      const timestamp = new Date().getTime();
+      const refreshedUrl = `${publicUrl}?t=${timestamp}`;
+      setLocalAvatarUrl(refreshedUrl);
+
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast.error('Failed to upload image');

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getAvatarUrl } from '../lib/avatar-utils';
 
@@ -19,6 +19,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   className = '',
   forceAvatarUrl = null
 }) => {
+  const [key, setKey] = useState(Date.now());
+  
+  // Force re-render when avatar URL changes
+  useEffect(() => {
+    setKey(Date.now());
+  }, [user?.avatar_url, forceAvatarUrl]);
+
   const getSize = () => {
     switch (size) {
       case 'sm': return 'h-8 w-8';
@@ -41,8 +48,9 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   return (
     <Avatar className={`${getSize()} ${className}`}>
       <AvatarImage 
+        key={key} // Add key to force re-render when URL changes
         src={avatarUrl} 
-        alt={user?.username || 'User'} 
+        alt={user?.username || 'User'}
       />
       <AvatarFallback className="bg-blue-100 text-blue-800 flex items-center justify-center">
         {initials}
