@@ -41,6 +41,7 @@ import MarketplaceProfile from "./pages/MarketplaceProfile";
 import Favourites from "./pages/Favourites";
 import Vibezone from "./pages/Vibezone";
 import UploadVideo from "./pages/UploadVideo";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,24 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   
   if (location.pathname === '/auth' || location.pathname === '/profile-setup' || location.pathname === '/find-friends') {
     return <>{children}</>;
+  }
+  
+  // Apply standard layout to privacy page but without right chat column
+  if (location.pathname === '/privacy') {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50">
+        <TopHeader />
+        <div className="flex flex-1">
+          {isDesktop && <Sidebar />}
+          {!isDesktop && <Header />}
+          <div className={`flex-1 ${isDesktop ? 'ml-64' : ''}`}>
+            <div className={`${isDesktop ? 'w-full mx-auto mt-16' : 'w-full mt-0'} px-4 py-6 max-w-6xl mx-auto`}>
+              <main className="flex-1 w-full">{children}</main>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   const showRightChat = isDesktop && 
@@ -224,6 +243,8 @@ const App = () => (
                             </ProtectedRoute>
                           }
                         />
+                        {/* Privacy page accessible to all users */}
+                        <Route path="/privacy" element={<Privacy />} />
                         {/* Removed the WatchVideo route - all functionality now in main Vibezone page */}
                         {/* Any /vibezone/watch/:id URLs will go to 404 now */}
                         <Route path="*" element={<NotFound />} />

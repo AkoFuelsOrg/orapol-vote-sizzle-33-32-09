@@ -538,7 +538,7 @@ const Index: React.FC = () => {
           <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
             <a href="#" className="hover:text-primary transition-colors">Terms</a>
             <span>•</span>
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
             <span>•</span>
             <a href="#" className="hover:text-primary transition-colors">Help</a>
           </div>

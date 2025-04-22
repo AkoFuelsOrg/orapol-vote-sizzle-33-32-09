@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
 import '@/styles/auth-overrides.css';
 import { Logo } from '@/components/Logo';
+import { Link } from 'react-router-dom';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -170,7 +171,7 @@ const Auth = () => {
         </Card>
         
         <div className="mt-6 text-center text-gray-500 text-sm animate-fade-in delay-200">
-          <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+          <p>By continuing, you agree to our Terms of Service and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link></p>
         </div>
       </div>
     </div>
