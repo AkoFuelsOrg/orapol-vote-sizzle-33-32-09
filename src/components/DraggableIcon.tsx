@@ -5,7 +5,10 @@ import { Film } from 'lucide-react';
 
 const DraggableIcon: React.FC = () => {
   const navigate = useNavigate();
-  const [position, setPosition] = useState({ x: window.innerWidth - 80, y: 80 });
+  const [position, setPosition] = useState({ 
+    x: window.innerWidth - 80,  // Positioned from the right
+    y: window.innerHeight - 80  // Positioned from the bottom 
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
@@ -49,13 +52,15 @@ const DraggableIcon: React.FC = () => {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
+        background: 'rgba(155, 135, 245, 0.8)', // Primary Purple with opacity
+        borderRadius: '50%',
+        padding: '12px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
       }}
       onMouseDown={handleMouseDown}
       onClick={() => !isDragging && navigate('/vibezone')}
     >
-      <div className="bg-primary p-3 rounded-full shadow-lg hover:shadow-xl backdrop-blur-sm transition-all duration-300">
-        <Film className="h-6 w-6 text-white" />
-      </div>
+      <Film className="h-6 w-6 text-white" />
     </div>
   );
 };
