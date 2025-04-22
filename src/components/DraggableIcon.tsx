@@ -52,10 +52,16 @@ const DraggableIcon: React.FC = () => {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        background: 'rgba(155, 135, 245, 0.8)', // Primary Purple with opacity
+        background: '#9b87f5',  // Vivid Purple from color palette
         borderRadius: '50%',
-        padding: '12px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        padding: '15px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        width: '50px',  // Explicit width
+        height: '50px', // Explicit height
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '2px solid rgba(255,255,255,0.3)'
       }}
       onMouseDown={handleMouseDown}
       onClick={() => !isDragging && navigate('/vibezone')}
