@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Film } from 'lucide-react';
+import { Video } from 'lucide-react';
+import { useBreakpoint } from '../hooks/use-mobile';
 
 const DraggableIcon: React.FC = () => {
   const navigate = useNavigate();
+  const breakpoint = useBreakpoint();
   const [position, setPosition] = useState({ 
     x: window.innerWidth - 80,  // Positioned from the right
     y: window.innerHeight - 80  // Positioned from the bottom 
@@ -44,6 +46,11 @@ const DraggableIcon: React.FC = () => {
     };
   }, [isDragging]);
 
+  // Only show on mobile and tablet
+  if (breakpoint === "desktop") {
+    return null;
+  }
+
   return (
     <div
       className={`fixed z-50 cursor-move transition-transform ${
@@ -52,12 +59,12 @@ const DraggableIcon: React.FC = () => {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        background: '#9b87f5',  // Vivid Purple from color palette
+        background: '#9b87f5',  // Primary Purple
         borderRadius: '50%',
         padding: '15px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-        width: '50px',  // Explicit width
-        height: '50px', // Explicit height
+        width: '50px',
+        height: '50px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -66,7 +73,7 @@ const DraggableIcon: React.FC = () => {
       onMouseDown={handleMouseDown}
       onClick={() => !isDragging && navigate('/vibezone')}
     >
-      <Film className="h-6 w-6 text-white" />
+      <Video className="h-6 w-6 text-white" />
     </div>
   );
 };
