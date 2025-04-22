@@ -6,6 +6,7 @@
 /**
  * Returns the appropriate avatar URL based on user data
  * Uses the default avatar if the user has no avatar set
+ * Adds a cache-busting parameter to ensure fresh images
  */
 export const getAvatarUrl = (avatarUrl?: string | null): string => {
   // Check if we have a valid avatar URL that's not a placeholder
@@ -17,12 +18,16 @@ export const getAvatarUrl = (avatarUrl?: string | null): string => {
       !avatarUrl.includes('dicebear')
   ) {
     // Add timestamp to force browser to reload the image and not use cache
-    if (avatarUrl.includes('supabase.co')) {
-      // For Supabase Storage URLs, add a timestamp parameter to prevent caching
-      const timestamp = new Date().getTime();
+    const timestamp = new Date().getTime();
+    
+    // For Supabase Storage URLs or any URLs, add a timestamp parameter to prevent caching
+    if (avatarUrl.includes('?')) {
+      // URL already has parameters, append timestamp
+      return `${avatarUrl}&t=${timestamp}`;
+    } else {
+      // URL has no parameters, add timestamp as first parameter
       return `${avatarUrl}?t=${timestamp}`;
     }
-    return avatarUrl;
   }
   
   // Return the default avatar image

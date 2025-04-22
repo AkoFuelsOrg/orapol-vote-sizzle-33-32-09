@@ -11,20 +11,22 @@ interface UserAvatarProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   forceAvatarUrl?: string | null; // Add optional prop to force a specific avatar URL
+  forceRefresh?: boolean; // Add a prop that can be used to force refresh
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({ 
   user, 
   size = 'md',
   className = '',
-  forceAvatarUrl = null
+  forceAvatarUrl = null,
+  forceRefresh = false
 }) => {
-  const [key, setKey] = useState(Date.now());
+  const [key, setKey] = useState(() => Date.now());
   
-  // Force re-render when avatar URL changes
+  // Force re-render when avatar URL changes or when forceRefresh is true
   useEffect(() => {
     setKey(Date.now());
-  }, [user?.avatar_url, forceAvatarUrl]);
+  }, [user?.avatar_url, forceAvatarUrl, forceRefresh]);
 
   const getSize = () => {
     switch (size) {
@@ -37,6 +39,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   };
 
   // Use forced avatar URL if provided, otherwise get from user
+  // The getAvatarUrl function now always adds a cache-busting timestamp
   const avatarUrl = forceAvatarUrl !== null 
     ? getAvatarUrl(forceAvatarUrl) 
     : getAvatarUrl(user?.avatar_url);

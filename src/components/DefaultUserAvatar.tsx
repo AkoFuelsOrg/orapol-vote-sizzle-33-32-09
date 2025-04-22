@@ -8,12 +8,14 @@ interface DefaultUserAvatarProps {
   user: User | null;
   size?: "sm" | "md" | "lg";
   className?: string;
+  forceRefresh?: boolean;
 }
 
 export const DefaultUserAvatar: React.FC<DefaultUserAvatarProps> = ({
   user,
   size,
   className,
+  forceRefresh,
 }) => {
   // Create a modified user object with the default avatar
   const userWithDefaultAvatar = user
@@ -28,6 +30,9 @@ export const DefaultUserAvatar: React.FC<DefaultUserAvatarProps> = ({
       user={userWithDefaultAvatar}
       size={size}
       className={className}
+      forceRefresh={forceRefresh}
     />
   );
 };
+
+export default DefaultUserAvatar;

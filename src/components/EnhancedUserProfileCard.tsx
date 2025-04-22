@@ -19,7 +19,7 @@ export const EnhancedUserProfileCard: React.FC<EnhancedUserProfileCardProps> = (
   isFollowing,
   isCurrentUser,
 }) => {
-  // Ensure the avatar URL is properly set
+  // Add timestamp to URL to ensure the latest avatar is displayed
   const enhancedAvatarUrl = getAvatarUrl(user.avatar_url);
   
   // Pass props that match UserProfileCard requirements
@@ -33,3 +33,5 @@ export const EnhancedUserProfileCard: React.FC<EnhancedUserProfileCardProps> = (
     />
   );
 };
+
+export default EnhancedUserProfileCard;
