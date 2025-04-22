@@ -1,8 +1,7 @@
-
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '../hooks/use-mobile';
-import { Search, MessageSquare, Bell, User, Heart, X } from 'lucide-react';
+import { Search, MessageSquare, Video, User, Heart, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useSupabase } from '../context/SupabaseContext';
@@ -19,14 +18,12 @@ const TopHeader: React.FC = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  // Don't render on mobile
   if (!isDesktop) {
     return null;
   }
 
   const handleSearchClick = () => {
     if (showSearch) {
-      // If search box is already visible, handle search submission
       if (searchQuery.trim()) {
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
@@ -34,7 +31,6 @@ const TopHeader: React.FC = () => {
         setShowSuggestions(false);
       }
     } else {
-      // If search box is not visible, show it
       setShowSearch(true);
       setTimeout(() => {
         searchInputRef.current?.focus();
@@ -141,7 +137,7 @@ const TopHeader: React.FC = () => {
             className="flex items-center text-white hover:bg-white/20 transition-all duration-300 rounded-full"
             size="icon"
           >
-            <Bell size={18} />
+            <Video size={18} />
           </Button>
           
           <Button 
@@ -171,7 +167,7 @@ const TopHeader: React.FC = () => {
                     <AvatarImage 
                       src={profile.avatar_url} 
                       alt={profile.username || "Profile"} 
-                      key={profile.avatar_url} // Add key to force re-render when URL changes
+                      key={profile.avatar_url}
                     />
                     <AvatarFallback><User size={18} /></AvatarFallback>
                   </Avatar>
