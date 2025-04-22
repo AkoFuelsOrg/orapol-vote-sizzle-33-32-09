@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
@@ -40,7 +39,7 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ 
   post, 
-  onPostUpdate, 
+  onPostUpdate,
   onPostDeleted 
 }) => {
   const { user } = useSupabase();
