@@ -659,7 +659,7 @@ const Vibezone: React.FC = () => {
   const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
-    <div className="bg-black min-h-screen">
+    <div className="bg-black min-h-screen w-full">
       <div className="fixed top-16 sm:top-4 left-0 w-full z-30 px-4 flex justify-between items-center">
         <div className="flex items-center">
           <h1 className="text-xl font-bold text-white flex items-center">
@@ -678,9 +678,9 @@ const Vibezone: React.FC = () => {
       </div>
 
       {shouldShowSkeleton ? (
-        <div className="pt-20 pb-16 px-2 flex flex-col items-center gap-4">
+        <div className="pt-20 pb-16 flex flex-col items-center gap-4">
           {[...Array(2)].map((_, index) => (
-            <div key={`skeleton-${index}`} className="relative w-full max-w-md aspect-[9/16] bg-gray-800 rounded-xl overflow-hidden">
+            <div key={`skeleton-${index}`} className="relative w-full aspect-[9/16] bg-gray-800 rounded-xl overflow-hidden">
               <Skeleton className="w-full h-full" />
               <div className="absolute bottom-0 left-0 w-full p-4">
                 <div className="flex items-center">
@@ -700,7 +700,7 @@ const Vibezone: React.FC = () => {
           ))}
         </div>
       ) : videos.length === 0 ? (
-        <div className="pt-20 pb-16 px-4 flex flex-col items-center justify-center min-h-[80vh] text-center">
+        <div className="pt-20 pb-16 flex flex-col items-center justify-center min-h-[80vh] text-center">
           <div className="bg-gray-800/50 p-8 rounded-xl">
             <FilmIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">No videos yet</h3>
@@ -724,11 +724,11 @@ const Vibezone: React.FC = () => {
               className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative will-change-transform"
               data-index={index}
             >
-              <div className="relative w-full h-full max-w-md mx-auto bg-black">
+              <div className="relative w-full h-full bg-black">
                 <video 
                   ref={(el) => handleVideoRef(el, index)}
                   src={video.video_url}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain bg-black"
                   loop
                   playsInline
                   muted={isMuted}
