@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
 import { Post } from '../lib/types';
@@ -6,6 +6,7 @@ import PostCard from '../components/PostCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { useBreakpoint } from '../hooks/use-mobile';
+import PostSkeleton from '../components/PostSkeleton';
 
 const Favourites = () => {
   const { user } = useSupabase();
@@ -203,8 +204,10 @@ const Favourites = () => {
         
         <TabsContent value="liked">
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <PostSkeleton key={i} />
+              ))}
             </div>
           ) : likedPosts.length > 0 ? (
             <div className="grid gap-6">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -7,6 +6,7 @@ import PollCard from './PollCard';
 import { Post, Poll, PollOption } from '../lib/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import PostSkeleton from './PostSkeleton';
 
 interface GroupPostsProps {
   groupId: string;
@@ -18,14 +18,12 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   const [loading, setLoading] = useState(true);
   const { user } = useSupabase();
   
-  // Update default avatar URL to use the new image
   const defaultAvatarUrl = "/lovable-uploads/d731e3a9-5c0f-466c-8468-16c2465aca8a.png";
   
   useEffect(() => {
     if (groupId) {
       fetchGroupPosts();
       
-      // Listen for group post creation events
       const handleGroupPostCreated = (event: CustomEvent) => {
         if (event.detail?.groupId === groupId) {
           console.log('Group post created event detected, refreshing content...');
@@ -35,7 +33,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
       
       window.addEventListener('group-post-created', handleGroupPostCreated as EventListener);
       
-      // Set up real-time subscription for posts and polls
       const postsChannel = supabase
         .channel('group_posts_changes')
         .on('postgres_changes', 
@@ -77,7 +74,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
   const fetchGroupPosts = async () => {
     setLoading(true);
     try {
-      // Fetch posts for the group
       const { data: postsData, error } = await supabase
         .from('posts')
         .select('*')
@@ -86,7 +82,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
       
       if (error) throw error;
       
-      // Fetch polls for the group
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select('*')
@@ -95,9 +90,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         
       if (pollsError) throw pollsError;
       
-      // Get like counts and user's like status for posts
       const formattedPosts = await Promise.all((postsData || []).map(async (post) => {
-        // Get profile data
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -108,7 +101,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           console.error('Error fetching profile:', profileError);
         }
         
-        // Get like count
         const { count: likeCount, error: likeCountError } = await supabase
           .from('post_likes')
           .select('*', { count: 'exact', head: true })
@@ -116,7 +108,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
         
         if (likeCountError) throw likeCountError;
         
-        // Check if current user has liked the post
         let userLiked = false;
         if (user) {
           const { data: userLike, error: userLikeError } = await supabase
@@ -130,7 +121,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           userLiked = !!userLike;
         }
         
-        // Format the post object to match the PostCard expectations
         return {
           id: post.id,
           content: post.content,
@@ -142,16 +132,14 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           author: {
             id: profileData?.id || 'unknown',
             name: profileData?.username || 'Anonymous',
-            avatar: profileData?.avatar_url || defaultAvatarUrl, // Use the consistent default avatar
+            avatar: profileData?.avatar_url || defaultAvatarUrl,
           },
           groupId: post.group_id,
           marketplace_id: post.marketplace_id,
         };
       }));
       
-      // Format polls
       const formattedPolls = await Promise.all((pollsData || []).map(async (poll) => {
-        // Get profile data
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -162,7 +150,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           console.error('Error fetching profile:', profileError);
         }
         
-        // Check if current user has voted on this poll
         let userVoted = null;
         if (user) {
           const { data: voteData, error: voteError } = await supabase
@@ -179,7 +166,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           }
         }
         
-        // Convert the raw options from the database to the PollOption type
         const typedOptions: PollOption[] = Array.isArray(poll.options) 
           ? poll.options.map((option: any) => ({
               id: option.id || '',
@@ -190,7 +176,6 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
             }))
           : [];
         
-        // Format the poll object to match the PollCard expectations
         return {
           id: poll.id,
           question: poll.question,
@@ -203,7 +188,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           author: {
             id: profileData?.id || 'unknown',
             name: profileData?.username || 'Anonymous',
-            avatar: profileData?.avatar_url || defaultAvatarUrl, // Use the consistent default avatar
+            avatar: profileData?.avatar_url || defaultAvatarUrl,
           },
           groupId: poll.group_id,
         };
@@ -219,20 +204,20 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
     }
   };
   
-  // Handle post deletion locally without requiring a refresh
   const handlePostDeleted = (postId: string) => {
     setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
   };
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <PostSkeleton key={i} />
+        ))}
       </div>
     );
   }
   
-  // Combine and sort posts and polls by creation date
   const combinedContent = [...posts, ...polls].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );

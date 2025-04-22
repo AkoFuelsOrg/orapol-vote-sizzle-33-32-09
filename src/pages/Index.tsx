@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Card } from '@/components/ui/card';
+import PostSkeleton from '../components/PostSkeleton';
 
 const Index: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -468,9 +469,10 @@ const Index: React.FC = () => {
         <CreatePostInterface />
         
         {loading ? (
-          <div className="flex flex-col justify-center items-center py-24">
-            <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
-            <p className="text-muted-foreground">Loading content...</p>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <PostSkeleton key={i} />
+            ))}
           </div>
         ) : allContent.length === 0 ? (
           <Card className="overflow-hidden border-none shadow-lg p-8 text-center bg-gradient-to-br from-white to-gray-50">
@@ -517,7 +519,6 @@ const Index: React.FC = () => {
             )}
           </div>
         )}
-      <AIChatModal isOpen={isAIChatOpen} onClose={() => setAIChatOpen(false)} />
       </main>
       
       <footer className="py-8 mt-16 border-t bg-gradient-to-b from-white to-gray-50">
