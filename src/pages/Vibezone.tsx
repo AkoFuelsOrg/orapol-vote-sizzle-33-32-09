@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -775,7 +774,7 @@ const Vibezone: React.FC = () => {
                   </div>
                   
                   {user && video.author?.id && user.id !== video.author.id && (
-                    <div className="flex space-x-2 mt-2">
+                    <div className="flex space-x-2 mt-2" style={{ display: 'none' }}>
                       <Button
                         onClick={(e) => handleFollowUser(e, video.author?.id || '')}
                         disabled={!!actionLoadingUsers[video.author?.id || '']}
