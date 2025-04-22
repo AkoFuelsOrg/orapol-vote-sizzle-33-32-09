@@ -27,58 +27,202 @@ const Index: React.FC = () => {
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
+  const [offset, setOffset] = useState(0);
+  const LIMIT = 300;
+  const [hasMore, setHasMore] = useState(true);
   
   useEffect(() => {
     fetchContent();
-    
-    const handlePostCreated = () => {
-      console.log('Post created event detected, refreshing content...');
-      fetchContent();
-    };
-    
-    window.addEventListener('post-created', handlePostCreated);
-    
-    const pollsChannel = supabase
-      .channel('public:polls')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'polls' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            fetchPollWithDetails(payload.new.id);
-          } else if (payload.eventType === 'DELETE') {
-            setPolls(prevPolls => prevPolls.filter(poll => poll.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            fetchPollWithDetails(payload.new.id);
-          }
-        }
-      )
-      .subscribe();
-    
-    const postsChannel = supabase
-      .channel('public:posts')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'posts' },
-        (payload: any) => {
-          if (payload.eventType === 'INSERT') {
-            fetchPostWithDetails(payload.new.id);
-          } else if (payload.eventType === 'DELETE') {
-            setPosts(prevPosts => prevPosts.filter(post => post.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            fetchPostWithDetails(payload.new.id);
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(pollsChannel);
-      supabase.removeChannel(postsChannel);
-      window.removeEventListener('post-created', handlePostCreated);
-    };
   }, []);
   
+  const fetchContent = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch polls
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          question,
+          options,
+          created_at,
+          total_votes,
+          comment_count,
+          image,
+          profiles:user_id(id, username, avatar_url)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(LIMIT);
+      
+      if (pollsError) throw pollsError;
+      
+      // Fetch posts with pagination
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          created_at,
+          image,
+          comment_count,
+          user_id
+        `)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + LIMIT - 1);
+      
+      if (postsError) throw postsError;
+      
+      // Set hasMore based on whether we got a full page of results
+      setHasMore(postsData.length === LIMIT);
+      
+      const profileIds = postsData ? postsData.map(post => post.user_id) : [];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', profileIds);
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+      
+      const profilesMap = new Map();
+      if (profilesData) {
+        profilesData.forEach(profile => {
+          profilesMap.set(profile.id, profile);
+        });
+      }
+      
+      let userVotes: Record<string, string> = {};
+      
+      if (user) {
+        const { data: votesData, error: votesError } = await supabase
+          .from('poll_votes')
+          .select('poll_id, option_id')
+          .eq('user_id', user.id);
+        
+        if (!votesError && votesData) {
+          userVotes = votesData.reduce((acc, vote) => {
+            acc[vote.poll_id] = vote.option_id;
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
+      
+      let userLikes: Record<string, boolean> = {};
+      
+      if (user) {
+        const { data: likesData, error: likesError } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+        
+        if (!likesError && likesData) {
+          userLikes = likesData.reduce((acc, like) => {
+            acc[like.post_id] = true;
+            return acc;
+          }, {} as Record<string, boolean>);
+        }
+      }
+      
+      const { data: likeCounts, error: likeCountsError } = await supabase
+        .from('post_likes')
+        .select('post_id');
+      
+      if (likeCountsError) throw likeCountsError;
+      
+      const likeCountMap: Record<string, number> = {};
+      if (likeCounts) {
+        likeCounts.forEach(like => {
+          likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
+        });
+      }
+      
+      const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
+        if (typeof jsonOptions === 'string') {
+          try {
+            return JSON.parse(jsonOptions);
+          } catch (error) {
+            console.error('Error parsing JSON options:', error);
+            return [];
+          }
+        }
+        
+        if (Array.isArray(jsonOptions)) {
+          return jsonOptions.map(opt => {
+            if (typeof opt === 'object' && opt !== null) {
+              const option = opt as Record<string, unknown>;
+              return {
+                id: String(option?.id || ''),
+                text: String(option?.text || ''),
+                votes: Number(option?.votes || 0),
+                imageUrl: option?.imageUrl as string | undefined
+              };
+            }
+            return { id: '', text: '', votes: 0 };
+          });
+        }
+        
+        return [];
+      };
+      
+      const formattedPolls: Poll[] = pollsData ? pollsData.map(poll => ({
+        id: poll.id,
+        question: poll.question,
+        options: convertJsonToPollOptions(poll.options),
+        author: {
+          id: poll.profiles.id,
+          name: poll.profiles.username || 'Anonymous',
+          avatar: poll.profiles.avatar_url || 'https://i.pravatar.cc/150'
+        },
+        createdAt: poll.created_at,
+        totalVotes: poll.total_votes || 0,
+        commentCount: poll.comment_count || 0,
+        userVoted: userVotes[poll.id],
+        image: poll.image
+      })) : [];
+      
+      const formattedPosts: Post[] = postsData ? postsData.map(post => {
+        const profile = profilesMap.get(post.user_id);
+        
+        return {
+          id: post.id,
+          content: post.content,
+          author: {
+            id: profile?.id || post.user_id,
+            name: profile?.username || 'Anonymous',
+            avatar: profile?.avatar_url || 'https://i.pravatar.cc/150'
+          },
+          createdAt: post.created_at,
+          image: post.image,
+          commentCount: post.comment_count || 0,
+          likeCount: likeCountMap[post.id] || 0,
+          userLiked: userLikes[post.id] || false
+        };
+      }) : [];
+      
+      // Update posts state with new data
+      if (offset === 0) {
+        setPosts(formattedPosts);
+      } else {
+        setPosts(prevPosts => [...prevPosts, ...formattedPosts]);
+      }
+      
+      setPolls(formattedPolls);
+    } catch (error: any) {
+      console.error('Error fetching content:', error);
+      toast.error('Failed to load content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    setOffset(prev => prev + LIMIT);
+    fetchContent();
+  };
+
   useEffect(() => {
     setAnimateItems(true);
   }, [polls, posts]);
@@ -249,155 +393,11 @@ const Index: React.FC = () => {
     }
   };
   
-  const fetchContent = async () => {
-    try {
-      setLoading(true);
-      
-      const { data: pollsData, error: pollsError } = await supabase
-        .from('polls')
-        .select(`
-          id,
-          question,
-          options,
-          created_at,
-          total_votes,
-          comment_count,
-          image,
-          profiles:user_id(id, username, avatar_url)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (pollsError) throw pollsError;
-      
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select(`
-          id,
-          content,
-          created_at,
-          image,
-          comment_count,
-          user_id
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (postsError) throw postsError;
-      
-      const profileIds = postsData ? postsData.map(post => post.user_id) : [];
-      
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url')
-        .in('id', profileIds);
-      
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
-      
-      const profilesMap = new Map();
-      if (profilesData) {
-        profilesData.forEach(profile => {
-          profilesMap.set(profile.id, profile);
-        });
-      }
-      
-      let userVotes: Record<string, string> = {};
-      
-      if (user) {
-        const { data: votesData, error: votesError } = await supabase
-          .from('poll_votes')
-          .select('poll_id, option_id')
-          .eq('user_id', user.id);
-        
-        if (!votesError && votesData) {
-          userVotes = votesData.reduce((acc, vote) => {
-            acc[vote.poll_id] = vote.option_id;
-            return acc;
-          }, {} as Record<string, string>);
-        }
-      }
-      
-      let userLikes: Record<string, boolean> = {};
-      
-      if (user) {
-        const { data: likesData, error: likesError } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', user.id);
-        
-        if (!likesError && likesData) {
-          userLikes = likesData.reduce((acc, like) => {
-            acc[like.post_id] = true;
-            return acc;
-          }, {} as Record<string, boolean>);
-        }
-      }
-      
-      const { data: likeCounts, error: likeCountsError } = await supabase
-        .from('post_likes')
-        .select('post_id');
-      
-      if (likeCountsError) throw likeCountsError;
-      
-      const likeCountMap: Record<string, number> = {};
-      if (likeCounts) {
-        likeCounts.forEach(like => {
-          likeCountMap[like.post_id] = (likeCountMap[like.post_id] || 0) + 1;
-        });
-      }
-      
-      const formattedPolls: Poll[] = pollsData ? pollsData.map(poll => ({
-        id: poll.id,
-        question: poll.question,
-        options: convertJsonToPollOptions(poll.options),
-        author: {
-          id: poll.profiles.id,
-          name: poll.profiles.username || 'Anonymous',
-          avatar: poll.profiles.avatar_url || 'https://i.pravatar.cc/150'
-        },
-        createdAt: poll.created_at,
-        totalVotes: poll.total_votes || 0,
-        commentCount: poll.comment_count || 0,
-        userVoted: userVotes[poll.id],
-        image: poll.image
-      })) : [];
-      
-      const formattedPosts: Post[] = postsData ? postsData.map(post => {
-        const profile = profilesMap.get(post.user_id);
-        
-        return {
-          id: post.id,
-          content: post.content,
-          author: {
-            id: profile?.id || post.user_id,
-            name: profile?.username || 'Anonymous',
-            avatar: profile?.avatar_url || 'https://i.pravatar.cc/150'
-          },
-          createdAt: post.created_at,
-          image: post.image,
-          commentCount: post.comment_count || 0,
-          likeCount: likeCountMap[post.id] || 0,
-          userLiked: userLikes[post.id] || false
-        };
-      }) : [];
-      
-      setPolls(formattedPolls);
-      setPosts(formattedPosts);
-    } catch (error: any) {
-      console.error('Error fetching content:', error);
-      toast.error('Failed to load content');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
   const allContent = [...polls, ...posts].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const loadMore = () => {
+  const loadMore2 = () => {
     setVisibleCount(prev => prev + 5);
   };
   
@@ -467,7 +467,7 @@ const Index: React.FC = () => {
         
         <CreatePostInterface />
         
-        {loading ? (
+        {loading && offset === 0 ? (
           <div className="flex flex-col justify-center items-center py-24">
             <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
             <p className="text-muted-foreground">Loading content...</p>
@@ -505,14 +505,19 @@ const Index: React.FC = () => {
               </div>
             ))}
             
-            {visibleCount < allContent.length && (
+            {hasMore && (
               <div className="flex justify-center pt-4 pb-2">
-                <button 
+                <Button
                   onClick={loadMore}
+                  disabled={loading}
                   className="flex items-center gap-2 px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 rounded-full transition-colors font-medium border border-gray-200 shadow-sm hover:shadow"
                 >
-                  Load More <ChevronDown size={18} className="text-primary" />
-                </button>
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Load More Posts'
+                  )}
+                </Button>
               </div>
             )}
           </div>
