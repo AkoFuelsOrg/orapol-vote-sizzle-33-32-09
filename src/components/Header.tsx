@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -13,7 +12,7 @@ import {
   Users,
   ShoppingBag,
   Heart,
-  Bell,
+  Video,
   PenLine,
   Mic,
   X
@@ -94,7 +93,7 @@ const Header: React.FC = () => {
 
   const navItems = [
     { href: '/', icon: <Home size={20} />, label: 'Home' },
-    { href: '/vibezone', icon: <MessageCircle size={20} />, label: 'Vibezone' },
+    { href: '/vibezone', icon: <Video size={20} />, label: 'Vibezone' },
     { href: '/groups', icon: <Users size={20} />, label: 'Groups' },
     { href: '/marketplaces', icon: <ShoppingBag size={20} />, label: 'Marketplaces' },
     { href: '/messages', icon: <MessageSquare size={20} />, label: 'Messages' },
