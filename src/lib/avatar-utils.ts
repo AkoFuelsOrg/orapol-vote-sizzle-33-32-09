@@ -17,8 +17,9 @@ export const getAvatarUrl = (avatarUrl?: string | null): string => {
       !avatarUrl.includes('placeholder') &&
       !avatarUrl.includes('dicebear')
   ) {
-    // Add timestamp to force browser to reload the image and not use cache
-    const timestamp = new Date().getTime();
+    // Generate a more robust timestamp that changes less frequently (every minute)
+    // This helps with browser caching without creating too many unique URLs
+    const timestamp = Math.floor(Date.now() / 60000);
     
     // For Supabase Storage URLs or any URLs, add a timestamp parameter to prevent caching
     if (avatarUrl.includes('?')) {

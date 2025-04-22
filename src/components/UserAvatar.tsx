@@ -21,11 +21,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   forceAvatarUrl = null,
   forceRefresh = false
 }) => {
-  const [key, setKey] = useState(() => Date.now());
+  // Use a more robust key that will definitely change when needed
+  const [key, setKey] = useState(() => `avatar-${Date.now()}`);
   
   // Force re-render when avatar URL changes or when forceRefresh is true
   useEffect(() => {
-    setKey(Date.now());
+    const newKey = `avatar-${Date.now()}-${forceRefresh ? 'refresh' : 'normal'}-${user?.avatar_url || 'none'}-${forceAvatarUrl || 'none'}`;
+    setKey(newKey);
   }, [user?.avatar_url, forceAvatarUrl, forceRefresh]);
 
   const getSize = () => {
@@ -51,7 +53,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   return (
     <Avatar className={`${getSize()} ${className}`}>
       <AvatarImage 
-        key={key} // Add key to force re-render when URL changes
+        key={key}
         src={avatarUrl} 
         alt={user?.username || 'User'}
       />

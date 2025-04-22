@@ -104,6 +104,11 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updates.username = data.username;
       }
       
+      if (data.avatar_url) {
+        avatarUrl = data.avatar_url;
+        updates.avatar_url = data.avatar_url;
+      }
+      
       if (data.profileFile) {
         const fileExt = data.profileFile.name.split('.').pop();
         const filePath = `${user.id}/profile-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -153,6 +158,16 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ...(avatarUrl && { avatar_url: avatarUrl }),
         ...(coverUrl && { cover_url: coverUrl }),
       }));
+      
+      const { data: refreshedProfile, error: refreshError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (!refreshError && refreshedProfile) {
+        setProfile(refreshedProfile);
+      }
       
       toast.success('Profile updated successfully');
     } catch (error: any) {
@@ -334,7 +349,6 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (data.user) {
         await createDefaultProfile(data.user.id);
         
-        // After successful signup, explicitly navigate to profile-setup
         navigate('/profile-setup');
         toast.success('Sign up successful! Please complete your profile.');
       }

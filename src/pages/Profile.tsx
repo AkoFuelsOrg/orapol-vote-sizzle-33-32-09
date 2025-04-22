@@ -42,7 +42,8 @@ const Profile: React.FC = () => {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [selectedFileExt, setSelectedFileExt] = useState<string | null>(null);
-  
+  const [avatarRefreshKey, setAvatarRefreshKey] = useState<number>(0);
+
   const profileFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   
@@ -327,18 +328,18 @@ const Profile: React.FC = () => {
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       const publicUrl = data.publicUrl;
       
-      setLocalAvatarUrl(publicUrl);
+      const timestamp = Date.now();
+      const avatarWithTimestamp = `${publicUrl}?t=${timestamp}`;
+      setLocalAvatarUrl(avatarWithTimestamp);
       
       await updateProfile({ avatar_url: publicUrl });
+      
+      setAvatarRefreshKey(prev => prev + 1);
       
       toast.success('Profile image updated successfully!');
       setCropperOpen(false);
       setOriginalImageUrl(null);
       setSelectedFileExt(null);
-
-      const timestamp = new Date().getTime();
-      const refreshedUrl = `${publicUrl}?t=${timestamp}`;
-      setLocalAvatarUrl(refreshedUrl);
 
     } catch (error) {
       console.error('Error uploading avatar:', error);
@@ -476,6 +477,7 @@ const Profile: React.FC = () => {
                     <>
                       {avatarUrl ? (
                         <img 
+                          key={`profile-avatar-${avatarRefreshKey}`}
                           src={avatarUrl} 
                           alt={profile?.username || 'User'} 
                           className="w-full h-full object-cover"
@@ -485,6 +487,7 @@ const Profile: React.FC = () => {
                           user={profile}
                           size="xl"
                           className="w-full h-full"
+                          forceRefresh={true}
                         />
                       )}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
