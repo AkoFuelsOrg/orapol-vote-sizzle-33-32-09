@@ -331,13 +331,6 @@ const Profile: React.FC = () => {
       
       await updateProfile({ avatar_url: publicUrl });
       
-      if (profile) {
-        setProfile({
-          ...profile,
-          avatar_url: publicUrl
-        });
-      }
-      
       toast.success('Profile image updated successfully!');
       setCropperOpen(false);
       setOriginalImageUrl(null);
@@ -431,9 +424,7 @@ const Profile: React.FC = () => {
       <Header />
       
       <main className="pt-16 pb-20 w-full">
-        {/* Profile card */}
         <div className="bg-white rounded-xl shadow-sm border border-border/50 mb-4 animate-fade-in w-full overflow-hidden mx-auto px-0">
-          {/* Cover image section */}
           <div className="relative w-full h-36 sm:h-48 bg-gray-200 group">
             {coverUrl ? (
               <img 
@@ -467,7 +458,6 @@ const Profile: React.FC = () => {
           
           <div className="px-4 py-4 sm:p-5">
             <div className="flex flex-col items-center -mt-12 sm:-mt-14">
-              {/* Profile image */}
               <div className="relative group z-10">
                 <div 
                   onClick={handleProfileImageClick}
@@ -507,7 +497,6 @@ const Profile: React.FC = () => {
                 />
               </div>
               
-              {/* Username and email */}
               {isEditing ? (
                 <div className="space-y-2">
                   <input 
@@ -615,7 +604,6 @@ const Profile: React.FC = () => {
               )}
             </div>
             
-            {/* Stats */}
             <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-1 sm:gap-4 justify-center max-w-xs sm:max-w-md mx-auto text-center">
               <div className="text-center bg-gray-50 rounded-lg py-2 px-1">
                 <p className="text-lg sm:text-2xl font-bold">{userPosts.length}</p>
@@ -633,7 +621,6 @@ const Profile: React.FC = () => {
           </div>
         </div>
         
-        {/* Content tabs */}
         <div className="px-2 sm:px-4">
           <Tabs defaultValue="all" className="w-full animate-fade-in">
             <div className="overflow-x-auto no-scrollbar pb-1">
@@ -747,7 +734,6 @@ const Profile: React.FC = () => {
         </div>
       </main>
       
-      {/* Image Cropper Dialog */}
       {originalImageUrl && (
         <ImageCropper 
           imageUrl={originalImageUrl}
