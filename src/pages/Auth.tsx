@@ -171,7 +171,7 @@ const Auth = () => {
         </Card>
         
         <div className="mt-6 text-center text-gray-500 text-sm animate-fade-in delay-200">
-          <p>By continuing, you agree to our Terms of Service and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link></p>
+          <p>By continuing, you agree to our <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link></p>
         </div>
       </div>
     </div>

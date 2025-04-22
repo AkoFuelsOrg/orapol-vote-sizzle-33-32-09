@@ -42,6 +42,7 @@ import Favourites from "./pages/Favourites";
 import Vibezone from "./pages/Vibezone";
 import UploadVideo from "./pages/UploadVideo";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,8 +62,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
   }
   
-  // Apply standard layout to privacy page but without right chat column
-  if (location.pathname === '/privacy') {
+  // Apply standard layout to privacy and terms pages but without right chat column
+  if (location.pathname === '/privacy' || location.pathname === '/terms') {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
         <TopHeader />
@@ -245,6 +246,8 @@ const App = () => (
                         />
                         {/* Privacy page accessible to all users */}
                         <Route path="/privacy" element={<Privacy />} />
+                        {/* Terms page accessible to all users */}
+                        <Route path="/terms" element={<Terms />} />
                         {/* Removed the WatchVideo route - all functionality now in main Vibezone page */}
                         {/* Any /vibezone/watch/:id URLs will go to 404 now */}
                         <Route path="*" element={<NotFound />} />
