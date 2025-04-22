@@ -136,6 +136,7 @@ const TopHeader: React.FC = () => {
             variant="ghost" 
             className="flex items-center text-white hover:bg-white/20 transition-all duration-300 rounded-full"
             size="icon"
+            onClick={() => navigate('/vibezone')}
           >
             <Video size={18} />
           </Button>
