@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Film } from 'lucide-react';
+import { Film, Move } from 'lucide-react';
 
 const DraggableIcon: React.FC = () => {
   const navigate = useNavigate();
@@ -32,6 +32,19 @@ const DraggableIcon: React.FC = () => {
     setIsDragging(false);
   };
 
+  // Update position on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition({
+        x: Math.min(position.x, window.innerWidth - 80),
+        y: Math.min(position.y, window.innerHeight - 80)
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [position]);
+
   useEffect(() => {
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
@@ -52,7 +65,7 @@ const DraggableIcon: React.FC = () => {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        background: '#3eb0ff',  // Updated primary color
+        background: '#3eb0ff',  // Primary color
         borderRadius: '50%',
         padding: '15px',
         boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
