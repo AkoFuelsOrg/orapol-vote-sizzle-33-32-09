@@ -10,8 +10,8 @@ interface UserAvatarProps {
   } | null;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
-  forceAvatarUrl?: string | null; // Add optional prop to force a specific avatar URL
-  forceRefresh?: boolean; // Add a prop that can be used to force refresh
+  forceAvatarUrl?: string | null;
+  forceRefresh?: boolean;
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({ 
@@ -56,6 +56,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         key={key}
         src={avatarUrl} 
         alt={user?.username || 'User'}
+        className="object-cover" // Added object-fit: cover style
       />
       <AvatarFallback className="bg-blue-100 text-blue-800 flex items-center justify-center">
         {initials}
