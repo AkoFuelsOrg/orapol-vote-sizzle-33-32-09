@@ -44,6 +44,7 @@ import Vibezone from "./pages/Vibezone";
 import UploadVideo from "./pages/UploadVideo";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,8 +64,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
   }
   
-  // Apply standard layout to privacy and terms pages but without right chat column
-  if (location.pathname === '/privacy' || location.pathname === '/terms') {
+  // Apply standard layout to privacy, terms, and help pages but without right chat column
+  if (location.pathname === '/privacy' || location.pathname === '/terms' || location.pathname === '/help') {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
         <TopHeader />
@@ -246,9 +247,10 @@ const App = () => (
                               </ProtectedRoute>
                             }
                           />
-                          {/* Privacy and Terms pages */}
+                          {/* Privacy, Terms, and Help pages */}
                           <Route path="/privacy" element={<Privacy />} />
                           <Route path="/terms" element={<Terms />} />
+                          <Route path="/help" element={<Help />} />
                           {/* Contact Us page */}
                           <Route path="/contact-us" element={<ContactUs />} />
                           <Route path="*" element={<NotFound />} />

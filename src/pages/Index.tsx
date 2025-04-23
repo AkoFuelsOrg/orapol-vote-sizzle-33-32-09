@@ -512,11 +512,11 @@ const Index: React.FC = () => {
             Connect, share and discover with Tuwaye
           </p>
           <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
+            <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
             <span>•</span>
             <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
             <span>•</span>
-            <a href="#" className="hover:text-primary transition-colors">Help</a>
+            <Link to="/help" className="hover:text-primary transition-colors">Help</Link>
           </div>
         </div>
       </footer>
