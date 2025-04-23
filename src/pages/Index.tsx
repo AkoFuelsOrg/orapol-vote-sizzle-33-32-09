@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import AIChatButton from '../components/AIChatButton';
+
 import { Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AIChatModal } from '@/components/AIChatModal';
@@ -403,41 +405,13 @@ const Index: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 pb-20">
+    <div className="w-full">
       <Header />
       <TopHeader />
       
       <main className={`${isDesktop ? 'pt-5' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
-        <div className="mb-6 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-1">Discover</h2>
-                <Sparkles className="h-5 w-5 text-primary/70 animate-pulse-slow" />
-              </div>
-              <p className="text-muted-foreground text-base">Join the conversation and share your thoughts</p>
-            </div>
-            
-            <Button 
-              variant="outline" 
-              className="hidden sm:flex bg-white hover:bg-primary/5 border border-primary/20 shadow-sm hover:shadow-md transition-all duration-300 group"
-              onClick={() => setAIChatOpen(true)}
-            >
-              <Bot className="w-5 h-5 mr-2 text-primary group-hover:scale-110 transition-transform" />
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent font-medium">
-                Tuwaye AI Gen 0
-              </span>
-            </Button>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            className="sm:hidden w-full mt-4 bg-white hover:bg-primary/5 border border-primary/20"
-            onClick={() => setAIChatOpen(true)}
-          >
-            <Bot className="w-5 h-5 mr-2 text-primary" />
-            Tuwaye AI Gen 0
-          </Button>
+        <div className="mb-6">
+          <AIChatButton />
         </div>
         
         {!user && (

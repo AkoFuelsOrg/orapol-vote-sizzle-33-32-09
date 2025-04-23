@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -234,6 +235,18 @@ const Header: React.FC = () => {
                             <span>{item.label}</span>
                           </Link>
                         ))}
+                        
+                        {/* Add the AI Chat Button */}
+                        <Button
+                          onClick={() => {
+                            setAiChatOpen(true); 
+                            setIsOpen(false);
+                          }}
+                          className="flex items-center space-x-3 p-3 rounded-lg w-full justify-start font-normal text-primary/80 hover:bg-primary/5 hover:text-primary transition-all duration-300"
+                        >
+                          <Bot className="flex-shrink-0" size={20} />
+                          <span>Tuwaye AI Gen 0</span>
+                        </Button>
                         
                         {user && !loading && (
                           <button
