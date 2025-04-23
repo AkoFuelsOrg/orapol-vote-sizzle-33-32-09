@@ -832,6 +832,7 @@ const Vibezone: React.FC = () => {
                   <button 
                     className="flex flex-col items-center"
                     onClick={(e) => video.id && handleShowComments(e, video.id)}
+                    style={{ display: 'none' }}
                   >
                     <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
                       <MessageCircle className="h-6 w-6 text-white" />
