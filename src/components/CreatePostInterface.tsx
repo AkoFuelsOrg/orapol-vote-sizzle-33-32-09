@@ -61,6 +61,7 @@ const CreatePostInterface = () => {
             <button 
               onClick={() => navigate('/create')}
               className="flex items-center justify-center gap-2 py-2.5 px-3 hover:bg-green-50 rounded-lg flex-1 transition-colors"
+              style={{ display: 'none' }}
             >
               <PenLine size={isMobile ? 18 : 20} className="text-green-500" />
               <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-700`}>Create Poll</span>
