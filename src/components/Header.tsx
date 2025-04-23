@@ -122,15 +122,6 @@ const Header: React.FC = () => {
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white/40 group-hover:w-full transition-all duration-300"></span>
                 </span>
               </Link>
-              <Button
-                onClick={() => setAiChatOpen(true)}
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2 text-white/90 hover:text-white hover:bg-white/20 transition-all duration-300 ml-2"
-              >
-                <Bot className="w-4 h-4" />
-                <span>AI Gen 0</span>
-              </Button>
             </div>
           ) : (
             <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xs relative">
