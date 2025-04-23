@@ -13,7 +13,8 @@ import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -38,10 +39,12 @@ const Sidebar = () => {
     { href: '/marketplaces', icon: ShoppingBag, label: 'Marketplaces' },
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
     { href: '/favourites', icon: Bookmark, label: 'Favourites' },
+    { href: '/help', icon: HelpCircle, label: 'Help & Support' },
   ];
   
   const unauthenticatedNavLinks = [
     { href: '/', icon: Home, label: 'Home' },
+    { href: '/help', icon: HelpCircle, label: 'Help & Support' },
   ];
   
   // Choose the appropriate navLinks based on authentication state
