@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image, Loader2, BarChart2, Smile, Crop } from 'lucide-react';
+import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -11,7 +12,7 @@ import CreatePollModal from './CreatePollModal';
 import EmojiPicker from './EmojiPicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import UserAvatar from './UserAvatar';
-import ImageCropper from './ImageCropper';
+// Removed import of ImageCropper
 
 export interface CreatePostModalProps {
   isOpen?: boolean;
@@ -43,8 +44,7 @@ const CreatePostModal = ({
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const [keepExistingImage, setKeepExistingImage] = useState(!!initialImage);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  const [cropperOpen, setCropperOpen] = useState(false);
-  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+  // Removed cropperOpen, originalImageUrl, and related state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user, profile } = useSupabase();
@@ -71,73 +71,23 @@ const CreatePostModal = ({
       return;
     }
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const imageUrl = event.target?.result as string;
-      setOriginalImageUrl(imageUrl);
-      setCropperOpen(true);
-    };
-    reader.readAsDataURL(file);
-  };
-  
-  const handleCropComplete = (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' });
-    setImageFile(croppedFile);
+    setImageFile(file);
     setKeepExistingImage(false);
     
     const reader = new FileReader();
     reader.onload = (event) => {
       setImagePreview(event.target?.result as string);
     };
-    reader.readAsDataURL(croppedBlob);
-    
-    setCropperOpen(false);
+    reader.readAsDataURL(file);
+    // No cropping modal logic
   };
   
-  const handleSkipCropping = (originalUrl: string) => {
-    const originalImageBlob = dataURLtoBlob(originalUrl);
-    if (originalImageBlob) {
-      const originalFile = new File([originalImageBlob], 'original-image.jpg', { 
-        type: originalImageBlob.type || 'image/jpeg' 
-      });
-      
-      setImageFile(originalFile);
-      setKeepExistingImage(false);
-      setImagePreview(originalUrl);
-    }
-    
-    setCropperOpen(false);
-  };
-  
-  const dataURLtoBlob = (dataURL: string): Blob | null => {
-    try {
-      if (dataURL.startsWith('data:')) {
-        const arr = dataURL.split(',');
-        const mime = arr[0].match(/:(.*?);/)?.[1];
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        
-        return new Blob([u8arr], { type: mime });
-      }
-      return null;
-    } catch (error) {
-      console.error('Error converting data URL to Blob:', error);
-      return null;
-    }
-  };
-  
-  const handleCropCancel = () => {
-    setCropperOpen(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-  
+  // handleCropComplete and handleSkipCropping removed since cropping is gone
+
+  // dataURLtoBlob unused, so removed
+
+  // handleCropCancel removed
+
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
@@ -333,17 +283,7 @@ const CreatePostModal = ({
                     className="w-full h-auto max-h-[300px] object-contain bg-gray-100"
                   />
                   <div className="absolute top-2 right-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOriginalImageUrl(imagePreview);
-                        setCropperOpen(true);
-                      }}
-                      className="bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-                      title="Crop image"
-                    >
-                      <Crop size={16} />
-                    </button>
+                    {/* Removed Crop image button */}
                     <button
                       type="button"
                       onClick={removeImage}
@@ -420,17 +360,10 @@ const CreatePostModal = ({
         />
       )}
 
-      {originalImageUrl && (
-        <ImageCropper 
-          imageUrl={originalImageUrl}
-          onCrop={handleCropComplete}
-          onCancel={handleCropCancel}
-          isOpen={cropperOpen}
-          onSkipCropping={handleSkipCropping}
-        />
-      )}
+      {/* Removed ImageCropper usage */}
     </>
   );
 };
 
 export default CreatePostModal;
+
