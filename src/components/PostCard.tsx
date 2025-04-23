@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
@@ -254,7 +255,11 @@ const PostCard: React.FC<PostCardProps> = ({
 
   const authorAvatarUrl = getAvatarUrl(post.author.avatar);
 
-  const closeExpandedImage = () => {
+  const closeExpandedImage = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsImageExpanded(false);
   };
 
@@ -402,14 +407,16 @@ const PostCard: React.FC<PostCardProps> = ({
               <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
                 <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white rounded-lg border-none shadow-2xl">
                   <DialogTitle className="sr-only">Post Image</DialogTitle>
-                  <button 
-                    onClick={closeExpandedImage}
-                    className="absolute top-2 right-2 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
-                    aria-label="Close"
-                    type="button"
-                  >
-                    <X size={24} />
-                  </button>
+                  <div className="absolute top-0 right-0 z-50 p-2">
+                    <button 
+                      onClick={closeExpandedImage}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-black/60 text-white hover:bg-black/80 focus:outline-none transition-colors"
+                      aria-label="Close"
+                      type="button"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
                   <div className="relative w-full overflow-hidden rounded-lg p-1">
                     <img 
                       src={post.image} 
@@ -570,14 +577,16 @@ const PostCard: React.FC<PostCardProps> = ({
               <Dialog open={isImageExpanded} onOpenChange={setIsImageExpanded}>
                 <DialogContent className="max-w-5xl p-0 overflow-hidden bg-white rounded-xl border-none shadow-2xl">
                   <DialogTitle className="sr-only">Post Image</DialogTitle>
-                  <button 
-                    onClick={closeExpandedImage}
-                    className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
-                    aria-label="Close"
-                    type="button"
-                  >
-                    <X size={24} />
-                  </button>
+                  <div className="absolute top-0 right-0 z-50 p-4">
+                    <button 
+                      onClick={closeExpandedImage}
+                      className="flex items-center justify-center w-10 h-10 rounded-full bg-black/60 text-white hover:bg-black/80 focus:outline-none transition-colors"
+                      aria-label="Close"
+                      type="button"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
                   <div className="relative w-full overflow-hidden rounded-lg p-1">
                     <img 
                       src={post.image} 
