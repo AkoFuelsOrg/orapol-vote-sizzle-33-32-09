@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
@@ -356,6 +355,7 @@ const PostCard: React.FC<PostCardProps> = ({
                 <AvatarImage 
                   src={authorAvatarUrl} 
                   alt={post.author.name} 
+                  className="object-cover"
                 />
                 <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
                   {post.author.name.charAt(0)}
@@ -552,6 +552,7 @@ const PostCard: React.FC<PostCardProps> = ({
                     <AvatarImage 
                       src={authorAvatarUrl} 
                       alt={post.author.name} 
+                      className="object-cover"
                     />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
                       {post.author.name.charAt(0)}
@@ -613,6 +614,7 @@ const PostCard: React.FC<PostCardProps> = ({
                     <AvatarImage 
                       src={authorAvatarUrl} 
                       alt={post.author.name} 
+                      className="object-cover"
                     />
                     <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/30 text-primary-foreground">
                       {post.author.name.charAt(0)}
