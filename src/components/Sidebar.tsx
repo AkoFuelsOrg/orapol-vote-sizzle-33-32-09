@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Home,
@@ -31,7 +30,6 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   
-  // Different navLinks based on authentication state
   const authenticatedNavLinks = [
     { href: '/', icon: Home, label: 'Home' },
     { href: '/vibezone', icon: Film, label: 'Vibezone' },
@@ -47,11 +45,8 @@ const Sidebar = () => {
     { href: '/help', icon: HelpCircle, label: 'Help & Support' },
   ];
   
-  // Choose the appropriate navLinks based on authentication state
   const navLinks = user ? authenticatedNavLinks : unauthenticatedNavLinks;
 
-  // Get the user's profile data directly from the profile object
-  // This is coming from useSupabase hook which already fetches the profile
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
   const coverUrl = profile?.cover_url || user?.user_metadata?.cover_url;
   const username = profile?.username || user?.user_metadata?.username || 'User';
@@ -64,7 +59,6 @@ const Sidebar = () => {
           collapsed ? 'w-20' : 'w-64'
         } bg-white border-r border-gray-100 flex flex-col shadow-lg mt-12 overflow-hidden z-30`}
       >
-        {/* Collapse Button */}
         <button 
           onClick={() => setCollapsed(!collapsed)}
           className="absolute top-4 right-3 h-8 w-8 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center z-10 hover:bg-gray-50 transition-all hover:scale-105 active:scale-95"
@@ -77,7 +71,6 @@ const Sidebar = () => {
         
         {user && (
           <div className="shrink-0 mt-4">
-            {/* Profile Cover Image */}
             <div className="relative h-28 overflow-hidden">
               {coverUrl ? (
                 <img 
@@ -89,15 +82,12 @@ const Sidebar = () => {
                 <div className="w-full h-full bg-gradient-to-br from-primary/30 via-purple-300/30 to-indigo-200/30" />
               )}
               
-              {/* Beautiful Glass Effect */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/50 backdrop-blur-[2px]"></div>
               
-              {/* Decorative Elements */}
               <div className="absolute -bottom-2 right-4 text-white/80">
                 <Sparkles className="h-4 w-4 animate-pulse-slow" />
               </div>
               
-              {/* Decorative Curve */}
               <div className="absolute -bottom-5 left-0 right-0 h-10 bg-white" style={{ 
                 borderTopLeftRadius: '50%', 
                 borderTopRightRadius: '50%',
@@ -116,11 +106,14 @@ const Sidebar = () => {
                 </div>
               )}
               
-              {/* Profile Avatar - Positioned to overlap the cover image */}
               <Avatar className={`border-4 border-white shadow-lg ${
                 collapsed ? 'h-14 w-14' : 'h-20 w-20'
               } transition-all duration-300 hover:border-primary/20`}>
-                <AvatarImage src={avatarUrl} alt={username} />
+                <AvatarImage 
+                  src={avatarUrl} 
+                  alt={username} 
+                  className="object-cover"
+                />
                 <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/60 text-primary-foreground text-lg font-medium">
                   {username.charAt(0).toUpperCase()}
                 </AvatarFallback>
@@ -154,7 +147,6 @@ const Sidebar = () => {
           </div>
         )}
 
-        {/* Show app logo for unauthenticated users */}
         {!user && (
           <div className="shrink-0 mt-8 flex justify-center">
             <div className="bg-white rounded-full p-1 shadow-sm mb-4 border border-primary/10">
@@ -192,7 +184,6 @@ const Sidebar = () => {
                       isHovered ? 'scale-110' : 'scale-100'
                     }`} />
                     
-                    {/* Animation dot */}
                     {isActive && (
                       <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 bg-primary rounded-full animate-pulse" />
                     )}
@@ -259,7 +250,6 @@ const Sidebar = () => {
               </>
             )
           ) : (
-            // Login button for unauthenticated users
             collapsed ? (
               <Button 
                 onClick={() => navigate('/auth')}
