@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useVibezone } from '@/context/VibezoneContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { VideoComment } from '@/lib/types';
 
 export function useVideoComments(videoId: string, onCommentCountChange?: (count: number) => void) {
@@ -79,9 +78,6 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
-      if (mountedRef.current) {
-        toast.error('Failed to load comments');
-      }
     } finally {
       if (mountedRef.current) {
         setLoading(false);
@@ -127,7 +123,6 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
 
   const handleLikeComment = async (comment: VideoComment) => {
     if (!user) {
-      toast.error('You must be logged in to like comments');
       return;
     }
     if (updatingLike === comment.id) return;
@@ -185,9 +180,6 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
       }
     } catch (error) {
       console.error('Error updating like status:', error);
-      if (mountedRef.current) {
-        toast.error('Failed to update like status');
-      }
     } finally {
       if (mountedRef.current) {
         setTimeout(() => {
@@ -199,7 +191,6 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
 
   const addComment = async (newComment: string, inputRef: React.RefObject<HTMLInputElement>) => {
     if (!user) {
-      toast.error('You must be logged in to comment');
       return;
     }
     if (newComment.trim() === '') return;
@@ -218,9 +209,6 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      if (mountedRef.current) {
-        toast.error('Failed to add comment');
-      }
     } finally {
       if (mountedRef.current) {
         setSubmittingComment(false);

@@ -9,7 +9,7 @@ import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+// Removing toast import to prevent alerts
 import { formatDistanceToNow } from 'date-fns';
 
 interface CommentAuthor {
@@ -86,7 +86,7 @@ const CommentSection: React.FC = () => {
         .is('parent_id', null)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) return;
       
       const commentsWithCounts = await Promise.all(data.map(async (comment) => {
         const { count, error: countError } = await supabase
@@ -148,7 +148,7 @@ const CommentSection: React.FC = () => {
       setComments(formattedComments);
     } catch (error: any) {
       console.error('Error loading comments:', error);
-      toast.error('Failed to load comments');
+      // Removed toast.error('Failed to load comments');
     } finally {
       setLoading(false);
     }
@@ -225,7 +225,7 @@ const CommentSection: React.FC = () => {
       setShowReplies(prev => ({ ...prev, [commentId]: true }));
     } catch (error: any) {
       console.error('Error loading replies:', error);
-      toast.error('Failed to load replies');
+      // Removed toast.error('Failed to load replies');
     } finally {
       setRepliesLoading(prev => ({ ...prev, [commentId]: false }));
     }
@@ -240,12 +240,12 @@ const CommentSection: React.FC = () => {
     e.preventDefault();
     
     if (!user) {
-      toast.error('Please sign in to comment');
+      // Removed toast.error('Please sign in to comment');
       return;
     }
     
     if (!commentContent.trim()) {
-      toast.error('Comment cannot be empty');
+      // Removed toast.error('Comment cannot be empty');
       return;
     }
     
@@ -291,10 +291,10 @@ const CommentSection: React.FC = () => {
       }
       
       setCommentContent('');
-      toast.success('Comment added successfully');
+      // Removed toast.success('Comment added successfully');
     } catch (error: any) {
       console.error('Error submitting comment:', error);
-      toast.error(error.message || 'Failed to add comment');
+      // Removed toast.error(error.message || 'Failed to add comment');
     } finally {
       setSubmitting(false);
     }
@@ -302,7 +302,7 @@ const CommentSection: React.FC = () => {
 
   const handleLikeComment = async (commentId: string, currentlyLiked: boolean) => {
     if (!user) {
-      toast.error('Please sign in to like comments');
+      // Removed toast.error('Please sign in to like comments');
       return;
     }
     
@@ -355,18 +355,18 @@ const CommentSection: React.FC = () => {
       );
     } catch (error: any) {
       console.error('Error liking comment:', error);
-      toast.error(error.message || 'Failed to update like status');
+      // Removed toast.error(error.message || 'Failed to update like status');
     }
   };
 
   const handleSubmitReply = async (parentId: string) => {
     if (!user) {
-      toast.error('Please sign in to reply');
+      // Removed toast.error('Please sign in to reply');
       return;
     }
     
     if (!replyContent.trim()) {
-      toast.error('Reply cannot be empty');
+      // Removed toast.error('Reply cannot be empty');
       return;
     }
     
@@ -426,14 +426,14 @@ const CommentSection: React.FC = () => {
       
       setReplyContent('');
       setReplyingTo(null);
-      toast.success('Reply added successfully');
+      // Removed toast.success('Reply added successfully');
       
       if (!showReplies[parentId]) {
         loadReplies(parentId);
       }
     } catch (error: any) {
       console.error('Error submitting reply:', error);
-      toast.error(error.message || 'Failed to add reply');
+      // Removed toast.error(error.message || 'Failed to add reply');
     } finally {
       setSubmitting(false);
     }
