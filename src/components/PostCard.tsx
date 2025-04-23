@@ -406,6 +406,7 @@ const PostCard: React.FC<PostCardProps> = ({
                     onClick={closeExpandedImage}
                     className="absolute top-2 right-2 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
                     aria-label="Close"
+                    type="button"
                   >
                     <X size={24} />
                   </button>
@@ -573,6 +574,7 @@ const PostCard: React.FC<PostCardProps> = ({
                     onClick={closeExpandedImage}
                     className="absolute top-4 right-4 z-50 text-white bg-black/40 p-2 rounded-full hover:bg-black/60 focus:outline-none"
                     aria-label="Close"
+                    type="button"
                   >
                     <X size={24} />
                   </button>
