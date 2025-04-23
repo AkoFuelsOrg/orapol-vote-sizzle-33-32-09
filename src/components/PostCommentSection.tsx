@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Loader2, Smile } from 'lucide-react';
+import { toast } from 'sonner';
 import PostComment from './PostComment';
 import EmojiPicker from './EmojiPicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -63,7 +65,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
         .eq('post_id', postId)
         .is('parent_id', null);
       
-      if (countError) return;
+      if (countError) throw countError;
       
       setTotalComments(count || 0);
       updateCommentCount(count || 0);
@@ -169,6 +171,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       setComments(formattedComments);
     } catch (error: any) {
       console.error('Error loading comments:', error);
+      toast.error('Failed to load comments');
     } finally {
       setLoading(false);
     }
@@ -181,10 +184,11 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
     }
   };
 
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitComment = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     
     if (!user) {
+      toast.error('Please sign in to comment');
       return;
     }
     
@@ -234,8 +238,10 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       }
       
       setCommentContent('');
+      toast.success('Comment added');
     } catch (error: any) {
       console.error('Error submitting comment:', error);
+      toast.error(error.message || 'Failed to add comment');
     } finally {
       setSubmitting(false);
     }
@@ -243,6 +249,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
 
   const handleLikeComment = async (commentId: string, currentlyLiked: boolean) => {
     if (!user) {
+      toast.error('Please sign in to like comments');
       return;
     }
     
@@ -295,6 +302,7 @@ const PostCommentSection: React.FC<PostCommentSectionProps> = ({
       );
     } catch (error: any) {
       console.error('Error liking comment:', error);
+      toast.error(error.message || 'Failed to update like status');
     }
   };
 
