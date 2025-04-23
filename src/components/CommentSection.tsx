@@ -526,9 +526,14 @@ const CommentSection: React.FC = () => {
             <div key={comment.id} className="border rounded-lg p-4 bg-card">
               <div className="flex gap-3">
                 <Avatar>
-                  <AvatarImage src={comment.author.avatar_url || ''} alt={comment.author.username || ''} />
+                  <AvatarImage 
+                    src={comment.author.avatar_url || ''} 
+                    alt={comment.author.username || ''} 
+                    className="object-cover"
+                  />
                   <AvatarFallback>{comment.author.username?.substring(0, 2).toUpperCase() || '??'}</AvatarFallback>
                 </Avatar>
+                
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <div>
@@ -631,9 +636,14 @@ const CommentSection: React.FC = () => {
                     <div key={reply.id} className="mt-4 border-t pt-3">
                       <div className="flex gap-2">
                         <Avatar className="h-7 w-7">
-                          <AvatarImage src={reply.author.avatar_url || ''} alt={reply.author.username || ''} />
+                          <AvatarImage 
+                            src={reply.author.avatar_url || ''} 
+                            alt={reply.author.username || ''} 
+                            className="object-cover"
+                          />
                           <AvatarFallback>{reply.author.username?.substring(0, 2).toUpperCase() || '??'}</AvatarFallback>
                         </Avatar>
+                        
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <div>

@@ -250,7 +250,11 @@ const PostComment: React.FC<PostCommentProps> = ({
     <div className="flex py-2">
       <Link to={`/user/${comment.author.id}`} className="flex-shrink-0 mr-2">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={comment.author.avatar_url || ''} alt={comment.author.username || ''} />
+          <AvatarImage 
+            src={comment.author.avatar_url || ''} 
+            alt={comment.author.username || ''} 
+            className="object-cover"
+          />
           <AvatarFallback>{comment.author.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
         </Avatar>
       </Link>
@@ -306,7 +310,11 @@ const PostComment: React.FC<PostCommentProps> = ({
                         <div key={reply.id} className="flex py-2">
                           <Link to={`/user/${reply.author.id}`} className="flex-shrink-0 mr-2">
                             <Avatar className="h-6 w-6">
-                              <AvatarImage src={reply.author.avatar_url || ''} alt={reply.author.username || ''} />
+                              <AvatarImage 
+                                src={reply.author.avatar_url || ''} 
+                                alt={reply.author.username || ''} 
+                                className="object-cover"
+                              />
                               <AvatarFallback>{reply.author.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
                             </Avatar>
                           </Link>
@@ -349,7 +357,11 @@ const PostComment: React.FC<PostCommentProps> = ({
             {showReplyForm && user && (
               <form onSubmit={handleSubmitReply} className="mt-2 flex items-center">
                 <Avatar className="h-6 w-6 mr-2">
-                  <AvatarImage src={profile?.avatar_url || ''} />
+                  <AvatarImage 
+                    src={profile?.avatar_url || ''} 
+                    alt={profile?.username || ''} 
+                    className="object-cover"
+                  />
                   <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || '?'}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 flex items-center">
