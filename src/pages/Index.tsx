@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import AIChatButton from '../components/AIChatButton';
 
 import { Bot } from 'lucide-react';
