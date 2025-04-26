@@ -127,6 +127,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ onSelectConversatio
               <AvatarImage 
                 src={conversation.avatar_url || `https://i.pravatar.cc/150?u=${conversation.other_user_id}`} 
                 alt={conversation.username} 
+                className="object-cover"
               />
               <AvatarFallback className="bg-primary/10 text-primary">
                 {conversation.username?.charAt(0).toUpperCase()}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabase } from '../context/SupabaseContext';
 import { supabase } from '../integrations/supabase/client';
@@ -407,7 +406,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                       >
                         {!isOutgoing && showAvatar && (
                           <Avatar className="h-9 w-9 mr-2 mt-1">
-                            <AvatarImage src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`} />
+                            <AvatarImage 
+                              src={profile.avatar_url || `https://i.pravatar.cc/150?u=${profile.id}`}
+                              className="object-cover" 
+                            />
                             <AvatarFallback>{profile.username?.charAt(0).toUpperCase()}</AvatarFallback>
                           </Avatar>
                         )}
@@ -426,7 +428,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
                         
                         {isOutgoing && showAvatar && (
                           <Avatar className="h-9 w-9 ml-2 mt-1 border-2 border-red-100">
-                            <AvatarImage src={user?.user_metadata?.avatar_url || ''} />
+                            <AvatarImage 
+                              src={user?.user_metadata?.avatar_url || ''}
+                              className="object-cover"
+                            />
                             <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                           </Avatar>
                         )}
