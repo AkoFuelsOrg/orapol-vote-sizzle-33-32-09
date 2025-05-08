@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Film } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import CreatePostModal from './CreatePostModal';
 
 const DraggableIcon: React.FC = () => {
@@ -88,7 +88,7 @@ const DraggableIcon: React.FC = () => {
         onMouseDown={handleMouseDown}
         onClick={handleClick}
       >
-        <Film className="h-6 w-6 text-white" />
+        <Plus className="h-6 w-6 text-white" />
       </div>
       
       <CreatePostModal 
