@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AIChatButton from '../components/AIChatButton';
 
@@ -496,7 +495,7 @@ const Index: React.FC = () => {
         )}
       </main>
       
-      <footer className="py-8 mt-16 border-t bg-gradient-to-b from-white to-gray-50">
+      <footer className="py-8 mt-16 border-t bg-gradient-to-b from-white to-gray-50 mb-16 md:mb-0">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
             <div className="p-1.5 rounded-full bg-primary/10 shadow-inner">

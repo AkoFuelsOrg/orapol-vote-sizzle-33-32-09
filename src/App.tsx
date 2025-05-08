@@ -19,6 +19,7 @@ import NetworkStatusHandler from "./components/NetworkStatusHandler";
 import { useBreakpoint } from "./hooks/use-mobile";
 import AppWrapper from "./components/AppWrapper";
 import ContactUs from "./pages/ContactUs";
+import MobileTabMenu from "./components/MobileTabMenu";
 
 // Import all page components
 import Index from "./pages/Index";
@@ -78,6 +79,7 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
         </div>
+        {!isDesktop && <MobileTabMenu />}
       </div>
     );
   }
@@ -101,12 +103,13 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
         {isDesktop && <Sidebar />}
         {!isDesktop && <Header />}
         <div className={`flex-1 ${isDesktop ? 'ml-64' : ''} ${showRightChat ? 'mr-80' : ''}`}>
-          <div className={`${isDesktop ? 'w-full mx-auto mt-16' : 'w-full mt-0'} px-4 py-6 ${!isFullWidthPage && !showRightChat ? 'max-w-6xl mx-auto' : ''}`}>
+          <div className={`${isDesktop ? 'w-full mx-auto mt-16' : 'w-full mt-0 pb-16'} px-4 py-6 ${!isFullWidthPage && !showRightChat ? 'max-w-6xl mx-auto' : ''}`}>
             <main className="flex-1 w-full">{children}</main>
           </div>
         </div>
         {showRightChat && <RightChatColumn />}
       </div>
+      {!isDesktop && <MobileTabMenu />}
     </div>
   );
 };
