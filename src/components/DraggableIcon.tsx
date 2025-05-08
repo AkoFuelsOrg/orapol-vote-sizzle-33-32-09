@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Film } from 'lucide-react';
-import { CreatePostModal } from './CreatePostModal';
+import CreatePostModal from './CreatePostModal';
 
 const DraggableIcon: React.FC = () => {
   const [position, setPosition] = useState({ 
