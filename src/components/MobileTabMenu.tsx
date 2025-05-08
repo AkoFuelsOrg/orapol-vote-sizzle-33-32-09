@@ -28,48 +28,63 @@ const MobileTabMenu: React.FC = () => {
           <Link 
             to="/" 
             className={cn(
-              "flex flex-col items-center justify-center w-full h-full text-xs", 
-              path === '/' ? "text-primary" : "text-gray-500"
+              "flex flex-col items-center justify-center w-full h-full text-xs transition-colors", 
+              path === '/' ? "text-primary font-medium" : "text-gray-500"
             )}
           >
-            <Home size={24} className={cn(path === '/' ? "text-primary" : "text-gray-500")} />
-            <span className="mt-1">Home</span>
+            <div className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
+              path === '/' ? "bg-primary/10" : "bg-transparent"
+            )}>
+              <Home size={22} className={cn(path === '/' ? "text-primary" : "text-gray-500")} />
+            </div>
+            <span className="text-[10px]">Home</span>
           </Link>
           
           <Link 
             to="/vibezone" 
             className={cn(
-              "flex flex-col items-center justify-center w-full h-full text-xs", 
-              path === '/vibezone' || path.startsWith('/vibezone/') ? "text-primary" : "text-gray-500"
+              "flex flex-col items-center justify-center w-full h-full text-xs transition-colors", 
+              path === '/vibezone' || path.startsWith('/vibezone/') ? "text-primary font-medium" : "text-gray-500"
             )}
           >
-            <Video size={24} className={cn(
-              path === '/vibezone' || path.startsWith('/vibezone/') ? "text-primary" : "text-gray-500"
-            )} />
-            <span className="mt-1">Vibezone</span>
+            <div className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
+              path === '/vibezone' || path.startsWith('/vibezone/') ? "bg-primary/10" : "bg-transparent"
+            )}>
+              <Video size={22} className={cn(
+                path === '/vibezone' || path.startsWith('/vibezone/') ? "text-primary" : "text-gray-500"
+              )} />
+            </div>
+            <span className="text-[10px]">Vibezone</span>
           </Link>
           
           <Link 
             to={user ? "/messages" : "/auth"} 
             className={cn(
-              "flex flex-col items-center justify-center w-full h-full text-xs", 
-              path === '/messages' || path.startsWith('/messages/') ? "text-primary" : "text-gray-500"
+              "flex flex-col items-center justify-center w-full h-full text-xs transition-colors", 
+              path === '/messages' || path.startsWith('/messages/') ? "text-primary font-medium" : "text-gray-500"
             )}
           >
-            <MessageSquare size={24} className={cn(
-              path === '/messages' || path.startsWith('/messages/') ? "text-primary" : "text-gray-500"
-            )} />
-            <span className="mt-1">Messages</span>
+            <div className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
+              path === '/messages' || path.startsWith('/messages/') ? "bg-primary/10" : "bg-transparent"
+            )}>
+              <MessageSquare size={22} className={cn(
+                path === '/messages' || path.startsWith('/messages/') ? "text-primary" : "text-gray-500"
+              )} />
+            </div>
+            <span className="text-[10px]">Messages</span>
           </Link>
           
           <button 
             onClick={openAIChat}
-            className="flex flex-col items-center justify-center w-full h-full text-xs text-gray-500"
+            className="flex flex-col items-center justify-center w-full h-full text-xs text-gray-500 transition-colors"
           >
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10">
-              <span className="text-primary font-bold text-sm">AI</span>
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 mb-0.5">
+              <span className="text-primary font-bold text-base">AI</span>
             </div>
-            <span className="mt-1">TGL AI</span>
+            <span className="text-[10px]">TGL AI</span>
           </button>
         </div>
       </div>
