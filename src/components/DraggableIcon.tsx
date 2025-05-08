@@ -1,16 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Film, Move } from 'lucide-react';
+import { Film } from 'lucide-react';
+import { CreatePostModal } from './CreatePostModal';
 
 const DraggableIcon: React.FC = () => {
-  const navigate = useNavigate();
   const [position, setPosition] = useState({ 
     x: window.innerWidth - 80,  // Positioned from the right
     y: window.innerHeight - 80  // Positioned from the bottom 
   });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -30,6 +30,12 @@ const DraggableIcon: React.FC = () => {
 
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  const handleClick = () => {
+    if (!isDragging) {
+      setIsPostModalOpen(true);
+    }
   };
 
   // Update position on window resize
@@ -58,31 +64,42 @@ const DraggableIcon: React.FC = () => {
   }, [isDragging]);
 
   return (
-    <div
-      className={`fixed z-50 cursor-move transition-transform ${
-        isDragging ? 'scale-110' : 'hover:scale-105'
-      }`}
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        background: '#3eb0ff',  // Primary color
-        borderRadius: '50%',
-        padding: '15px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-        width: '50px',  // Explicit width
-        height: '50px', // Explicit height
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: '2px solid rgba(255,255,255,0.3)',
-        position: 'fixed',  // Ensure it stays in the viewport
-        margin: '20px'  // Add some margin from the edges
-      }}
-      onMouseDown={handleMouseDown}
-      onClick={() => !isDragging && navigate('/vibezone')}
-    >
-      <Film className="h-6 w-6 text-white" />
-    </div>
+    <>
+      <div
+        className={`fixed z-50 cursor-move transition-transform ${
+          isDragging ? 'scale-110' : 'hover:scale-105'
+        }`}
+        style={{
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          background: '#3eb0ff',  // Primary color
+          borderRadius: '50%',
+          padding: '15px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          width: '50px',  // Explicit width
+          height: '50px', // Explicit height
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '2px solid rgba(255,255,255,0.3)',
+          position: 'fixed',  // Ensure it stays in the viewport
+          margin: '20px'  // Add some margin from the edges
+        }}
+        onMouseDown={handleMouseDown}
+        onClick={handleClick}
+      >
+        <Film className="h-6 w-6 text-white" />
+      </div>
+      
+      <CreatePostModal 
+        isOpen={isPostModalOpen} 
+        onClose={() => setIsPostModalOpen(false)}
+        onPostUpdate={() => {
+          // Dispatch event to refresh posts if needed
+          window.dispatchEvent(new CustomEvent('post-created'));
+        }}
+      />
+    </>
   );
 };
 
