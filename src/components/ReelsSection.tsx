@@ -3,6 +3,7 @@ import React from 'react';
 import { Film } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useBreakpoint } from '@/hooks/use-mobile';
 
 interface ReelProps {
   imageUrl: string;
@@ -33,6 +34,9 @@ const ReelItem: React.FC<ReelProps> = ({ imageUrl, username, isActive = false })
 };
 
 const ReelsSection: React.FC = () => {
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
+  
   // Sample reel data
   const reels = [
     { id: 1, username: "ridelink_inc", imageUrl: "/lovable-uploads/02736388-a56a-464b-b977-6c8483604473.png", isActive: true },
@@ -42,6 +46,9 @@ const ReelsSection: React.FC = () => {
     { id: 5, username: "samanta", imageUrl: "https://source.unsplash.com/random/300x300?portrait=5" },
     { id: 6, username: "jessica", imageUrl: "https://source.unsplash.com/random/300x300?portrait=6" },
   ];
+
+  // Display all reels on desktop, but only 4 on mobile
+  const displayReels = isMobile ? reels.slice(0, 4) : reels;
 
   return (
     <div className="mb-6 bg-white rounded-lg p-4 shadow-sm">
@@ -55,7 +62,7 @@ const ReelsSection: React.FC = () => {
         </Link>
       </div>
       <div className="flex overflow-x-auto gap-4 pb-2 no-scrollbar">
-        {reels.map((reel) => (
+        {displayReels.map((reel) => (
           <ReelItem
             key={reel.id}
             username={reel.username}
