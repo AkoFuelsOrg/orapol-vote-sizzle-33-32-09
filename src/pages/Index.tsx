@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AIChatButton from '../components/AIChatButton';
 import { Bot } from 'lucide-react';
@@ -410,7 +409,7 @@ const Index: React.FC = () => {
       <Header />
       <TopHeader />
       
-      <main className={`${isDesktop ? 'pt-5' : 'pt-20'} px-4 max-w-3xl mx-auto`}>
+      <main className={`${isDesktop ? 'pt-5' : 'pt-20'} px-0 max-w-3xl mx-auto`}>
         <div className="mb-6">
           <AIChatButton />
         </div>
@@ -500,7 +499,7 @@ const Index: React.FC = () => {
       </main>
       
       <footer className="py-8 mt-16 border-t bg-gradient-to-b from-white to-gray-50 mb-16 md:mb-0">
-        <div className="max-w-3xl mx-auto px-4 text-center">
+        <div className="max-w-3xl mx-auto px-0 text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
             <div className="p-1.5 rounded-full bg-primary/10 shadow-inner">
               <img 
