@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -103,7 +104,11 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
         {isDesktop && <Sidebar />}
         {!isDesktop && <Header />}
         <div className={`flex-1 ${isDesktop ? 'ml-64' : ''} ${showRightChat ? 'mr-80' : ''}`}>
-          <div className={`${isDesktop ? 'w-full mx-auto mt-16' : 'w-full mt-0 pb-16'} px-4 py-6 ${!isFullWidthPage && !showRightChat ? 'max-w-6xl mx-auto' : ''}`}>
+          <div className={`
+            ${isDesktop ? 'w-full mx-auto mt-16' : 'w-full mt-0 pb-16'} 
+            ${!isDesktop ? 'px-2' : 'px-4'} py-6 
+            ${!isFullWidthPage && !showRightChat && isDesktop ? 'max-w-6xl mx-auto' : ''}
+          `}>
             <main className="flex-1 w-full">{children}</main>
           </div>
         </div>
