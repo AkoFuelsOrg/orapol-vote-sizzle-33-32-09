@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MessageSquare, Video } from 'lucide-react';
+import { Home, MessageSquare, Video, Film } from 'lucide-react';
 import { useSupabase } from '../context/SupabaseContext';
 import { cn } from '@/lib/utils';
 import { AIChatModal } from './AIChatModal';
@@ -59,6 +59,34 @@ const MobileTabMenu: React.FC = () => {
             <span className="text-[10px]">Vibezone</span>
           </Link>
           
+          <button 
+            onClick={openAIChat}
+            className="flex flex-col items-center justify-center w-full h-full text-xs text-gray-500 transition-colors"
+          >
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 mb-0.5">
+              <span className="text-primary font-bold text-base">AI</span>
+            </div>
+            <span className="text-[10px]">TGL AI</span>
+          </button>
+          
+          <Link 
+            to="/reels" 
+            className={cn(
+              "flex flex-col items-center justify-center w-full h-full text-xs transition-colors", 
+              path === '/reels' || path.startsWith('/reels/') ? "text-primary font-medium" : "text-gray-500"
+            )}
+          >
+            <div className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
+              path === '/reels' || path.startsWith('/reels/') ? "bg-primary/10" : "bg-transparent"
+            )}>
+              <Film size={22} className={cn(
+                path === '/reels' || path.startsWith('/reels/') ? "text-primary" : "text-gray-500"
+              )} />
+            </div>
+            <span className="text-[10px]">Reels</span>
+          </Link>
+          
           <Link 
             to={user ? "/messages" : "/auth"} 
             className={cn(
@@ -76,16 +104,6 @@ const MobileTabMenu: React.FC = () => {
             </div>
             <span className="text-[10px]">Messages</span>
           </Link>
-          
-          <button 
-            onClick={openAIChat}
-            className="flex flex-col items-center justify-center w-full h-full text-xs text-gray-500 transition-colors"
-          >
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-primary/20 to-primary/10 mb-0.5">
-              <span className="text-primary font-bold text-base">AI</span>
-            </div>
-            <span className="text-[10px]">TGL AI</span>
-          </button>
         </div>
       </div>
       
