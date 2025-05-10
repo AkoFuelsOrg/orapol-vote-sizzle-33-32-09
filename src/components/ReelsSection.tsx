@@ -1,16 +1,18 @@
 
 import React, { useState } from 'react';
-import { Film, Plus } from 'lucide-react';
+import { Film, Plus, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useBreakpoint } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import AddReelModal from './AddReelModal';
 
 interface ReelProps {
   imageUrl: string;
   username: string;
   isActive?: boolean;
+  onClick?: () => void;
 }
 
 interface ReelItem {
@@ -20,13 +22,16 @@ interface ReelItem {
   isActive?: boolean;
 }
 
-const ReelItem: React.FC<ReelProps> = ({ imageUrl, username, isActive = false }) => {
+const ReelItem: React.FC<ReelProps> = ({ imageUrl, username, isActive = false, onClick }) => {
   return (
-    <Link to={`/reels/${username}`} className="flex flex-col items-center">
-      <div className={cn(
-        "relative rounded-full overflow-hidden h-16 w-16 border-2 mb-1",
-        isActive ? "border-gradient-to-r from-pink-500 via-red-500 to-yellow-500" : "border-gray-300"
-      )}>
+    <div className="flex flex-col items-center">
+      <div 
+        className={cn(
+          "relative rounded-full overflow-hidden h-16 w-16 border-2 mb-1 cursor-pointer",
+          isActive ? "border-gradient-to-r from-pink-500 via-red-500 to-yellow-500" : "border-gray-300"
+        )}
+        onClick={onClick}
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 rounded-full p-0.5">
           <div className="rounded-full overflow-hidden h-full w-full border-2 border-white">
             <img 
@@ -38,7 +43,7 @@ const ReelItem: React.FC<ReelProps> = ({ imageUrl, username, isActive = false })
         </div>
       </div>
       <span className="text-xs text-center truncate max-w-[70px]">{username}</span>
-    </Link>
+    </div>
   );
 };
 
@@ -46,6 +51,7 @@ const ReelsSection: React.FC = () => {
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
   const [isAddReelModalOpen, setIsAddReelModalOpen] = useState(false);
+  const [expandedReel, setExpandedReel] = useState<ReelItem | null>(null);
   
   // Sample reel data with state
   const [reels, setReels] = useState<ReelItem[]>([
@@ -72,6 +78,14 @@ const ReelsSection: React.FC = () => {
       },
       ...reels
     ]);
+  };
+
+  const handleReelClick = (reel: ReelItem) => {
+    setExpandedReel(reel);
+  };
+
+  const closeExpandedReel = () => {
+    setExpandedReel(null);
   };
 
   return (
@@ -103,6 +117,7 @@ const ReelsSection: React.FC = () => {
             username={reel.username}
             imageUrl={reel.imageUrl}
             isActive={reel.isActive}
+            onClick={() => handleReelClick(reel)}
           />
         ))}
       </div>
@@ -112,6 +127,36 @@ const ReelsSection: React.FC = () => {
         onClose={() => setIsAddReelModalOpen(false)}
         onAddReel={handleAddReel}
       />
+
+      {/* Expanded Reel Modal */}
+      <Dialog open={!!expandedReel} onOpenChange={closeExpandedReel}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+          <div className="relative w-full">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-2 top-2 z-10 bg-black/20 hover:bg-black/40 text-white rounded-full"
+              onClick={closeExpandedReel}
+            >
+              <X size={18} />
+            </Button>
+            <div className="w-full h-full max-h-[80vh] overflow-hidden">
+              {expandedReel && (
+                <img 
+                  src={expandedReel.imageUrl} 
+                  alt={`${expandedReel.username}'s reel`}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+            {expandedReel && (
+              <div className="p-3 bg-white">
+                <h3 className="font-medium text-sm">{expandedReel.username}</h3>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
