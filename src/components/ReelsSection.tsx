@@ -1,13 +1,22 @@
 
-import React from 'react';
-import { Film } from 'lucide-react';
+import React, { useState } from 'react';
+import { Film, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useBreakpoint } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
+import AddReelModal from './AddReelModal';
 
 interface ReelProps {
   imageUrl: string;
   username: string;
+  isActive?: boolean;
+}
+
+interface ReelItem {
+  id: number;
+  username: string;
+  imageUrl: string;
   isActive?: boolean;
 }
 
@@ -36,19 +45,34 @@ const ReelItem: React.FC<ReelProps> = ({ imageUrl, username, isActive = false })
 const ReelsSection: React.FC = () => {
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
+  const [isAddReelModalOpen, setIsAddReelModalOpen] = useState(false);
   
-  // Sample reel data
-  const reels = [
+  // Sample reel data with state
+  const [reels, setReels] = useState<ReelItem[]>([
     { id: 1, username: "ridelink_inc", imageUrl: "/lovable-uploads/02736388-a56a-464b-b977-6c8483604473.png", isActive: true },
     { id: 2, username: "mukisad", imageUrl: "https://source.unsplash.com/random/300x300?portrait=2" },
     { id: 3, username: "muwonge", imageUrl: "https://source.unsplash.com/random/300x300?portrait=3" },
     { id: 4, username: "bchemla", imageUrl: "https://source.unsplash.com/random/300x300?portrait=4" },
     { id: 5, username: "samanta", imageUrl: "https://source.unsplash.com/random/300x300?portrait=5" },
     { id: 6, username: "jessica", imageUrl: "https://source.unsplash.com/random/300x300?portrait=6" },
-  ];
+  ]);
 
   // Display all reels on desktop, but only 4 on mobile
   const displayReels = isMobile ? reels.slice(0, 4) : reels;
+
+  const handleAddReel = (newReel: { username: string; imageUrl: string }) => {
+    // Generate new ID (in a real app, this would come from the backend)
+    const newId = Math.max(...reels.map(reel => reel.id)) + 1;
+    
+    // Add new reel to the beginning of the array
+    setReels([
+      {
+        id: newId,
+        ...newReel
+      },
+      ...reels
+    ]);
+  };
 
   return (
     <div className="mb-6 bg-white rounded-lg p-4 shadow-sm">
@@ -57,9 +81,20 @@ const ReelsSection: React.FC = () => {
           <Film size={18} className="text-primary" />
           <span>Reels</span>
         </h3>
-        <Link to="/reels" className="text-xs text-primary font-medium">
-          See all
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-primary hover:text-primary/80 p-1 h-auto"
+            onClick={() => setIsAddReelModalOpen(true)}
+          >
+            <Plus size={18} />
+            <span className="text-xs">Add</span>
+          </Button>
+          <Link to="/reels" className="text-xs text-primary font-medium">
+            See all
+          </Link>
+        </div>
       </div>
       <div className="flex overflow-x-auto gap-4 pb-2 no-scrollbar">
         {displayReels.map((reel) => (
@@ -71,6 +106,12 @@ const ReelsSection: React.FC = () => {
           />
         ))}
       </div>
+      
+      <AddReelModal 
+        isOpen={isAddReelModalOpen}
+        onClose={() => setIsAddReelModalOpen(false)}
+        onAddReel={handleAddReel}
+      />
     </div>
   );
 };
