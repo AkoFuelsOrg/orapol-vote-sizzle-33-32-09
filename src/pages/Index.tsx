@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import AIChatButton from '../components/AIChatButton';
-
 import { Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AIChatModal } from '@/components/AIChatModal';
@@ -19,6 +19,7 @@ import { Json } from '@/integrations/supabase/types';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Card } from '@/components/ui/card';
 import PostSkeleton from '../components/PostSkeleton';
+import ReelsSection from '../components/ReelsSection';
 
 const Index: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -439,6 +440,9 @@ const Index: React.FC = () => {
             </div>
           </Card>
         )}
+        
+        {/* Add Reels section here */}
+        <ReelsSection />
         
         <CreatePostInterface />
         
