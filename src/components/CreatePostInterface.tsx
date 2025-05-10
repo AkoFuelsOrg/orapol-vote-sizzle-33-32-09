@@ -8,12 +8,17 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import UserAvatar from './UserAvatar';
+import { useLocation } from 'react-router-dom';
 
 const CreatePostInterface = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const { user, profile } = useSupabase();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const location = useLocation();
+  
+  // Check if on index page (root path)
+  const isIndexPage = location.pathname === '/';
   
   if (!user) {
     return null;
@@ -26,7 +31,10 @@ const CreatePostInterface = () => {
   
   return (
     <>
-      <Card className={`relative overflow-hidden ${isMobile ? 'rounded-xl mb-4' : 'rounded-xl mb-8'} border-none shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-white to-gray-50`}>
+      <Card 
+        className={`relative overflow-hidden ${isMobile ? 'rounded-xl mb-4' : 'rounded-xl mb-8'} border-none shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-white to-gray-50`}
+        style={{ display: isIndexPage ? 'none' : 'block' }}
+      >
         <div className="absolute inset-0 bg-primary/5 -z-10"></div>
         
         <div className={`${isMobile ? 'px-4 py-3.5' : 'p-5'}`}>
