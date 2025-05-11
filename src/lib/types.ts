@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name?: string;
@@ -55,6 +54,15 @@ export interface Message {
   read: boolean;
   attachment_url?: string;
   attachment_type?: string;
+}
+
+export interface LiveMessage {
+  id: string;
+  user_id: string;
+  room_code: string;
+  content: string;
+  created_at: string;
+  username: string;
 }
 
 export interface Poll {

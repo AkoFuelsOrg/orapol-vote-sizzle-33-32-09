@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import UserAvatar from './UserAvatar';
 import { useLocation } from 'react-router-dom';
+import LiveButton from './LiveButton';
 
 const CreatePostInterface = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -66,14 +67,9 @@ const CreatePostInterface = () => {
             
             <div className="w-px h-8 bg-gray-200/70 self-center mx-2"></div>
             
-            <button 
-              onClick={() => navigate('/create')}
-              className="flex items-center justify-center gap-2 py-2.5 px-3 hover:bg-green-50 rounded-lg flex-1 transition-colors"
-              style={{ display: 'none' }}
-            >
-              <PenLine size={isMobile ? 18 : 20} className="text-green-500" />
-              <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-700`}>Create Poll</span>
-            </button>
+            <div className="flex-1">
+              <LiveButton />
+            </div>
           </div>
         </div>
       </Card>
