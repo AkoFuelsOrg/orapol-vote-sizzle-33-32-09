@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { Card } from '@/components/ui/card';
@@ -21,6 +21,8 @@ const Live: React.FC = () => {
   const [viewers, setViewers] = useState(1);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{id: string, user: string, message: string}>>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   
   useEffect(() => {
     if (!roomCode) {
@@ -34,8 +36,11 @@ const Live: React.FC = () => {
       setLoading(false);
       toast.success(isHost ? 'Your live stream has started!' : 'Connected to live stream!');
       
-      // Mock some viewers joining
+      // Start camera if host
       if (isHost) {
+        startCamera();
+        
+        // Mock some viewers joining
         const viewerInterval = setInterval(() => {
           setViewers(prev => {
             const newCount = prev + Math.floor(Math.random() * 3);
@@ -47,20 +52,83 @@ const Live: React.FC = () => {
       }
     }, 2000);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      stopCamera();
+    };
   }, [roomCode, isHost, navigate]);
   
+  const startCamera = async () => {
+    try {
+      if (!videoEnabled) return;
+      
+      const constraints = {
+        audio: audioEnabled,
+        video: videoEnabled
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      streamRef.current = stream;
+      console.log('Camera started successfully');
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Could not access camera or microphone');
+      setVideoEnabled(false);
+    }
+  };
+  
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      streamRef.current = null;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+  };
+  
   const toggleAudio = () => {
+    if (streamRef.current) {
+      streamRef.current.getAudioTracks().forEach(track => {
+        track.enabled = !audioEnabled;
+      });
+    }
+    
     setAudioEnabled(prev => !prev);
     toast(audioEnabled ? 'Microphone muted' : 'Microphone unmuted');
+    
+    if (!streamRef.current && isHost) {
+      // Restart camera with new audio setting
+      startCamera();
+    }
   };
   
   const toggleVideo = () => {
+    if (streamRef.current) {
+      streamRef.current.getVideoTracks().forEach(track => {
+        track.enabled = !videoEnabled;
+      });
+    }
+    
     setVideoEnabled(prev => !prev);
     toast(videoEnabled ? 'Video turned off' : 'Video turned on');
+    
+    if (!videoEnabled && !streamRef.current && isHost) {
+      // If we're turning video back on and don't have a stream
+      startCamera();
+    }
   };
   
   const endStream = () => {
+    stopCamera();
     toast.info('Ending stream...');
     setTimeout(() => {
       navigate('/');
@@ -91,17 +159,27 @@ const Live: React.FC = () => {
         <div className="flex flex-col md:flex-row h-[calc(100vh-180px)]">
           {/* Video area */}
           <div className="flex-1 relative bg-black">
-            <div className="absolute inset-0 flex items-center justify-center">
-              {videoEnabled ? (
-                <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                  <div className="text-white text-2xl font-bold">Live Stream</div>
-                </div>
-              ) : (
-                <div className="bg-gray-800 p-8 rounded-full">
-                  <VideoOff size={48} className="text-gray-400" />
-                </div>
-              )}
-            </div>
+            {isHost && videoEnabled ? (
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {videoEnabled ? (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                    <div className="text-white text-2xl font-bold">Live Stream</div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-800 p-8 rounded-full">
+                    <VideoOff size={48} className="text-gray-400" />
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Live indicator and viewers count */}
             <div className="absolute top-4 left-4 flex items-center gap-3">
