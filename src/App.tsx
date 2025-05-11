@@ -21,6 +21,7 @@ import AppWrapper from "./components/AppWrapper";
 import ContactUs from "./pages/ContactUs";
 import MobileTabMenu from "./components/MobileTabMenu";
 import Live from "./pages/Live";
+import LiveStreams from "./pages/LiveStreams";
 
 // Import all page components
 import Index from "./pages/Index";
@@ -67,7 +68,8 @@ const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
   }
   
   // Apply standard layout to privacy, terms, and help pages but without right chat column
-  if (location.pathname === '/privacy' || location.pathname === '/terms' || location.pathname === '/help' || location.pathname.startsWith('/live')) {
+  if (location.pathname === '/privacy' || location.pathname === '/terms' || location.pathname === '/help' || 
+      location.pathname.startsWith('/live') || location.pathname === '/live-streams') {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
         <TopHeader />
@@ -264,6 +266,15 @@ const App = () => (
                               </ProtectedRoute>
                             }
                           />
+                          <Route
+                            path="/live-streams"
+                            element={
+                              <ProtectedRoute>
+                                <LiveStreams />
+                              </ProtectedRoute>
+                            }
+                          />
+                          
                           {/* Privacy, Terms, and Help pages */}
                           <Route path="/privacy" element={<Privacy />} />
                           <Route path="/terms" element={<Terms />} />

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Video, Users } from 'lucide-react';
+import { Video, Users, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useNavigate } from 'react-router-dom';
@@ -43,6 +43,11 @@ const LiveButton: React.FC = () => {
     // Navigate to the live page with the provided room code
     navigate(`/live/${joinCode.trim().toUpperCase()}`);
   };
+  
+  const browseLiveStreams = () => {
+    setIsOpen(false);
+    navigate('/live-streams');
+  };
 
   return (
     <div>
@@ -70,6 +75,14 @@ const LiveButton: React.FC = () => {
               >
                 <Video className="w-5 h-5" /> 
                 Start Live Stream
+              </Button>
+              
+              <Button
+                onClick={browseLiveStreams}
+                className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary"
+              >
+                <Eye className="w-5 h-5" />
+                Browse Live Streams
               </Button>
               
               <div className="flex flex-col gap-2">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -25,6 +24,14 @@ const Live: React.FC = () => {
   const streamRef = useRef<MediaStream | null>(null);
   
   useEffect(() => {
+    // Handle direct navigation to /live/new
+    if (roomCode === 'new') {
+      // Generate a random room code
+      const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      navigate(`/live/${newRoomCode}?host=true`, { replace: true });
+      return;
+    }
+    
     if (!roomCode) {
       toast.error('Invalid room code');
       navigate('/');
@@ -131,7 +138,7 @@ const Live: React.FC = () => {
     stopCamera();
     toast.info('Ending stream...');
     setTimeout(() => {
-      navigate('/');
+      navigate('/live-streams');
     }, 1000);
   };
   
