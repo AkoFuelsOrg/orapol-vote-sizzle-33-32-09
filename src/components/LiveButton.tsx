@@ -15,9 +15,6 @@ const LiveButton: React.FC = () => {
   const { user } = useSupabase();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Check if on index page (root path)
-  const isIndexPage = location.pathname === '/';
 
   const createLiveStream = async () => {
     if (!user) {
@@ -48,7 +45,7 @@ const LiveButton: React.FC = () => {
   };
 
   return (
-    <div style={{ display: isIndexPage ? 'none' : 'block' }}>
+    <div>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button 

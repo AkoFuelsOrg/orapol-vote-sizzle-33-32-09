@@ -18,9 +18,6 @@ const CreatePostInterface = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
   
-  // Check if on index page (root path)
-  const isIndexPage = location.pathname === '/';
-  
   if (!user) {
     return null;
   }
@@ -34,7 +31,6 @@ const CreatePostInterface = () => {
     <>
       <Card 
         className={`relative overflow-hidden ${isMobile ? 'rounded-xl mb-4' : 'rounded-xl mb-8'} border-none shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-r from-white to-gray-50`}
-        style={{ display: isIndexPage ? 'none' : 'block' }}
       >
         <div className="absolute inset-0 bg-primary/5 -z-10"></div>
         
