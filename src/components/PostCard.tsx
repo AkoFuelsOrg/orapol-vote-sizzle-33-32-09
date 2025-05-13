@@ -62,6 +62,43 @@ const PostCard: React.FC<PostCardProps> = ({
     }).format(date);
   };
 
+  const renderTextWithLinks = (text: string) => {
+    // URL regex pattern to match http:// and https:// URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    
+    // Split the text by URLs
+    const parts = text.split(urlRegex);
+    
+    // Find all URLs in the text
+    const urls = text.match(urlRegex) || [];
+    
+    // If no URLs found, return the text as is
+    if (urls.length === 0) {
+      return text;
+    }
+    
+    // Combine parts and URLs
+    return parts.map((part, i) => {
+      // If this part matches a URL, render it as a link
+      if (urls.includes(part)) {
+        return (
+          <a 
+            key={i} 
+            href={part} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      // Otherwise, render it as plain text
+      return part;
+    });
+  };
+
   const handleLike = async () => {
     if (!user) {
       toast.error("Please sign in to like posts");
@@ -381,7 +418,9 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
         
         <div className="px-4 py-3">
-          <p className="text-sm whitespace-pre-line break-words mb-2 leading-relaxed">{post.content}</p>
+          <p className="text-sm whitespace-pre-line break-words mb-2 leading-relaxed">
+            {renderTextWithLinks(post.content)}
+          </p>
         </div>
         
         {post.image && (
@@ -668,7 +707,7 @@ const PostCard: React.FC<PostCardProps> = ({
               <p className="text-sm leading-relaxed whitespace-pre-line break-words">
                 {post.image ? '' : <span className="font-semibold">{post.author.name}</span>}{" "}
                 <span>
-                  {post.content}
+                  {renderTextWithLinks(post.content)}
                 </span>
               </p>
             </div>

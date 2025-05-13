@@ -32,12 +32,18 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
       avatar: getAvatarUrl(post.author.avatar),
     }
   };
+  
+  const handlePostUpdate = () => {
+    if (onLike && post.id) {
+      onLike(post.id);
+    }
+  };
 
   // Pass only the props that PostCard accepts
   return (
     <PostCard
       post={enhancedPost}
-      onPostUpdate={() => {}}
+      onPostUpdate={handlePostUpdate}
       onPostDeleted={() => {}}
     />
   );
