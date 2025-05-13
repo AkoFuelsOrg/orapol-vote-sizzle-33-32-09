@@ -1,10 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  SliderHorizontal, 
+  SlidersHorizontal, 
   Pencil, 
   Sliders, 
   Image as ImageIcon, 
@@ -40,12 +39,12 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ imageUrl, onSave, onCancel })
     { name: 'Original', class: '' },
     { name: 'Grayscale', class: 'grayscale' },
     { name: 'Sepia', class: 'sepia' },
-    { name: 'Vintage', style: { filter: 'sepia(50%) brightness(90%) contrast(120%)' } },
-    { name: 'Cool', style: { filter: 'hue-rotate(180deg) saturate(130%)' } },
-    { name: 'Warm', style: { filter: 'sepia(30%) saturate(140%) brightness(110%)' } },
-    { name: 'High Contrast', style: { filter: 'contrast(150%) brightness(110%)' } },
-    { name: 'Muted', style: { filter: 'saturate(70%) brightness(105%)' } },
-    { name: 'Dramatic', style: { filter: 'contrast(140%) brightness(95%) saturate(120%)' } }
+    { name: 'Vintage', class: '', style: { filter: 'sepia(50%) brightness(90%) contrast(120%)' } },
+    { name: 'Cool', class: '', style: { filter: 'hue-rotate(180deg) saturate(130%)' } },
+    { name: 'Warm', class: '', style: { filter: 'sepia(30%) saturate(140%) brightness(110%)' } },
+    { name: 'High Contrast', class: '', style: { filter: 'contrast(150%) brightness(110%)' } },
+    { name: 'Muted', class: '', style: { filter: 'saturate(70%) brightness(105%)' } },
+    { name: 'Dramatic', class: '', style: { filter: 'contrast(140%) brightness(95%) saturate(120%)' } }
   ];
 
   // Load and draw the image when the component mounts
