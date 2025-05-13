@@ -22,32 +22,7 @@ import ContactUs from "./pages/ContactUs";
 import MobileTabMenu from "./components/MobileTabMenu";
 import Live from "./pages/Live";
 import LiveStreams from "./pages/LiveStreams";
-
-// Import all page components
-import Index from "./pages/Index";
-import CreatePoll from "./pages/CreatePoll";
-import PollDetail from "./pages/PollDetail";
-import Profile from "./pages/Profile";
-import ProfileSetup from "./pages/ProfileSetup";
-import FindFriends from "./pages/FindFriends";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Messages from "./pages/Messages";
-import VotedPolls from "./pages/VotedPolls";
-import Followers from "./pages/Followers";
-import Following from "./pages/Following";
-import Notifications from "./pages/Notifications";
-import SearchResults from "./pages/SearchResults";
-import Groups from "./pages/Groups";
-import GroupProfile from "./pages/GroupProfile";
-import Marketplaces from "./pages/Marketplaces";
-import MarketplaceProfile from "./pages/MarketplaceProfile";
-import Favourites from "./pages/Favourites";
-import Vibezone from "./pages/Vibezone";
-import UploadVideo from "./pages/UploadVideo";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Help from "./pages/Help";
+import PostDetail from "./pages/PostDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -256,6 +231,10 @@ const App = () => (
                                 <UploadVideo />
                               </ProtectedRoute>
                             }
+                          />
+                          <Route
+                            path="/post/:id"
+                            element={<PostDetail />} {/* Add new route for individual posts */}
                           />
                           {/* Live stream routes */}
                           <Route

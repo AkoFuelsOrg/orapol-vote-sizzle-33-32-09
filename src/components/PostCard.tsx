@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
 import { Post } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
@@ -160,6 +160,7 @@ const PostCard: React.FC<PostCardProps> = ({
       return;
     }
     
+    // Create a direct deep link to the individual post
     const postUrl = `${window.location.origin}/post/${post.id}`;
     let sharedSuccessfully = false;
     
