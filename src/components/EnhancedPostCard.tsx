@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import PostCard from "./PostCard";
 import { Post } from "../lib/types";
@@ -76,30 +75,28 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
     
     // Fetch user's groups and marketplaces when opening the share dialog
-    if (!shareDialogOpen) {
-      try {
-        // Fetch groups where user is a member
-        const { data: groups, error: groupsError } = await supabase
-          .from('group_members')
-          .select('group_id, groups(id, name, avatar_url)')
-          .eq('user_id', user.id);
-        
-        if (groupsError) throw groupsError;
-        
-        // Fetch marketplaces where user is a member
-        const { data: marketplaces, error: marketplacesError } = await supabase
-          .from('marketplace_members')
-          .select('marketplace_id, marketplaces(id, name, avatar_url)')
-          .eq('user_id', user.id);
-        
-        if (marketplacesError) throw marketplacesError;
-        
-        setUserGroups(groups?.map(item => item.groups) || []);
-        setUserMarketplaces(marketplaces?.map(item => item.marketplaces) || []);
-      } catch (error) {
-        console.error("Error fetching user's groups and marketplaces:", error);
-        toast.error("Failed to load your groups and marketplaces");
-      }
+    try {
+      // Fetch groups where user is a member
+      const { data: groups, error: groupsError } = await supabase
+        .from('group_members')
+        .select('group_id, groups(id, name, avatar_url)')
+        .eq('user_id', user.id);
+      
+      if (groupsError) throw groupsError;
+      
+      // Fetch marketplaces where user is a member
+      const { data: marketplaces, error: marketplacesError } = await supabase
+        .from('marketplace_members')
+        .select('marketplace_id, marketplaces(id, name, avatar_url)')
+        .eq('user_id', user.id);
+      
+      if (marketplacesError) throw marketplacesError;
+      
+      setUserGroups(groups?.map(item => item.groups) || []);
+      setUserMarketplaces(marketplaces?.map(item => item.marketplaces) || []);
+    } catch (error) {
+      console.error("Error fetching user's groups and marketplaces:", error);
+      toast.error("Failed to load your groups and marketplaces");
     }
     
     setShareDialogOpen(true);
