@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,8 +8,40 @@ import { PollProvider } from "./context/PollContext";
 import { GroupProvider } from "./context/GroupContext";
 import { MarketplaceProvider } from "./context/MarketplaceContext";
 import { VibezoneProvider } from "./context/VibezoneContext";
-import ProtectedRoute from "./components/ProtectedRoute";
+
+// Import all page components
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import ProfileSetup from "./pages/ProfileSetup";
+import FindFriends from "./pages/FindFriends";
+import SearchResults from "./pages/SearchResults";
+import CreatePoll from "./pages/CreatePoll";
+import PollDetail from "./pages/PollDetail";
+import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
+import Messages from "./pages/Messages";
+import VotedPolls from "./pages/VotedPolls";
+import Followers from "./pages/Followers";
+import Following from "./pages/Following";
+import Notifications from "./pages/Notifications";
+import Favourites from "./pages/Favourites";
+import Groups from "./pages/Groups";
+import GroupProfile from "./pages/GroupProfile";
+import Marketplaces from "./pages/Marketplaces";
+import MarketplaceProfile from "./pages/MarketplaceProfile";
+import Vibezone from "./pages/Vibezone";
+import UploadVideo from "./pages/UploadVideo";
+import PostDetail from "./pages/PostDetail";
+import Live from "./pages/Live";
+import LiveStreams from "./pages/LiveStreams";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Help from "./pages/Help";
+import NotFound from "./pages/NotFound";
+import ContactUs from "./pages/ContactUs";
+
+// Import UI components
+import ProtectedRoute from "./components/ProtectedRoute";
 import AppLoader from "./components/AppLoader";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -19,11 +50,7 @@ import RightChatColumn from "./components/RightChatColumn";
 import NetworkStatusHandler from "./components/NetworkStatusHandler";
 import { useBreakpoint } from "./hooks/use-mobile";
 import AppWrapper from "./components/AppWrapper";
-import ContactUs from "./pages/ContactUs";
 import MobileTabMenu from "./components/MobileTabMenu";
-import Live from "./pages/Live";
-import LiveStreams from "./pages/LiveStreams";
-import PostDetail from "./pages/PostDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
