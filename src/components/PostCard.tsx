@@ -32,10 +32,7 @@ import {
 import CreatePostModal from './CreatePostModal';
 
 interface PostCardProps {
-  post: Post & { 
-    contentWithLinks?: (string | JSX.Element)[];
-    originalContent?: string;
-  };
+  post: Post;
   onPostUpdate?: () => void;
   onPostDeleted?: (postId: string) => void;
 }
@@ -384,9 +381,7 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
         
         <div className="px-4 py-3">
-          <p className="text-sm whitespace-pre-line break-words mb-2 leading-relaxed">
-            {post.contentWithLinks || post.content}
-          </p>
+          <p className="text-sm whitespace-pre-line break-words mb-2 leading-relaxed">{post.content}</p>
         </div>
         
         {post.image && (
@@ -673,7 +668,7 @@ const PostCard: React.FC<PostCardProps> = ({
               <p className="text-sm leading-relaxed whitespace-pre-line break-words">
                 {post.image ? '' : <span className="font-semibold">{post.author.name}</span>}{" "}
                 <span>
-                  {post.contentWithLinks || post.content}
+                  {post.content}
                 </span>
               </p>
             </div>
