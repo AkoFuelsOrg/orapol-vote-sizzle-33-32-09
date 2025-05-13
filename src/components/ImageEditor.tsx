@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ interface FilterOption {
   name: string;
   class: string;
   style?: React.CSSProperties;
+  filter?: string; // Adding this property to handle custom filters
 }
 
 interface ImageEditorProps {
@@ -39,12 +41,12 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ imageUrl, onSave, onCancel })
     { name: 'Original', class: '' },
     { name: 'Grayscale', class: 'grayscale' },
     { name: 'Sepia', class: 'sepia' },
-    { name: 'Vintage', class: '', style: { filter: 'sepia(50%) brightness(90%) contrast(120%)' } },
-    { name: 'Cool', class: '', style: { filter: 'hue-rotate(180deg) saturate(130%)' } },
-    { name: 'Warm', class: '', style: { filter: 'sepia(30%) saturate(140%) brightness(110%)' } },
-    { name: 'High Contrast', class: '', style: { filter: 'contrast(150%) brightness(110%)' } },
-    { name: 'Muted', class: '', style: { filter: 'saturate(70%) brightness(105%)' } },
-    { name: 'Dramatic', class: '', style: { filter: 'contrast(140%) brightness(95%) saturate(120%)' } }
+    { name: 'Vintage', class: '', style: { filter: 'sepia(50%) brightness(90%) contrast(120%)' }, filter: 'sepia(50%) brightness(90%) contrast(120%)' },
+    { name: 'Cool', class: '', style: { filter: 'hue-rotate(180deg) saturate(130%)' }, filter: 'hue-rotate(180deg) saturate(130%)' },
+    { name: 'Warm', class: '', style: { filter: 'sepia(30%) saturate(140%) brightness(110%)' }, filter: 'sepia(30%) saturate(140%) brightness(110%)' },
+    { name: 'High Contrast', class: '', style: { filter: 'contrast(150%) brightness(110%)' }, filter: 'contrast(150%) brightness(110%)' },
+    { name: 'Muted', class: '', style: { filter: 'saturate(70%) brightness(105%)' }, filter: 'saturate(70%) brightness(105%)' },
+    { name: 'Dramatic', class: '', style: { filter: 'contrast(140%) brightness(95%) saturate(120%)' }, filter: 'contrast(140%) brightness(95%) saturate(120%)' }
   ];
 
   // Load and draw the image when the component mounts
@@ -142,11 +144,162 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ imageUrl, onSave, onCancel })
           data[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
           data[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
           data[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+        } else if (selectedFilter === 'Vintage') {
+          // Vintage: sepia effect + adjusted brightness and contrast
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Apply sepia at 50%
+          data[i] = Math.min(255, (r * (1 - 0.5)) + (r * 0.393 + g * 0.769 + b * 0.189) * 0.5);
+          data[i + 1] = Math.min(255, (g * (1 - 0.5)) + (r * 0.349 + g * 0.686 + b * 0.168) * 0.5);
+          data[i + 2] = Math.min(255, (b * (1 - 0.5)) + (r * 0.272 + g * 0.534 + b * 0.131) * 0.5);
+          
+          // Reduce brightness to 90%
+          data[i] *= 0.9;
+          data[i + 1] *= 0.9;
+          data[i + 2] *= 0.9;
+          
+          // Increase contrast by 20%
+          const factor = (259 * (120 + 255)) / (255 * (259 - 120));
+          data[i] = factor * (data[i] - 128) + 128;
+          data[i + 1] = factor * (data[i + 1] - 128) + 128;
+          data[i + 2] = factor * (data[i + 2] - 128) + 128;
+        } else if (selectedFilter === 'Cool') {
+          // Cool: hue-rotate and increased saturation
+          // Convert RGB to HSL, modify, then back to RGB
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newH = (h + 180) % 360; // hue-rotate 180 degrees
+          const newS = Math.min(100, s * 1.3); // saturate 130%
+          const [r, g, b] = hslToRgb(newH, newS, l);
+          data[i] = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+        } else if (selectedFilter === 'Warm') {
+          // Warm: slight sepia, increased saturation and brightness
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Apply sepia at 30%
+          data[i] = Math.min(255, (r * 0.7) + (r * 0.393 + g * 0.769 + b * 0.189) * 0.3);
+          data[i + 1] = Math.min(255, (g * 0.7) + (r * 0.349 + g * 0.686 + b * 0.168) * 0.3);
+          data[i + 2] = Math.min(255, (b * 0.7) + (r * 0.272 + g * 0.534 + b * 0.131) * 0.3);
+          
+          // Increase brightness to 110%
+          data[i] = Math.min(255, data[i] * 1.1);
+          data[i + 1] = Math.min(255, data[i + 1] * 1.1);
+          data[i + 2] = Math.min(255, data[i + 2] * 1.1);
+          
+          // Increase saturation
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newS = Math.min(100, s * 1.4); // Increase saturation by 40%
+          const [newR, newG, newB] = hslToRgb(h, newS, l);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+        } else if (selectedFilter === 'High Contrast') {
+          // High contrast and slightly increased brightness
+          const factor = (259 * (150 + 255)) / (255 * (259 - 150));
+          data[i] = factor * (data[i] - 128) + 128;
+          data[i + 1] = factor * (data[i + 1] - 128) + 128;
+          data[i + 2] = factor * (data[i + 2] - 128) + 128;
+          
+          // Increase brightness to 110%
+          data[i] = Math.min(255, data[i] * 1.1);
+          data[i + 1] = Math.min(255, data[i + 1] * 1.1);
+          data[i + 2] = Math.min(255, data[i + 2] * 1.1);
+        } else if (selectedFilter === 'Muted') {
+          // Reduce saturation to 70% and slightly increase brightness
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newS = s * 0.7; // Reduce saturation to 70%
+          const newL = Math.min(100, l * 1.05); // Increase brightness slightly
+          const [newR, newG, newB] = hslToRgb(h, newS, newL);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+        } else if (selectedFilter === 'Dramatic') {
+          // Dramatic: higher contrast, slightly darker, more saturated
+          // First increase contrast
+          const factor = (259 * (140 + 255)) / (255 * (259 - 140));
+          data[i] = factor * (data[i] - 128) + 128;
+          data[i + 1] = factor * (data[i + 1] - 128) + 128;
+          data[i + 2] = factor * (data[i + 2] - 128) + 128;
+          
+          // Reduce brightness slightly to 95%
+          data[i] *= 0.95;
+          data[i + 1] *= 0.95;
+          data[i + 2] *= 0.95;
+          
+          // Increase saturation
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newS = Math.min(100, s * 1.2); // Increase saturation by 20%
+          const [newR, newG, newB] = hslToRgb(h, newS, l);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
         }
       }
       
       ctx.putImageData(imageData, 0, 0);
     }
+  };
+  
+  // Helper function: Convert RGB to HSL
+  const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h *= 60;
+    }
+    
+    return [h, s * 100, l * 100];
+  };
+  
+  // Helper function: Convert HSL to RGB
+  const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
+    s /= 100;
+    l /= 100;
+    
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l - c / 2;
+    
+    let r = 0, g = 0, b = 0;
+    
+    if (h >= 0 && h < 60) {
+      r = c; g = x; b = 0;
+    } else if (h >= 60 && h < 120) {
+      r = x; g = c; b = 0;
+    } else if (h >= 120 && h < 180) {
+      r = 0; g = c; b = x;
+    } else if (h >= 180 && h < 240) {
+      r = 0; g = x; b = c;
+    } else if (h >= 240 && h < 300) {
+      r = x; g = 0; b = c;
+    } else if (h >= 300 && h < 360) {
+      r = c; g = 0; b = x;
+    }
+    
+    return [
+      Math.round((r + m) * 255),
+      Math.round((g + m) * 255),
+      Math.round((b + m) * 255)
+    ];
   };
   
   const handleSave = () => {
