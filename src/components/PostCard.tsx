@@ -82,7 +82,8 @@ const PostCard: React.FC<PostCardProps> = ({
     // Combine parts and URLs
     return parts.map((part, i) => {
       // If this part matches a URL, render it as a link
-      if (urls.indexOf(part) !== -1) {
+      // Use includes instead of indexOf to avoid type issues
+      if (urls.includes(part)) {
         return (
           <a 
             key={i} 
