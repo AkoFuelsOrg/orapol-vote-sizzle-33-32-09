@@ -1,8 +1,9 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import CommentList from './CommentList';
 import ReplyInput from './ReplyInput';
 import { useVideoComments } from './hooks/useVideoComments';
+import { useState } from 'react';
 import { VideoComment } from '@/lib/types';
 
 interface VideoCommentSectionProps {
@@ -22,22 +23,55 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onCo
     setComments
   } = useVideoComments(videoId, onCommentCountChange);
   
-  const [newComment, setNewComment] = useState('');
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddComment = async () => {
-    if (newComment.trim()) {
-      await addComment(newComment, inputRef);
-      setNewComment('');
+  const handleAddComment = (content: string) => {
+    addComment(content, inputRef);
+  };
+
+  const handleReplyTo = (comment: VideoComment) => {
+    setReplyingId(comment.id);
+    setReplyContent('');
+  };
+
+  const handleReplyCancel = () => {
+    setReplyingId(null);
+    setReplyContent('');
+  };
+
+  const handleReplySubmit = async () => {
+    if (!replyingId || !replyContent.trim()) return;
+    
+    setSubmittingReply(true);
+    try {
+      // For now, we'll add it as a normal comment
+      // In a real implementation, we would handle reply differently
+      await addComment(`Reply to comment: ${replyContent}`, inputRef);
+      setReplyingId(null);
+      setReplyContent('');
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+    } finally {
+      setSubmittingReply(false);
     }
   };
 
-  const handleReplySubmit = async (commentId: string, content: string) => {
-    if (!content.trim() || !commentId) return;
-    
-    // In a real implementation, you would handle replies differently
-    // For now, we'll add it as a normal comment with reply context
-    await addComment(`Reply to comment: ${content}`, inputRef);
+  const handleReplyInputChange = (value: string) => {
+    setReplyContent(value);
+  };
+
+  const handleLikeReply = (parentId: string, reply: VideoComment) => {
+    // For now, we'll just handle it like a regular comment
+    handleLikeComment(reply);
+  };
+
+  const replyState = {
+    replyingId,
+    replyContent,
+    submittingReply
   };
 
   return (
@@ -46,11 +80,11 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onCo
       
       <ReplyInput 
         user={user}
-        replyContent={newComment}
-        onChange={setNewComment}
-        onSubmit={handleAddComment}
-        onCancel={() => setNewComment('')}
-        submittingReply={submittingComment}
+        replyContent=""
+        onChange={handleAddComment}
+        onSubmit={() => {}}
+        onCancel={() => {}}
+        submittingReply={false}
         placeholder="Add a comment..."
       />
       
@@ -63,8 +97,13 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onCo
           comments={comments}
           user={user}
           updatingLike={updatingLike}
+          replyState={replyState}
           onLikeComment={handleLikeComment}
+          onReplyTo={handleReplyTo}
+          onReplyInputChange={handleReplyInputChange}
+          onReplyCancel={handleReplyCancel}
           onReplySubmit={handleReplySubmit}
+          onLikeReply={handleLikeReply}
         />
       )}
     </div>
