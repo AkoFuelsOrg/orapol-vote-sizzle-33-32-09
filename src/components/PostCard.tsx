@@ -35,12 +35,14 @@ interface PostCardProps {
   post: Post;
   onPostUpdate?: () => void;
   onPostDeleted?: (postId: string) => void;
+  onCustomShare?: () => void;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ 
   post, 
   onPostUpdate,
-  onPostDeleted 
+  onPostDeleted,
+  onCustomShare
 }) => {
   const { user } = useSupabase();
   const isMobile = useIsMobile();
@@ -154,6 +156,12 @@ const PostCard: React.FC<PostCardProps> = ({
   const handleShare = async (e: React.MouseEvent, platform?: string) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // If custom share handler is provided, use it first
+    if (onCustomShare && (!platform || platform === 'internal')) {
+      onCustomShare();
+      return;
+    }
     
     if (!user) {
       toast.error("Please sign in to share posts");
@@ -331,7 +339,20 @@ const PostCard: React.FC<PostCardProps> = ({
   );
 
   const ShareOptions = () => (
-    <div className="grid grid-cols-2 gap-4 w-full px-1 py-3">
+    <div className="grid grid-cols-3 gap-4 w-full px-1 py-3">
+      <Button 
+        variant="outline" 
+        className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-red-50 transition-all border-gray-100 hover:border-red-200" 
+        onClick={(e) => handleShare(e, 'internal')}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <path d="M12 11v9"></path>
+          <path d="M8 7 12 3l4 4"></path>
+        </svg>
+        <span className="text-xs font-medium">Share Post</span>
+      </Button>
+      
       <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-gray-50 transition-all border-gray-100 hover:border-primary/20" onClick={(e) => handleShare(e, 'copy')}>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
