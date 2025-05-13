@@ -1,2 +1,3 @@
 
-export { default } from './VideoCommentSection/VideoCommentSection';
+import VideoCommentSection from './VideoCommentSection/VideoCommentSection';
+export default VideoCommentSection;
