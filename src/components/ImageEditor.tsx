@@ -1,8 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   SlidersHorizontal, 
   Pencil, 
@@ -499,31 +499,33 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ imageUrl, onSave, onCancel })
           </TabsList>
 
           <TabsContent value="filters" className="py-4">
-            <div className="grid grid-cols-3 gap-3">
-              {filters.map((filter) => (
-                <div 
-                  key={filter.name}
-                  onClick={() => setSelectedFilter(filter.name)}
-                  className={`cursor-pointer p-1 rounded-md text-center border ${
-                    selectedFilter === filter.name ? 'border-primary bg-primary/10' : 'border-gray-200'
-                  }`}
-                >
+            <ScrollArea className="h-[280px] pr-4">
+              <div className="grid grid-cols-3 gap-3">
+                {filters.map((filter) => (
                   <div 
-                    className={`mb-2 h-16 rounded overflow-hidden ${filter.class}`}
-                    style={filter.style || {}}
+                    key={filter.name}
+                    onClick={() => setSelectedFilter(filter.name)}
+                    className={`cursor-pointer p-1 rounded-md text-center border ${
+                      selectedFilter === filter.name ? 'border-primary bg-primary/10' : 'border-gray-200'
+                    }`}
                   >
-                    {imageUrl && (
-                      <img 
-                        src={imageUrl} 
-                        alt={filter.name}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
+                    <div 
+                      className={`mb-2 h-16 rounded overflow-hidden ${filter.class}`}
+                      style={filter.style || {}}
+                    >
+                      {imageUrl && (
+                        <img 
+                          src={imageUrl} 
+                          alt={filter.name}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
+                    <span className="text-xs font-medium">{filter.name}</span>
                   </div>
-                  <span className="text-xs font-medium">{filter.name}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </ScrollArea>
           </TabsContent>
 
           <TabsContent value="adjust" className="py-4 space-y-6">
