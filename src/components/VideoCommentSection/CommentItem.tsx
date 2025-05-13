@@ -36,6 +36,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
 }) => {
   const isReplying = replyState.isReplying && replyState.commentId === comment.id;
   const isUpdating = updatingLike === comment.id;
+  const [replyContent, setReplyContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleReplyClick = () => {
     if (!user) {
@@ -46,6 +48,22 @@ const CommentItem: React.FC<CommentItemProps> = ({
       isReplying: !isReplying,
       commentId: comment.id
     });
+  };
+
+  const handleReplySubmit = async (content: string) => {
+    if (!user || !content.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await onReplySubmit(comment.id, content);
+      setReplyContent('');
+      setReplyState({
+        isReplying: false,
+        commentId: ''
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -108,8 +126,12 @@ const CommentItem: React.FC<CommentItemProps> = ({
           {isReplying && user && (
             <div className="mt-3">
               <ReplyInput
-                onSubmit={(content) => onReplySubmit(comment.id, content)}
                 user={user}
+                replyContent={replyContent}
+                onChange={setReplyContent}
+                onSubmit={() => handleReplySubmit(replyContent)}
+                onCancel={() => setReplyState({ isReplying: false, commentId: '' })}
+                submittingReply={isSubmitting}
                 placeholder={`Replying to ${comment.author?.name || comment.author?.username || 'Anonymous'}...`}
               />
             </div>

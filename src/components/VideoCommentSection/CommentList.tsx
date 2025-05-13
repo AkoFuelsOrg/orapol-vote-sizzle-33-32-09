@@ -2,36 +2,28 @@
 import React from 'react';
 import CommentItem from './CommentItem';
 import { VideoComment, User } from '@/lib/types';
+import { useState } from 'react';
 
 interface CommentListProps {
   comments: VideoComment[];
   user: User | null;
   updatingLike: string | null;
-  replyState: {
-    replyingId: string | null;
-    replyContent: string;
-    submittingReply: boolean;
-  };
-  onLikeComment: (comment: VideoComment) => void;
-  onReplyTo: (comment: VideoComment) => void;
-  onReplyInputChange: (v: string) => void;
-  onReplyCancel: () => void;
-  onReplySubmit: () => void;
-  onLikeReply: (parentId: string, reply: VideoComment) => void;
+  onLikeComment: (comment: VideoComment) => Promise<void>;
+  onReplySubmit: (commentId: string, content: string) => Promise<void>;
 }
 
 const CommentList: React.FC<CommentListProps> = ({
   comments,
   user,
   updatingLike,
-  replyState,
   onLikeComment,
-  onReplyTo,
-  onReplyInputChange,
-  onReplyCancel,
   onReplySubmit,
-  onLikeReply,
 }) => {
+  const [replyState, setReplyState] = useState({
+    isReplying: false,
+    commentId: ''
+  });
+
   return (
     <div className="space-y-6">
       {comments.map((comment) => (
@@ -39,16 +31,11 @@ const CommentList: React.FC<CommentListProps> = ({
           key={comment.id}
           comment={comment}
           user={user}
-          updatingLike={updatingLike}
+          updatingLike={updatingLike || ''}
           onLikeComment={onLikeComment}
-          onReply={onReplyTo}
-          isReplying={replyState.replyingId === comment.id}
-          replyContent={replyState.replyingId === comment.id ? replyState.replyContent : ''}
-          onReplyInputChange={onReplyInputChange}
-          onReplyCancel={onReplyCancel}
           onReplySubmit={onReplySubmit}
-          submittingReply={replyState.submittingReply}
-          onLikeReply={onLikeReply}
+          replyState={replyState}
+          setReplyState={setReplyState}
         />
       ))}
     </div>
