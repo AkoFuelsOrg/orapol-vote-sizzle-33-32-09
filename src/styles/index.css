@@ -1,5 +1,21 @@
 
-
 /* Global styles */
 @import './auth-overrides.css';
 
+/* Image filter styles */
+.grayscale {
+  filter: grayscale(100%);
+}
+
+.sepia {
+  filter: sepia(100%);
+}
+
+/* Animation for filter selection */
+.filter-preview {
+  transition: all 0.3s ease;
+}
+
+.filter-preview:hover {
+  transform: scale(1.05);
+}

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image, Loader2, BarChart2, Smile } from 'lucide-react';
+import { X, Image, Loader2, BarChart2, Smile, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -12,7 +12,7 @@ import CreatePollModal from './CreatePollModal';
 import EmojiPicker from './EmojiPicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import UserAvatar from './UserAvatar';
-// Removed import of ImageCropper
+import ImageEditor from './ImageEditor';
 
 export interface CreatePostModalProps {
   isOpen?: boolean;
@@ -44,7 +44,7 @@ const CreatePostModal = ({
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const [keepExistingImage, setKeepExistingImage] = useState(!!initialImage);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  // Removed cropperOpen, originalImageUrl, and related state
+  const [imageEditorOpen, setImageEditorOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user, profile } = useSupabase();
@@ -79,14 +79,7 @@ const CreatePostModal = ({
       setImagePreview(event.target?.result as string);
     };
     reader.readAsDataURL(file);
-    // No cropping modal logic
   };
-  
-  // handleCropComplete and handleSkipCropping removed since cropping is gone
-
-  // dataURLtoBlob unused, so removed
-
-  // handleCropCancel removed
 
   const removeImage = () => {
     setImageFile(null);
@@ -101,6 +94,29 @@ const CreatePostModal = ({
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
+  };
+
+  const handleEditImage = () => {
+    if (imagePreview) {
+      setImageEditorOpen(true);
+    }
+  };
+
+  const handleSaveEditedImage = (editedImageUrl: string) => {
+    setImagePreview(editedImageUrl);
+    setImageEditorOpen(false);
+    
+    // Convert data URL to File object for upload
+    fetch(editedImageUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        const file = new File([blob], 'edited-image.jpg', { type: 'image/jpeg' });
+        setImageFile(file);
+        setKeepExistingImage(false);
+      })
+      .catch(err => {
+        console.error('Error converting data URL to file:', err);
+      });
   };
   
   const handleSubmit = async () => {
@@ -220,6 +236,27 @@ const CreatePostModal = ({
     setPollModalOpen(false);
   };
 
+  // Render the image editor if it's open
+  if (isOpen && imageEditorOpen && imagePreview) {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!open) onClose();
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogTitle className="text-center font-bold text-lg">
+            Edit Image
+          </DialogTitle>
+          
+          <ImageEditor
+            imageUrl={imagePreview}
+            onSave={handleSaveEditedImage}
+            onCancel={() => setImageEditorOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => {
@@ -283,7 +320,14 @@ const CreatePostModal = ({
                     className="w-full h-auto max-h-[300px] object-contain bg-gray-100"
                   />
                   <div className="absolute top-2 right-2 flex gap-2">
-                    {/* Removed Crop image button */}
+                    <button
+                      type="button"
+                      onClick={handleEditImage}
+                      className="bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
+                      title="Edit image"
+                    >
+                      <Pencil size={16} />
+                    </button>
                     <button
                       type="button"
                       onClick={removeImage}
@@ -359,11 +403,8 @@ const CreatePostModal = ({
           marketplaceId={marketplaceId}
         />
       )}
-
-      {/* Removed ImageCropper usage */}
     </>
   );
 };
 
 export default CreatePostModal;
-
