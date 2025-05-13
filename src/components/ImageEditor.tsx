@@ -46,7 +46,17 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ imageUrl, onSave, onCancel })
     { name: 'Warm', class: '', style: { filter: 'sepia(30%) saturate(140%) brightness(110%)' }, filter: 'sepia(30%) saturate(140%) brightness(110%)' },
     { name: 'High Contrast', class: '', style: { filter: 'contrast(150%) brightness(110%)' }, filter: 'contrast(150%) brightness(110%)' },
     { name: 'Muted', class: '', style: { filter: 'saturate(70%) brightness(105%)' }, filter: 'saturate(70%) brightness(105%)' },
-    { name: 'Dramatic', class: '', style: { filter: 'contrast(140%) brightness(95%) saturate(120%)' }, filter: 'contrast(140%) brightness(95%) saturate(120%)' }
+    { name: 'Dramatic', class: '', style: { filter: 'contrast(140%) brightness(95%) saturate(120%)' }, filter: 'contrast(140%) brightness(95%) saturate(120%)' },
+    // New filters
+    { name: 'Noir', class: '', style: { filter: 'grayscale(100%) contrast(120%) brightness(90%)' }, filter: 'grayscale(100%) contrast(120%) brightness(90%)' },
+    { name: 'Vibrant', class: '', style: { filter: 'saturate(180%) brightness(110%) contrast(110%)' }, filter: 'saturate(180%) brightness(110%) contrast(110%)' },
+    { name: 'Pastel', class: '', style: { filter: 'saturate(60%) brightness(130%) contrast(90%)' }, filter: 'saturate(60%) brightness(130%) contrast(90%)' },
+    { name: 'Retro', class: '', style: { filter: 'sepia(60%) hue-rotate(-30deg) saturate(140%)' }, filter: 'sepia(60%) hue-rotate(-30deg) saturate(140%)' },
+    { name: 'Purple', class: '', style: { filter: 'hue-rotate(270deg) saturate(130%) brightness(110%)' }, filter: 'hue-rotate(270deg) saturate(130%) brightness(110%)' },
+    { name: 'Ocean', class: '', style: { filter: 'hue-rotate(190deg) saturate(160%) brightness(105%)' }, filter: 'hue-rotate(190deg) saturate(160%) brightness(105%)' },
+    { name: 'Sunset', class: '', style: { filter: 'hue-rotate(-20deg) saturate(150%) contrast(110%) brightness(110%)' }, filter: 'hue-rotate(-20deg) saturate(150%) contrast(110%) brightness(110%)' },
+    { name: 'Forest', class: '', style: { filter: 'hue-rotate(90deg) saturate(150%) brightness(95%)' }, filter: 'hue-rotate(90deg) saturate(150%) brightness(95%)' },
+    { name: 'Faded', class: '', style: { filter: 'contrast(85%) brightness(110%) saturate(75%)' }, filter: 'contrast(85%) brightness(110%) saturate(75%)' }
   ];
 
   // Load and draw the image when the component mounts
@@ -234,6 +244,136 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ imageUrl, onSave, onCancel })
           // Increase saturation
           const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
           const newS = Math.min(100, s * 1.2); // Increase saturation by 20%
+          const [newR, newG, newB] = hslToRgb(h, newS, l);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+        } 
+        // New filter implementations
+        else if (selectedFilter === 'Noir') {
+          // Noir: high contrast grayscale with darker blacks
+          const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+          data[i] = data[i + 1] = data[i + 2] = avg;
+          
+          // Apply high contrast
+          const factor = (259 * (120 + 255)) / (255 * (259 - 120));
+          data[i] = factor * (data[i] - 128) + 128;
+          
+          // Reduce brightness to 90%
+          data[i] *= 0.9;
+          data[i + 1] *= 0.9;
+          data[i + 2] *= 0.9;
+        } else if (selectedFilter === 'Vibrant') {
+          // Vibrant: high saturation and brightness
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newS = Math.min(100, s * 1.8); // Increase saturation by 80%
+          const newL = Math.min(100, l * 1.1); // Increase lightness by 10%
+          const [newR, newG, newB] = hslToRgb(h, newS, newL);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+          
+          // Add a bit of contrast
+          const factor = (259 * (110 + 255)) / (255 * (259 - 110));
+          data[i] = factor * (data[i] - 128) + 128;
+          data[i + 1] = factor * (data[i + 1] - 128) + 128;
+          data[i + 2] = factor * (data[i + 2] - 128) + 128;
+        } else if (selectedFilter === 'Pastel') {
+          // Pastel: lower saturation, higher brightness, lower contrast
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newS = s * 0.6; // Reduce saturation to 60%
+          const newL = Math.min(100, l * 1.3); // Increase lightness by 30%
+          const [newR, newG, newB] = hslToRgb(h, newS, newL);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+          
+          // Lower contrast
+          const factor = (259 * (90 + 255)) / (255 * (259 - 90));
+          data[i] = factor * (data[i] - 128) + 128;
+          data[i + 1] = factor * (data[i + 1] - 128) + 128;
+          data[i + 2] = factor * (data[i + 2] - 128) + 128;
+        } else if (selectedFilter === 'Retro') {
+          // Retro: sepia-like with color shift and vintage look
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // First apply sepia at 60%
+          data[i] = Math.min(255, (r * 0.4) + (r * 0.393 + g * 0.769 + b * 0.189) * 0.6);
+          data[i + 1] = Math.min(255, (g * 0.4) + (r * 0.349 + g * 0.686 + b * 0.168) * 0.6);
+          data[i + 2] = Math.min(255, (b * 0.4) + (r * 0.272 + g * 0.534 + b * 0.131) * 0.6);
+          
+          // Then apply hue shift to add a vintage feel
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newH = (h - 30 + 360) % 360; // Shift hue by -30 degrees
+          const newS = Math.min(100, s * 1.4); // Increase saturation
+          const [newR, newG, newB] = hslToRgb(newH, newS, l);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+        } else if (selectedFilter === 'Purple') {
+          // Purple: hue rotation to emphasize purple tones
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newH = (h + 270) % 360; // Shift to purple
+          const newS = Math.min(100, s * 1.3); // Increase saturation
+          const newL = Math.min(100, l * 1.1); // Increase brightness slightly
+          const [newR, newG, newB] = hslToRgb(newH, newS, newL);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+        } else if (selectedFilter === 'Ocean') {
+          // Ocean: blue-green hue shift with vibrant saturation
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newH = (h + 190) % 360; // Shift to blue-green
+          const newS = Math.min(100, s * 1.6); // Increase saturation
+          const newL = Math.min(100, l * 1.05); // Slight brightness boost
+          const [newR, newG, newB] = hslToRgb(newH, newS, newL);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+        } else if (selectedFilter === 'Sunset') {
+          // Sunset: orangish-red hue shift with high saturation
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newH = (h - 20 + 360) % 360; // Shift toward orange-red
+          const newS = Math.min(100, s * 1.5); // Increase saturation
+          const newL = Math.min(100, l * 1.1); // Increase brightness slightly
+          const [newR, newG, newB] = hslToRgb(newH, newS, newL);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+          
+          // Add a bit of contrast
+          const factor = (259 * (110 + 255)) / (255 * (259 - 110));
+          data[i] = factor * (data[i] - 128) + 128;
+          data[i + 1] = factor * (data[i + 1] - 128) + 128;
+          data[i + 2] = factor * (data[i + 2] - 128) + 128;
+        } else if (selectedFilter === 'Forest') {
+          // Forest: green-shifted with lower brightness
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newH = (h + 90) % 360; // Shift toward green
+          const newS = Math.min(100, s * 1.5); // Increase saturation
+          const newL = l * 0.95; // Slightly decrease brightness
+          const [newR, newG, newB] = hslToRgb(newH, newS, newL);
+          data[i] = newR;
+          data[i + 1] = newG;
+          data[i + 2] = newB;
+        } else if (selectedFilter === 'Faded') {
+          // Faded: low contrast, slightly higher brightness, lower saturation
+          // Lower contrast
+          const contrastFactor = (259 * (85 + 255)) / (255 * (259 - 85));
+          data[i] = contrastFactor * (data[i] - 128) + 128;
+          data[i + 1] = contrastFactor * (data[i + 1] - 128) + 128;
+          data[i + 2] = contrastFactor * (data[i + 2] - 128) + 128;
+          
+          // Increase brightness to 110%
+          data[i] = Math.min(255, data[i] * 1.1);
+          data[i + 1] = Math.min(255, data[i + 1] * 1.1);
+          data[i + 2] = Math.min(255, data[i + 2] * 1.1);
+          
+          // Lower saturation
+          const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+          const newS = s * 0.75; // Reduce saturation to 75%
           const [newR, newG, newB] = hslToRgb(h, newS, l);
           data[i] = newR;
           data[i + 1] = newG;
