@@ -12,6 +12,7 @@ interface ReplyInputProps {
   onSubmit: () => void;
   onCancel: () => void;
   submittingReply: boolean;
+  placeholder?: string;
 }
 
 const ReplyInput: React.FC<ReplyInputProps> = ({
@@ -20,7 +21,8 @@ const ReplyInput: React.FC<ReplyInputProps> = ({
   onChange,
   onSubmit,
   onCancel,
-  submittingReply
+  submittingReply,
+  placeholder = "Add a reply..."
 }) => {
   return (
     <div className="mt-3 flex items-center space-x-2">
@@ -35,7 +37,7 @@ const ReplyInput: React.FC<ReplyInputProps> = ({
       </Avatar>
       <Input
         type="text"
-        placeholder="Add a reply..."
+        placeholder={placeholder}
         className="flex-1 h-8 text-sm"
         value={replyContent}
         onChange={(e) => onChange(e.target.value)}

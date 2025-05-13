@@ -1,12 +1,11 @@
 
 import React from 'react';
+import { VideoComment, User } from '@/lib/types';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ThumbsUp, Reply } from 'lucide-react';
-import ReplyInput from './ReplyInput';
 import { formatDistanceToNow } from 'date-fns';
-import { VideoComment, User } from '@/lib/types';
+import { Heart, MessageCircle } from 'lucide-react';
+import ReplyInput from './ReplyInput';
 
 interface CommentItemProps {
   comment: VideoComment;
@@ -16,7 +15,7 @@ interface CommentItemProps {
   onReply: (comment: VideoComment) => void;
   isReplying: boolean;
   replyContent: string;
-  onReplyInputChange: (content: string) => void;
+  onReplyInputChange: (v: string) => void;
   onReplyCancel: () => void;
   onReplySubmit: () => void;
   submittingReply: boolean;
@@ -37,43 +36,61 @@ const CommentItem: React.FC<CommentItemProps> = ({
   submittingReply,
   onLikeReply,
 }) => {
+  const formatDate = (date: string) => {
+    try {
+      return formatDistanceToNow(new Date(date), { addSuffix: true });
+    } catch (error) {
+      return 'Unknown time';
+    }
+  };
+
   return (
-    <div className="group">
+    <div className="space-y-2">
       <div className="flex space-x-3">
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <img
-            src={comment.author?.avatar || comment.author?.avatar_url || "https://via.placeholder.com/40"}
-            alt={comment.author?.name || comment.author?.username || 'User'}
-            className="rounded-full"
-          />
+        <Avatar className="h-8 w-8">
+          {comment.user_avatar && (
+            <img
+              src={comment.user_avatar}
+              alt={comment.username || "User"}
+              className="rounded-full"
+            />
+          )}
         </Avatar>
         <div className="flex-1">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm font-semibold">{comment.author?.name || comment.author?.username || 'Unknown'}</p>
-            <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</p>
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+            <div className="flex justify-between">
+              <span className="font-medium text-sm">{comment.username || "Anonymous"}</span>
+              <span className="text-xs text-gray-500">
+                {formatDate(comment.created_at)}
+              </span>
+            </div>
+            <p className="text-sm mt-1">{comment.content}</p>
           </div>
-          <p className="text-sm mt-1">{comment.content}</p>
-          <div className="mt-2 flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`flex items-center h-8 px-2 ${updatingLike === comment.id ? 'pointer-events-none' : ''}`}
+          <div className="flex space-x-4 mt-1 px-2">
+            <button
               onClick={() => onLikeComment(comment)}
               disabled={updatingLike === comment.id}
+              className={`flex items-center space-x-1 text-xs ${
+                comment.user_has_liked ? 'text-blue-500' : 'text-gray-500'
+              }`}
             >
-              <ThumbsUp className={`h-4 w-4 mr-1.5 ${comment.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
-              {comment.likes && comment.likes > 0 && <span className="text-xs">{comment.likes}</span>}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center h-8 px-2"
-              onClick={() => onReply(comment)}
-            >
-              <Reply className="h-4 w-4 mr-1.5" />
-              <span className="text-xs">Reply</span>
-            </Button>
+              <Heart
+                size={14}
+                className={comment.user_has_liked ? 'fill-blue-500' : ''}
+              />
+              <span>{comment.likes || 0}</span>
+            </button>
+            {user && (
+              <button
+                onClick={() => onReply(comment)}
+                className="flex items-center space-x-1 text-xs text-gray-500"
+              >
+                <MessageCircle size={14} />
+                <span>Reply</span>
+              </button>
+            )}
           </div>
+          
           {isReplying && (
             <ReplyInput
               user={user}
@@ -84,42 +101,51 @@ const CommentItem: React.FC<CommentItemProps> = ({
               submittingReply={submittingReply}
             />
           )}
-          {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-3 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-3">
-              {comment.replies.map((reply) => (
-                <div key={reply.id} className="pt-2">
-                  <div className="flex space-x-2">
-                    <Avatar className="h-6 w-6 flex-shrink-0">
-                      <img
-                        src={reply.author?.avatar || reply.author?.avatar_url || "https://via.placeholder.com/40"}
-                        alt={reply.author?.name || reply.author?.username || 'User'}
-                        className="rounded-full"
-                      />
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <p className="text-xs font-semibold">{reply.author?.name || reply.author?.username || 'Unknown'}</p>
-                        <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}</p>
-                      </div>
-                      <p className="text-xs mt-0.5">{reply.content}</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`flex items-center h-6 px-1 mt-1 ${updatingLike === reply.id ? 'pointer-events-none' : ''}`}
-                        onClick={() => onLikeReply(comment.id, reply)}
-                        disabled={updatingLike === reply.id}
-                      >
-                        <ThumbsUp className={`h-3 w-3 mr-1 ${reply.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
-                        {reply.likes && reply.likes > 0 && <span className="text-xs">{reply.likes}</span>}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
+
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="ml-10 space-y-3">
+          {comment.replies.map((reply) => (
+            <div key={reply.id} className="flex space-x-3">
+              <Avatar className="h-6 w-6">
+                {reply.user_avatar && (
+                  <img
+                    src={reply.user_avatar}
+                    alt={reply.username || "User"}
+                    className="rounded-full"
+                  />
+                )}
+              </Avatar>
+              <div className="flex-1">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
+                  <div className="flex justify-between">
+                    <span className="font-medium text-xs">{reply.username || "Anonymous"}</span>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(reply.created_at)}
+                    </span>
+                  </div>
+                  <p className="text-xs mt-1">{reply.content}</p>
+                </div>
+                <div className="flex space-x-4 mt-1 px-2">
+                  <button
+                    onClick={() => onLikeReply(comment.id, reply)}
+                    className={`flex items-center space-x-1 text-xs ${
+                      reply.user_has_liked ? 'text-blue-500' : 'text-gray-500'
+                    }`}
+                  >
+                    <Heart
+                      size={12}
+                      className={reply.user_has_liked ? 'fill-blue-500' : ''}
+                    />
+                    <span>{reply.likes || 0}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
