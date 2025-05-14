@@ -116,7 +116,9 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
 
   const handleSearchClick = () => {
     if (debouncedQuery.trim()) {
-      addToSearchHistory(debouncedQuery.trim());
+      // Update both localStorage and local state
+      const updatedHistory = addToSearchHistory(debouncedQuery.trim());
+      setSearchHistory(updatedHistory);
       navigate(`/search?q=${encodeURIComponent(debouncedQuery.trim())}`);
       onClose();
     }
@@ -128,8 +130,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     setSearchHistory([]);
   };
 
-  // Important change: Always show history when input is clicked and history exists
-  // Before it was checking query.length < 2, now just check if history exists
+  // Always show history when it exists
   const showHistory = searchHistory.length > 0;
   const showSuggestions = debouncedQuery.length >= 2 && suggestions.length > 0;
   const showNoResults = debouncedQuery.length >= 2 && suggestions.length === 0 && !loading;

@@ -27,8 +27,8 @@ export const getSearchHistory = (): SearchHistoryItem[] => {
 /**
  * Add a search query to history and limit to MAX_HISTORY_ITEMS
  */
-export const addToSearchHistory = (query: string): void => {
-  if (!query.trim()) return;
+export const addToSearchHistory = (query: string): SearchHistoryItem[] => {
+  if (!query.trim()) return getSearchHistory();
   
   try {
     const history = getSearchHistory();
@@ -43,8 +43,10 @@ export const addToSearchHistory = (query: string): void => {
     ].slice(0, MAX_HISTORY_ITEMS);
     
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+    return updatedHistory;
   } catch (error) {
     console.error('Failed to save search history:', error);
+    return getSearchHistory();
   }
 };
 
