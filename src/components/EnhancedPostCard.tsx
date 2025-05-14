@@ -1,8 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import PostCard from "./PostCard";
 import { Post } from "../lib/types";
 import { getAvatarUrl } from "../lib/avatar-utils";
+import { useGroup } from "../context/GroupContext";
 
 interface EnhancedPostCardProps {
   post: Post;

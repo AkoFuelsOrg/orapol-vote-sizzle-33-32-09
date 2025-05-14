@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit } from 'lucide-react';
+import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit, Users, Home } from 'lucide-react';
 import { Post } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
@@ -30,6 +31,7 @@ import {
   DropdownMenuTrigger 
 } from './ui/dropdown-menu';
 import CreatePostModal from './CreatePostModal';
+import { useGroup } from '@/context/GroupContext';
 
 interface PostCardProps {
   post: Post;
@@ -43,6 +45,7 @@ const PostCard: React.FC<PostCardProps> = ({
   onPostDeleted 
 }) => {
   const { user } = useSupabase();
+  const { joinedGroups, loadingGroups } = useGroup();
   const isMobile = useIsMobile();
   const breakpoint = useBreakpoint();
   const [isImageExpanded, setIsImageExpanded] = useState(false);
@@ -151,11 +154,81 @@ const PostCard: React.FC<PostCardProps> = ({
     setShowCommentForm(!showCommentForm);
   };
 
-  const handleShare = async (e: React.MouseEvent, platform?: string) => {
+  const handleShareToGroup = async (e: React.MouseEvent, groupId: string) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (!user) {
+      toast.error("Please sign in to share to groups");
+      return;
+    }
+    
+    try {
+      // Create a new post in the selected group with reference to original post
+      const { error } = await supabase
+        .from('posts')
+        .insert({
+          content: post.content,
+          user_id: user.id,
+          group_id: groupId,
+          image: post.image,
+          shared_from_post_id: post.id
+        });
+        
+      if (error) throw error;
+      
+      toast.success("Shared to group successfully");
+      setIsShareOpen(false);
+      
+      if (onPostUpdate) {
+        onPostUpdate();
+      }
+    } catch (error: any) {
+      console.error('Error sharing to group:', error);
+      toast.error(error.message || "Failed to share to group");
+    }
+  };
+  
+  const handleShareToPublic = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      toast.error("Please sign in to share to the public feed");
+      return;
+    }
+    
+    try {
+      // Create a new post in the public feed with reference to original post
+      const { error } = await supabase
+        .from('posts')
+        .insert({
+          content: post.content,
+          user_id: user.id,
+          group_id: null, // No group = public feed
+          image: post.image,
+          shared_from_post_id: post.id
+        });
+        
+      if (error) throw error;
+      
+      toast.success("Shared to public feed successfully");
+      setIsShareOpen(false);
+      
+      if (onPostUpdate) {
+        onPostUpdate();
+      }
+    } catch (error: any) {
+      console.error('Error sharing to public feed:', error);
+      toast.error(error.message || "Failed to share to public feed");
+    }
+  };
+
+  const handleShare = async (e: React.MouseEvent, platform?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user && platform !== 'copy' && platform !== undefined) {
       toast.error("Please sign in to share posts");
       return;
     }
@@ -331,51 +404,118 @@ const PostCard: React.FC<PostCardProps> = ({
   );
 
   const ShareOptions = () => (
-    <div className="grid grid-cols-2 gap-4 w-full px-1 py-3">
-      <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-gray-50 transition-all border-gray-100 hover:border-primary/20" onClick={(e) => handleShare(e, 'copy')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-        </svg>
-        <span className="text-xs font-medium">Copy Link</span>
-      </Button>
+    <div className="flex flex-col w-full">
+      <div className="border-b border-gray-100 pb-3 mb-2">
+        <h4 className="text-sm font-medium text-gray-700 mb-2 px-1">Share to</h4>
+        <div className="grid grid-cols-2 gap-4 w-full px-1 py-2">
+          <Button 
+            variant="outline" 
+            className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-primary/5 transition-all border-gray-100" 
+            onClick={(e) => handleShareToPublic(e)}
+          >
+            <Home size={24} className="text-primary" />
+            <span className="text-xs font-medium">Public Feed</span>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-primary/5 transition-all border-gray-100" 
+            onClick={(e) => {
+              e.preventDefault();
+              const groupsSection = document.getElementById('groups-section');
+              if (groupsSection) {
+                groupsSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+          >
+            <Users size={24} className="text-primary" />
+            <span className="text-xs font-medium">My Groups</span>
+          </Button>
+        </div>
+      </div>
       
-      <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-blue-50 transition-all border-gray-100 hover:border-blue-200" onClick={(e) => handleShare(e, 'twitter')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
-          <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-        </svg>
-        <span className="text-xs font-medium">Twitter</span>
-      </Button>
+      {user && joinedGroups.length > 0 && (
+        <div id="groups-section" className="border-b border-gray-100 pb-3 mb-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2 px-1">My Groups</h4>
+          <div className="max-h-48 overflow-y-auto px-1">
+            {loadingGroups ? (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                {joinedGroups.map(group => (
+                  <Button 
+                    key={group.id}
+                    variant="ghost" 
+                    className="flex items-center justify-start w-full px-2 py-2 h-auto"
+                    onClick={(e) => handleShareToGroup(e, group.id)}
+                  >
+                    <div className="flex items-center space-x-2 w-full">
+                      <Avatar className="h-8 w-8 rounded-full border border-gray-100">
+                        <AvatarImage src={group.avatar_url || '/lovable-uploads/default-avatar.png'} alt={group.name} />
+                        <AvatarFallback>{group.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="truncate">
+                        <p className="text-sm font-medium">{group.name}</p>
+                      </div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
-      <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-blue-50 transition-all border-gray-100 hover:border-blue-200" onClick={(e) => handleShare(e, 'facebook')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-        </svg>
-        <span className="text-xs font-medium">Facebook</span>
-      </Button>
-      
-      <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-green-50 transition-all border-gray-100 hover:border-green-200" onClick={(e) => handleShare(e, 'whatsapp')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500">
-          <path d="M17.4 14.3a4 4 0 0 0-5.5-5.5l-6.8 6.8L2 22l6.8-2.9 6.8-6.8c.3.4.5.8.7 1.2A10 10 0 1 1 2 12a10 10 0 0 1 16.7-7.2c.3.4.6.8.7 1.3v8.2z"></path>
-        </svg>
-        <span className="text-xs font-medium">WhatsApp</span>
-      </Button>
-      
-      <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-blue-50 transition-all border-gray-100 hover:border-blue-200" onClick={(e) => handleShare(e, 'telegram')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-          <path d="m22 2-7 20-4-9-9-4 20-7Z"></path>
-          <path d="M22 2 11 13"></path>
-        </svg>
-        <span className="text-xs font-medium">Telegram</span>
-      </Button>
-      
-      <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-gray-50 transition-all border-gray-100 hover:border-gray-200" onClick={(e) => handleShare(e, 'email')}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
-          <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-        </svg>
-        <span className="text-xs font-medium">Email</span>
-      </Button>
+      <div className="mt-2">
+        <h4 className="text-sm font-medium text-gray-700 mb-2 px-1">External platforms</h4>
+        <div className="grid grid-cols-2 gap-4 w-full px-1 py-2">
+          <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-gray-50 transition-all border-gray-100 hover:border-primary/20" onClick={(e) => handleShare(e, 'copy')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <span className="text-xs font-medium">Copy Link</span>
+          </Button>
+          
+          <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-blue-50 transition-all border-gray-100 hover:border-blue-200" onClick={(e) => handleShare(e, 'twitter')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+              <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+            </svg>
+            <span className="text-xs font-medium">Twitter</span>
+          </Button>
+          
+          <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-blue-50 transition-all border-gray-100 hover:border-blue-200" onClick={(e) => handleShare(e, 'facebook')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+            </svg>
+            <span className="text-xs font-medium">Facebook</span>
+          </Button>
+          
+          <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-green-50 transition-all border-gray-100 hover:border-green-200" onClick={(e) => handleShare(e, 'whatsapp')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500">
+              <path d="M17.4 14.3a4 4 0 0 0-5.5-5.5l-6.8 6.8L2 22l6.8-2.9 6.8-6.8c.3.4.5.8.7 1.2A10 10 0 1 1 2 12a10 10 0 0 1 16.7-7.2c.3.4.6.8.7 1.3v8.2z"></path>
+            </svg>
+            <span className="text-xs font-medium">WhatsApp</span>
+          </Button>
+          
+          <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-blue-50 transition-all border-gray-100 hover:border-blue-200" onClick={(e) => handleShare(e, 'telegram')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+              <path d="M22 2 2 11l7 3 2 7 5-9"></path>
+            </svg>
+            <span className="text-xs font-medium">Telegram</span>
+          </Button>
+          
+          <Button variant="outline" className="flex flex-col items-center justify-center h-20 space-y-2 hover:bg-gray-50 transition-all border-gray-100 hover:border-gray-200" onClick={(e) => handleShare(e, 'email')}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+            </svg>
+            <span className="text-xs font-medium">Email</span>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 
@@ -521,10 +661,10 @@ const PostCard: React.FC<PostCardProps> = ({
               <DrawerHeader className="border-b border-gray-100">
                 <DrawerTitle className="text-center">Share This Post</DrawerTitle>
                 <DrawerDescription className="text-center text-sm">
-                  Choose a platform to share
+                  Choose where to share
                 </DrawerDescription>
               </DrawerHeader>
-              <div className="px-4">
+              <div className="px-4 py-2 max-h-[70vh] overflow-y-auto">
                 <ShareOptions />
               </div>
               <DrawerFooter>
@@ -760,10 +900,10 @@ const PostCard: React.FC<PostCardProps> = ({
                     <DrawerHeader className="border-b border-gray-100">
                       <DrawerTitle className="text-center">Share This Post</DrawerTitle>
                       <DrawerDescription className="text-center text-sm">
-                        Choose a platform to share
+                        Choose where to share
                       </DrawerDescription>
                     </DrawerHeader>
-                    <div className="px-4">
+                    <div className="px-4 py-2 max-h-[70vh] overflow-y-auto">
                       <ShareOptions />
                     </div>
                     <DrawerFooter>
@@ -783,7 +923,7 @@ const PostCard: React.FC<PostCardProps> = ({
                   </button>
                   <DialogContent className="sm:max-w-md rounded-xl">
                     <DialogTitle className="text-center">Share This Post</DialogTitle>
-                    <div className="p-2">
+                    <div className="p-2 max-h-[70vh] overflow-y-auto">
                       <ShareOptions />
                     </div>
                   </DialogContent>
