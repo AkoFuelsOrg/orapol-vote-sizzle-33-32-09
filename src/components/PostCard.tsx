@@ -164,15 +164,21 @@ const PostCard: React.FC<PostCardProps> = ({
     
     try {
       // Create a new post in the selected group with reference to original post
-      const { error } = await supabase
+      const newPost = {
+        content: post.content,
+        user_id: user.id,
+        group_id: groupId,
+        image: post.image,
+        shared_from_post_id: post.id || null
+      };
+      
+      console.log("Sharing post to group with data:", newPost);
+      
+      const { data, error } = await supabase
         .from('posts')
-        .insert({
-          content: post.content,
-          user_id: user.id,
-          group_id: groupId,
-          image: post.image,
-          shared_from_post_id: post.id || null
-        });
+        .insert(newPost)
+        .select('id')
+        .single();
         
       if (error) throw error;
       
@@ -182,6 +188,16 @@ const PostCard: React.FC<PostCardProps> = ({
       if (onPostUpdate) {
         onPostUpdate();
       }
+      
+      // Dispatch event to notify any listening components about the new post
+      const event = new CustomEvent('group-post-created', { 
+        detail: { 
+          groupId: groupId,
+          postId: data.id
+        } 
+      });
+      window.dispatchEvent(event);
+      
     } catch (error: any) {
       console.error('Error sharing to group:', error);
       toast.error(error.message || "Failed to share to group");
@@ -199,15 +215,21 @@ const PostCard: React.FC<PostCardProps> = ({
     
     try {
       // Create a new post in the public feed with reference to original post
-      const { error } = await supabase
+      const newPost = {
+        content: post.content,
+        user_id: user.id,
+        group_id: null, // No group = public feed
+        image: post.image,
+        shared_from_post_id: post.id || null
+      };
+      
+      console.log("Sharing post to public feed with data:", newPost);
+      
+      const { data, error } = await supabase
         .from('posts')
-        .insert({
-          content: post.content,
-          user_id: user.id,
-          group_id: null, // No group = public feed
-          image: post.image,
-          shared_from_post_id: post.id || null
-        });
+        .insert(newPost)
+        .select('id')
+        .single();
         
       if (error) throw error;
       
@@ -217,6 +239,7 @@ const PostCard: React.FC<PostCardProps> = ({
       if (onPostUpdate) {
         onPostUpdate();
       }
+      
     } catch (error: any) {
       console.error('Error sharing to public feed:', error);
       toast.error(error.message || "Failed to share to public feed");
