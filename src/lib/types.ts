@@ -43,6 +43,8 @@ export interface VideoComment {
   parent_id?: string; 
   replies?: VideoComment[];
   user_has_liked?: boolean;
+  username?: string;     // Adding the missing property
+  user_avatar?: string;  // Adding the missing property
 }
 
 export interface Message {
