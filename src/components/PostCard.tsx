@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit, Users, Home } from 'lucide-react';
@@ -172,7 +171,7 @@ const PostCard: React.FC<PostCardProps> = ({
           user_id: user.id,
           group_id: groupId,
           image: post.image,
-          shared_from_post_id: post.id
+          shared_from_post_id: post.id || null
         });
         
       if (error) throw error;
@@ -207,7 +206,7 @@ const PostCard: React.FC<PostCardProps> = ({
           user_id: user.id,
           group_id: null, // No group = public feed
           image: post.image,
-          shared_from_post_id: post.id
+          shared_from_post_id: post.id || null
         });
         
       if (error) throw error;
@@ -224,7 +223,7 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
-  const handleShare = async (e: React.MouseEvent, platform?: string) => {
+  const handleShare = async (e: React.MouseEvent, platform?: string | undefined) => {
     e.preventDefault();
     e.stopPropagation();
     
