@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit, Users, Home } from 'lucide-react';
+import { MessageCircle, Heart, Share2, X, Maximize, Bookmark, Trash2, Edit, Users, Home, CornerUpRight } from 'lucide-react';
 import { Post } from '../lib/types';
 import { useSupabase } from '../context/SupabaseContext';
 import { toast } from 'sonner';
@@ -55,6 +55,7 @@ const PostCard: React.FC<PostCardProps> = ({
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const isPostOwner = user && post.author.id === user.id;
+  const isSharedPost = post.shared_from_post_id ? true : false;
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -169,6 +170,7 @@ const PostCard: React.FC<PostCardProps> = ({
         user_id: user.id,
         group_id: groupId,
         image: post.image,
+        shared_from_post_id: post.id
       };
       
       console.log("Sharing post to group with data:", newPost);
@@ -219,6 +221,7 @@ const PostCard: React.FC<PostCardProps> = ({
         user_id: user.id,
         group_id: null, // No group = public feed
         image: post.image,
+        shared_from_post_id: post.id
       };
       
       console.log("Sharing post to public feed with data:", newPost);
@@ -580,6 +583,12 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
         
         <div className="px-4 py-3">
+          {isSharedPost && (
+            <div className="flex items-center text-gray-500 text-xs mb-2 font-medium">
+              <CornerUpRight size={14} className="mr-1.5" />
+              <span>Shared post</span>
+            </div>
+          )}
           <p className="text-sm whitespace-pre-line break-words mb-2 leading-relaxed">
             {renderTextWithLinks(post.content)}
           </p>
@@ -865,6 +874,12 @@ const PostCard: React.FC<PostCardProps> = ({
           )}
           
           <div className="px-5 py-4">
+            {isSharedPost && (
+              <div className="flex items-center text-gray-500 text-sm mb-3 font-medium">
+                <CornerUpRight size={16} className="mr-2 text-primary/70" />
+                <span>Shared post</span>
+              </div>
+            )}
             <div className="space-y-2">
               <p className="text-sm leading-relaxed whitespace-pre-line break-words">
                 {post.image ? '' : <span className="font-semibold">{post.author.name}</span>}{" "}

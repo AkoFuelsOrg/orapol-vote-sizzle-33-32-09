@@ -136,6 +136,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           },
           groupId: post.group_id,
           marketplace_id: post.marketplace_id,
+          shared_from_post_id: post.shared_from_post_id || undefined,
         };
       }));
       
