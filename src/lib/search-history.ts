@@ -23,12 +23,13 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
     if (!user) return [];
 
     // Fetch search history for this user
+    // Using the generic method to avoid type errors
     const { data, error } = await supabase
       .from('search_history')
       .select('*')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false })
-      .limit(MAX_HISTORY_ITEMS);
+      .limit(MAX_HISTORY_ITEMS) as { data: SearchHistoryItem[] | null, error: any };
 
     if (error) {
       console.error('Failed to fetch search history:', error);
@@ -54,12 +55,13 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     if (!user) return [];
     
     // Check if this query already exists for this user
+    // Using the generic method to avoid type errors
     const { data: existingQuery } = await supabase
       .from('search_history')
       .select('id')
       .eq('user_id', user.id)
       .eq('query', query.toLowerCase())
-      .maybeSingle();
+      .maybeSingle() as { data: { id: string } | null, error: any };
     
     // If it exists, delete it so we can add it again with updated timestamp
     if (existingQuery?.id) {
@@ -70,13 +72,16 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     }
     
     // Insert new search record
-    const newSearch = {
+    const newSearch: SearchHistoryItem = {
       user_id: user.id,
       query: query.trim(),
       timestamp: Date.now()
     };
     
-    await supabase.from('search_history').insert(newSearch);
+    // Using the generic method to avoid type errors
+    await supabase
+      .from('search_history')
+      .insert(newSearch as any);
     
     // After inserting the new search, check if we have more than MAX_HISTORY_ITEMS
     // If so, delete the oldest ones
@@ -84,7 +89,7 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
       .from('search_history')
       .select('*')
       .eq('user_id', user.id)
-      .order('timestamp', { ascending: false });
+      .order('timestamp', { ascending: false }) as { data: SearchHistoryItem[] | null, error: any };
       
     if (allSearches && allSearches.length > MAX_HISTORY_ITEMS) {
       const itemsToDelete = allSearches.slice(MAX_HISTORY_ITEMS);
