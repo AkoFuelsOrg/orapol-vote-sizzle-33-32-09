@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -32,6 +31,7 @@ import {
 import CreatePostModal from './CreatePostModal';
 import SearchSuggestions from './SearchSuggestions';
 import { AIChatModal } from './AIChatModal';
+import { addToSearchHistory } from '@/lib/search-history';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -53,6 +53,8 @@ const Header: React.FC = () => {
   const handleSearchClick = () => {
     if (showSearch) {
       if (searchQuery.trim()) {
+        // Add to search history before navigating
+        addToSearchHistory(searchQuery.trim());
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
         setShowSearch(false);
@@ -69,6 +71,8 @@ const Header: React.FC = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      // Add to search history before navigating
+      addToSearchHistory(searchQuery.trim());
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setShowSearch(false);
@@ -87,7 +91,7 @@ const Header: React.FC = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    setShowSuggestions(value.length >= 2);
+    setShowSuggestions(true);
   };
 
   const handleSuggestionSelect = (query: string) => {

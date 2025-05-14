@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Fuse from 'fuse.js';
+import { addToSearchHistory } from '@/lib/search-history';
 
 const SearchResults = () => {
   const location = useLocation();
@@ -20,6 +21,11 @@ const SearchResults = () => {
   const query = searchParams.get('q') || '';
   
   useEffect(() => {
+    if (query && query.length >= 2) {
+      // Add to search history when a search is performed
+      addToSearchHistory(query);
+    }
+    
     const performSearch = async () => {
       setIsLoading(true);
       

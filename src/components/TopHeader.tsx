@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import SearchSuggestions from './SearchSuggestions';
+import { addToSearchHistory } from '@/lib/search-history';
 
 const TopHeader: React.FC = () => {
   const breakpoint = useBreakpoint();
@@ -25,6 +26,8 @@ const TopHeader: React.FC = () => {
   const handleSearchClick = () => {
     if (showSearch) {
       if (searchQuery.trim()) {
+        // Add to search history before navigating
+        addToSearchHistory(searchQuery.trim());
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
         setShowSearch(false);
@@ -41,6 +44,8 @@ const TopHeader: React.FC = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      // Add to search history before navigating
+      addToSearchHistory(searchQuery.trim());
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setShowSearch(false);
@@ -59,7 +64,7 @@ const TopHeader: React.FC = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    setShowSuggestions(value.length >= 2);
+    setShowSuggestions(true);
   };
 
   const handleSuggestionSelect = (query: string) => {
