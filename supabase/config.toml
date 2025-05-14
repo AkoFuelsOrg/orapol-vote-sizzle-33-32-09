@@ -1,1 +1,24 @@
+
 project_id = "itmicgkwzgzeqdwrisjz"
+
+[db.extensions]
+pg_graphql = true
+postgis = true
+
+[[db.migrations]]
+id = "add-shared-from-post-id"
+sql = '''
+-- Add shared_from_post_id column to the posts table if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'posts' 
+        AND column_name = 'shared_from_post_id'
+    ) THEN
+        ALTER TABLE public.posts ADD COLUMN shared_from_post_id UUID REFERENCES public.posts(id) NULL;
+    END IF;
+END
+$$;
+'''

@@ -169,7 +169,6 @@ const PostCard: React.FC<PostCardProps> = ({
         user_id: user.id,
         group_id: groupId,
         image: post.image,
-        shared_from_post_id: post.id || null
       };
       
       console.log("Sharing post to group with data:", newPost);
@@ -220,7 +219,6 @@ const PostCard: React.FC<PostCardProps> = ({
         user_id: user.id,
         group_id: null, // No group = public feed
         image: post.image,
-        shared_from_post_id: post.id || null
       };
       
       console.log("Sharing post to public feed with data:", newPost);
@@ -246,7 +244,8 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
-  const handleShare = async (e: React.MouseEvent, platform?: string | undefined) => {
+  // Fix the type error by properly typing the platform parameter
+  const handleShare = async (e: React.MouseEvent, platform?: string) => {
     e.preventDefault();
     e.stopPropagation();
     

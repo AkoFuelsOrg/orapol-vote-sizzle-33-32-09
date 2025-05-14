@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name?: string;
@@ -101,6 +102,7 @@ export interface Post {
   groupId?: string;
   marketplace_id?: string;
   isDeleted?: boolean; // New field to track deletion status
+  shared_from_post_id?: string; // Added field for sharing functionality
 }
 
 export interface Comment {
