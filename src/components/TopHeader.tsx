@@ -64,12 +64,12 @@ const TopHeader: React.FC = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    setShowSuggestions(true);
+    setShowSuggestions(true); // Always show suggestions when typing
   };
 
   const handleSuggestionSelect = (query: string) => {
     setSearchQuery(query);
-    setShowSuggestions(false);
+    // Don't hide suggestions after selecting from history
   };
   
   return (
@@ -99,7 +99,7 @@ const TopHeader: React.FC = () => {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onKeyDown={handleSearchKeyDown}
-                onFocus={() => setShowSuggestions(searchQuery.length >= 2)}
+                onFocus={() => setShowSuggestions(true)} // Always show suggestions on focus
                 className="pl-9 pr-8 py-2 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full focus-visible:ring-white/30"
               />
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />

@@ -128,10 +128,13 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     setSearchHistory([]);
   };
 
-  const showHistory = query.length < 2 && searchHistory.length > 0;
+  // Important change: Always show history when input is clicked and history exists
+  // Before it was checking query.length < 2, now just check if history exists
+  const showHistory = searchHistory.length > 0;
   const showSuggestions = debouncedQuery.length >= 2 && suggestions.length > 0;
   const showNoResults = debouncedQuery.length >= 2 && suggestions.length === 0 && !loading;
   
+  // Return null only if there's nothing to display
   if (!showHistory && !showSuggestions && !showNoResults && !loading) {
     return null;
   }
@@ -145,6 +148,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
         <div className="p-2 text-sm text-gray-500">Loading suggestions...</div>
       ) : (
         <div className="max-h-60 overflow-y-auto py-1">
+          {/* Search history section - now always shown when history exists */}
           {showHistory && (
             <div className="mb-1">
               <div className="px-3 py-1.5 flex items-center justify-between">
@@ -172,10 +176,11 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                   </div>
                 </div>
               ))}
-              <div className="border-t border-gray-100 mt-1"></div>
+              {showSuggestions && <div className="border-t border-gray-100 mt-1"></div>}
             </div>
           )}
           
+          {/* Search suggestions section */}
           {showSuggestions && suggestions.map((suggestion) => (
             <div
               key={`${suggestion.type}-${suggestion.id}`}
