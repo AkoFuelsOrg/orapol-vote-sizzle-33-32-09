@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Search, MessageSquare, Video, User, Heart, X } from 'lucide-react';
@@ -23,15 +23,24 @@ const TopHeader: React.FC = () => {
     return null;
   }
 
-  const handleSearchClick = () => {
+  const handleSearchClick = async () => {
     if (showSearch) {
       if (searchQuery.trim()) {
-        // Add to search history before navigating
-        addToSearchHistory(searchQuery.trim());
-        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        setSearchQuery('');
-        setShowSearch(false);
-        setShowSuggestions(false);
+        try {
+          // Add to search history before navigating
+          await addToSearchHistory(searchQuery.trim());
+          navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+          setSearchQuery('');
+          setShowSearch(false);
+          setShowSuggestions(false);
+        } catch (error) {
+          console.error('Error adding to search history:', error);
+          // Navigate anyway even if saving history fails
+          navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+          setSearchQuery('');
+          setShowSearch(false);
+          setShowSuggestions(false);
+        }
       }
     } else {
       setShowSearch(true);
@@ -41,15 +50,24 @@ const TopHeader: React.FC = () => {
     }
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Add to search history before navigating
-      addToSearchHistory(searchQuery.trim());
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
-      setShowSearch(false);
-      setShowSuggestions(false);
+      try {
+        // Add to search history before navigating
+        await addToSearchHistory(searchQuery.trim());
+        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchQuery('');
+        setShowSearch(false);
+        setShowSuggestions(false);
+      } catch (error) {
+        console.error('Error adding to search history:', error);
+        // Navigate anyway even if saving history fails
+        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchQuery('');
+        setShowSearch(false);
+        setShowSuggestions(false);
+      }
     }
   };
 

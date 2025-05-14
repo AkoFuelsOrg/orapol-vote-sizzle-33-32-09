@@ -30,13 +30,26 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Load search history when component mounts
   useEffect(() => {
-    setSearchHistory(getSearchHistory());
+    const loadSearchHistory = async () => {
+      setHistoryLoading(true);
+      try {
+        const history = await getSearchHistory();
+        setSearchHistory(history);
+      } catch (error) {
+        console.error('Error loading search history:', error);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+    
+    loadSearchHistory();
   }, []);
   
   useEffect(() => {
@@ -114,20 +127,31 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     onSelect(query);
   };
 
-  const handleSearchClick = () => {
+  const handleSearchClick = async () => {
     if (debouncedQuery.trim()) {
-      // Update both localStorage and local state
-      const updatedHistory = addToSearchHistory(debouncedQuery.trim());
-      setSearchHistory(updatedHistory);
-      navigate(`/search?q=${encodeURIComponent(debouncedQuery.trim())}`);
-      onClose();
+      try {
+        // Update both database and local state
+        const updatedHistory = await addToSearchHistory(debouncedQuery.trim());
+        setSearchHistory(updatedHistory);
+        navigate(`/search?q=${encodeURIComponent(debouncedQuery.trim())}`);
+        onClose();
+      } catch (error) {
+        console.error('Error saving search history:', error);
+        // Still navigate even if saving history fails
+        navigate(`/search?q=${encodeURIComponent(debouncedQuery.trim())}`);
+        onClose();
+      }
     }
   };
 
-  const handleClearHistory = (e: React.MouseEvent) => {
+  const handleClearHistory = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    clearSearchHistory();
-    setSearchHistory([]);
+    try {
+      await clearSearchHistory();
+      setSearchHistory([]);
+    } catch (error) {
+      console.error('Error clearing search history:', error);
+    }
   };
 
   // Always show history when it exists
@@ -136,7 +160,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
   const showNoResults = debouncedQuery.length >= 2 && suggestions.length === 0 && !loading;
   
   // Return null only if there's nothing to display
-  if (!showHistory && !showSuggestions && !showNoResults && !loading) {
+  if (!showHistory && !showSuggestions && !showNoResults && !loading && !historyLoading) {
     return null;
   }
   
@@ -145,8 +169,8 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
       ref={containerRef}
       className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden z-50"
     >
-      {loading ? (
-        <div className="p-2 text-sm text-gray-500">Loading suggestions...</div>
+      {(loading || historyLoading) ? (
+        <div className="p-2 text-sm text-gray-500">Loading...</div>
       ) : (
         <div className="max-h-60 overflow-y-auto py-1">
           {/* Search history section - now always shown when history exists */}
@@ -165,7 +189,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
               </div>
               {searchHistory.map((item, i) => (
                 <div
-                  key={`history-${i}`}
+                  key={`history-${item.id || i}`}
                   className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                   onClick={() => handleHistoryItemClick(item.query)}
                 >

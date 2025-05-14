@@ -21,10 +21,18 @@ const SearchResults = () => {
   const query = searchParams.get('q') || '';
   
   useEffect(() => {
-    if (query && query.length >= 2) {
-      // Add to search history when a search is performed
-      addToSearchHistory(query);
-    }
+    const saveSearchAndPerform = async () => {
+      if (query && query.length >= 2) {
+        // Add to search history when a search is performed
+        try {
+          await addToSearchHistory(query);
+        } catch (error) {
+          console.error('Error saving search history:', error);
+        }
+      }
+      
+      performSearch();
+    };
     
     const performSearch = async () => {
       setIsLoading(true);
@@ -81,7 +89,7 @@ const SearchResults = () => {
       }
     };
     
-    performSearch();
+    saveSearchAndPerform();
   }, [query]);
   
   const navigateToUser = (userId: string) => {
