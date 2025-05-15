@@ -112,7 +112,7 @@ const PostDetail = () => {
     }
   };
   
-  const handlePostDeleted = (postId: string) => {
+  const handlePostDeleted = () => {
     toast.success("Post deleted successfully");
     navigate('/');
   };

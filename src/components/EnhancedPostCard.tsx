@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import PostCard from "./PostCard";
 import { Post } from "../lib/types";
 import { getAvatarUrl } from "../lib/avatar-utils";
@@ -40,17 +40,12 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
   };
 
-  const handlePostDeleted = (postId: string) => {
-    // Handle post deletion if needed
-    console.log("Post deleted:", postId);
-  };
-
   // Pass only the props that PostCard accepts
   return (
     <PostCard
       post={enhancedPost}
       onPostUpdate={handlePostUpdate}
-      onPostDeleted={handlePostDeleted}
+      onPostDeleted={() => {}}
     />
   );
 };

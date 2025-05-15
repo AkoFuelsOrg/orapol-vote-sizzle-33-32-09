@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,18 +8,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from './ui/button';
 import { useSupabase } from '../context/SupabaseContext';
 import { Post } from '@/lib/types';
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/hooks/use-toast";
+import { revalidatePath } from 'next/server';
+import { useToast } from './ui/use-toast';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
 
 interface PostCardProps {
   post: Post;
-  onPostUpdate?: () => void;
-  onPostDeleted?: (postId: string) => void;
+  onDelete?: (postId: string) => void;
   onEdit?: (postId: string) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate, onPostDeleted, onEdit }) => {
-  const { user, profile } = useSupabase();
+const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onEdit }) => {
+  const { user, profile, supabase } = useSupabase();
   const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(post.userLiked);
   const [likeCount, setLikeCount] = useState(post.likeCount);
@@ -44,45 +44,22 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate, onPostDeleted, 
       setIsLiked(optimisticLike);
       setLikeCount(optimisticLikeCount);
 
-      if (optimisticLike) {
-        const { error } = await supabase
-          .from('post_likes')
-          .upsert(
-            { post_id: post.id, user_id: user.id },
-            { onConflict: 'post_id,user_id', ignoreDuplicates: false }
-          );
+      const { error } = await supabase
+        .from('post_likes')
+        .upsert(
+          { post_id: post.id, user_id: user.id },
+          { onConflict: 'post_id,user_id', ignoreDuplicates: false }
+        );
 
-        if (error) {
-          console.error('Error toggling like:', error);
-          setIsLiked(isLiked);
-          setLikeCount(likeCount);
-          toast({
-            title: "Error",
-            description: "Failed to update like. Please try again.",
-            variant: "destructive",
-          });
-        } else if (onPostUpdate) {
-          onPostUpdate();
-        }
-      } else {
-        const { error } = await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', post.id)
-          .eq('user_id', user.id);
-
-        if (error) {
-          console.error('Error removing like:', error);
-          setIsLiked(isLiked);
-          setLikeCount(likeCount);
-          toast({
-            title: "Error",
-            description: "Failed to update like. Please try again.",
-            variant: "destructive",
-          });
-        } else if (onPostUpdate) {
-          onPostUpdate();
-        }
+      if (error) {
+        console.error('Error toggling like:', error);
+        setIsLiked(isLiked);
+        setLikeCount(likeCount);
+        toast({
+          title: "Error",
+          description: "Failed to update like. Please try again.",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -108,8 +85,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate, onPostDeleted, 
     
     try {
       // Optimistically update the UI
-      if (onPostDeleted) {
-        onPostDeleted(post.id);
+      if (onDelete) {
+        onDelete(post.id);
       }
       
       // Call the Supabase function to delete the post
@@ -175,17 +152,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate, onPostDeleted, 
         <div className="flex items-center">
           <Link to={`/user/${post.author.id}`}>
             <Avatar className="mr-3 h-8 w-8">
-              {post.author.avatar ? (
-                <AvatarImage src={post.author.avatar} alt={post.author.name || "User"} />
+              {post.author.avatar_url ? (
+                <AvatarImage src={post.author.avatar_url} alt={post.author.username || "User"} />
               ) : null}
               <AvatarFallback className="bg-muted">
-                {post.author.name ? post.author.name[0].toUpperCase() : "U"}
+                {post.author.username ? post.author.username[0].toUpperCase() : "U"}
               </AvatarFallback>
             </Avatar>
           </Link>
           <div className="flex flex-col">
             <Link to={`/user/${post.author.id}`}>
-              <CardTitle className="text-sm font-semibold hover:underline">{post.author.name}</CardTitle>
+              <CardTitle className="text-sm font-semibold hover:underline">{post.author.username}</CardTitle>
             </Link>
             <CardDescription className="text-xs text-gray-500">{timeAgo}</CardDescription>
           </div>

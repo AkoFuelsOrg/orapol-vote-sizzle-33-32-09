@@ -118,13 +118,6 @@ const Favourites = () => {
     }
   };
 
-  const handlePostDeleted = (postId: string) => {
-    // Remove the deleted post from all lists
-    setLikedPosts(prev => prev.filter(post => post.id !== postId));
-    setCommentedPosts(prev => prev.filter(post => post.id !== postId));
-    setSharedPosts(prev => prev.filter(post => post.id !== postId));
-  };
-
   const fetchPostDetails = async (postIds: string[], type: 'liked' | 'commented' | 'shared') => {
     try {
       // Modified query to use direct fetch pattern instead of relying on foreign key relationships
@@ -219,12 +212,7 @@ const Favourites = () => {
           ) : likedPosts.length > 0 ? (
             <div className="grid gap-6">
               {likedPosts.map((post) => (
-                <PostCard 
-                  key={post.id} 
-                  post={post} 
-                  onPostUpdate={handlePostUpdate}
-                  onPostDeleted={handlePostDeleted}
-                />
+                <PostCard key={post.id} post={post} onPostUpdate={handlePostUpdate} />
               ))}
             </div>
           ) : (
@@ -242,12 +230,7 @@ const Favourites = () => {
           ) : commentedPosts.length > 0 ? (
             <div className="grid gap-6">
               {commentedPosts.map((post) => (
-                <PostCard 
-                  key={post.id} 
-                  post={post} 
-                  onPostUpdate={handlePostUpdate}
-                  onPostDeleted={handlePostDeleted}
-                />
+                <PostCard key={post.id} post={post} onPostUpdate={handlePostUpdate} />
               ))}
             </div>
           ) : (
@@ -265,12 +248,7 @@ const Favourites = () => {
           ) : sharedPosts.length > 0 ? (
             <div className="grid gap-6">
               {sharedPosts.map((post) => (
-                <PostCard 
-                  key={post.id} 
-                  post={post} 
-                  onPostUpdate={handlePostUpdate}
-                  onPostDeleted={handlePostDeleted}
-                />
+                <PostCard key={post.id} post={post} onPostUpdate={handlePostUpdate} />
               ))}
             </div>
           ) : (
