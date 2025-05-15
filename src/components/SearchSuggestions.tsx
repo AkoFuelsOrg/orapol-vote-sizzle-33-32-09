@@ -41,6 +41,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
       setHistoryLoading(true);
       try {
         const history = await getSearchHistory();
+        console.log('Loaded search history:', history);
         setSearchHistory(history);
       } catch (error) {
         console.error('Error loading search history:', error);

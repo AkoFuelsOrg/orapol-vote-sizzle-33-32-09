@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Search, MessageSquare, Video, User, Heart, X } from 'lucide-react';
@@ -8,6 +8,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import SearchSuggestions from './SearchSuggestions';
 import { addToSearchHistory } from '@/lib/search-history';
+import { toast } from '@/components/ui/use-toast';
 
 const TopHeader: React.FC = () => {
   const breakpoint = useBreakpoint();
@@ -35,6 +36,10 @@ const TopHeader: React.FC = () => {
           setShowSuggestions(false);
         } catch (error) {
           console.error('Error adding to search history:', error);
+          toast({
+            description: "Failed to save search history",
+            variant: "destructive"
+          });
           // Navigate anyway even if saving history fails
           navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
           setSearchQuery('');
@@ -62,6 +67,10 @@ const TopHeader: React.FC = () => {
         setShowSuggestions(false);
       } catch (error) {
         console.error('Error adding to search history:', error);
+        toast({
+          description: "Failed to save search history",
+          variant: "destructive"
+        });
         // Navigate anyway even if saving history fails
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');

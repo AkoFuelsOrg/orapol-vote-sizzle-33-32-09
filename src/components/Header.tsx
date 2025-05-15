@@ -32,6 +32,7 @@ import CreatePostModal from './CreatePostModal';
 import SearchSuggestions from './SearchSuggestions';
 import { AIChatModal } from './AIChatModal';
 import { addToSearchHistory } from '@/lib/search-history';
+import { toast } from '@/components/ui/use-toast';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -62,6 +63,10 @@ const Header: React.FC = () => {
           setShowSuggestions(false);
         } catch (error) {
           console.error('Error adding to search history:', error);
+          toast({
+            description: "Failed to save search history",
+            variant: "destructive"
+          });
           // Navigate anyway even if saving history fails
           navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
           setSearchQuery('');
@@ -89,6 +94,10 @@ const Header: React.FC = () => {
         setShowSuggestions(false);
       } catch (error) {
         console.error('Error adding to search history:', error);
+        toast({
+          description: "Failed to save search history",
+          variant: "destructive"
+        });
         // Navigate anyway even if saving history fails
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
