@@ -36,7 +36,7 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
       return [];
     }
 
-    return data || [];
+    return data as SearchHistoryItem[] || [];
   } catch (error) {
     console.error('Failed to load search history:', error);
     return [];

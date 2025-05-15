@@ -943,6 +943,27 @@ export type Database = {
         }
         Relationships: []
       }
+      search_history: {
+        Row: {
+          id: string
+          query: string
+          timestamp: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          query: string
+          timestamp: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          query?: string
+          timestamp?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       video_campaigns: {
         Row: {
           budget: number
