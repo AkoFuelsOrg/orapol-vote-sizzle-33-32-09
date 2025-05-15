@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
@@ -123,7 +123,8 @@ const Header: React.FC = () => {
 
   const handleSuggestionSelect = (query: string) => {
     setSearchQuery(query);
-    // Don't hide suggestions after selecting from history
+    // Keep suggestions visible after selecting from history
+    setShowSuggestions(true);
   };
 
   const navItems = [
@@ -185,11 +186,13 @@ const Header: React.FC = () => {
                 </Button>
                 
                 {showSuggestions && (
-                  <SearchSuggestions
-                    query={searchQuery}
-                    onSelect={handleSuggestionSelect}
-                    onClose={() => setShowSuggestions(false)}
-                  />
+                  <div className="relative z-[9999]">
+                    <SearchSuggestions
+                      query={searchQuery}
+                      onSelect={handleSuggestionSelect}
+                      onClose={() => setShowSuggestions(false)}
+                    />
+                  </div>
                 )}
               </div>
             </form>

@@ -169,6 +169,7 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     <div 
       ref={containerRef}
       className="absolute top-full left-0 mt-1 w-64 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden z-50"
+      style={{ zIndex: 9999 }} // Ensure dropdown is above all other elements
     >
       {(loading || historyLoading) ? (
         <div className="p-2 text-sm text-gray-500">Loading...</div>
