@@ -10,7 +10,7 @@ const MAX_HISTORY_ITEMS = 5;
 
 export interface SearchHistoryItem {
   id?: string;
-  user_id?: string;
+  user_id: string; // Changed from optional to required to match database schema
   query: string;
   timestamp: number;
 }
@@ -71,7 +71,7 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
         .eq('id', existingQuery.id);
     }
     
-    // Insert new search record
+    // Insert new search record with explicit user_id field
     const newSearch: SearchHistoryItem = {
       user_id: user.id,
       query: query.trim(),
