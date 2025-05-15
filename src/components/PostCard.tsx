@@ -244,7 +244,7 @@ const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
-  // Fix the type error by properly typing the platform parameter
+  // Fix the type error by explicitly typing platform parameter
   const handleShare = async (e: React.MouseEvent, platform?: string) => {
     e.preventDefault();
     e.stopPropagation();
