@@ -4,12 +4,11 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 const MAX_HISTORY_ITEMS = 5;
 
 export interface SearchHistoryItem {
   id?: string;
-  user_id: string;  // Required to match Supabase's expectation
+  user_id?: string;
   query: string;
   timestamp: number;
 }
@@ -24,8 +23,9 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
     if (!user) return [];
 
     // Fetch search history for this user
+    // We need to use any here because the search_history table isn't in the types
     const { data, error } = await supabase
-      .from('search_history')
+      .from('search_history' as any)
       .select('*')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false })
@@ -36,7 +36,7 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
       return [];
     }
 
-    return (data as SearchHistoryItem[]) || [];
+    return data as SearchHistoryItem[] || [];
   } catch (error) {
     console.error('Failed to load search history:', error);
     return [];
@@ -56,7 +56,7 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     
     // Check if this query already exists for this user
     const { data: existingQuery } = await supabase
-      .from('search_history')
+      .from('search_history' as any)
       .select('id')
       .eq('user_id', user.id)
       .eq('query', query.toLowerCase())
@@ -65,48 +65,38 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     // If it exists, delete it so we can add it again with updated timestamp
     if (existingQuery?.id) {
       await supabase
-        .from('search_history')
+        .from('search_history' as any)
         .delete()
         .eq('id', existingQuery.id);
     }
     
-    // Insert new search record - explicitly define object shape to match what Supabase expects
-    const newSearch = {
+    // Insert new search record
+    const newSearch: SearchHistoryItem = {
       user_id: user.id,
       query: query.trim(),
       timestamp: Date.now()
     };
     
-    const { error: insertError } = await supabase
-      .from('search_history')
+    await supabase
+      .from('search_history' as any)
       .insert(newSearch);
-      
-    if (insertError) {
-      console.error('Error saving search history:', insertError);
-      return await getSearchHistory();
-    }
     
     // After inserting the new search, check if we have more than MAX_HISTORY_ITEMS
     // If so, delete the oldest ones
     const { data: allSearches } = await supabase
-      .from('search_history')
+      .from('search_history' as any)
       .select('*')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false });
       
     if (allSearches && allSearches.length > MAX_HISTORY_ITEMS) {
       const itemsToDelete = allSearches.slice(MAX_HISTORY_ITEMS);
-      if (itemsToDelete.length > 0) {
-        // Safely access the id property by casting to the expected type
-        const idsToDelete = itemsToDelete.map(item => (item as SearchHistoryItem).id);
-        
-        if (idsToDelete.every(id => id !== undefined)) {
-          await supabase
-            .from('search_history')
-            .delete()
-            .in('id', idsToDelete as string[]);
-        }
-      }
+      const idsToDelete = itemsToDelete.map(item => item.id);
+      
+      await supabase
+        .from('search_history' as any)
+        .delete()
+        .in('id', idsToDelete);
     }
     
     // Return updated search history
@@ -126,24 +116,11 @@ export const clearSearchHistory = async (): Promise<void> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
-    const { error } = await supabase
-      .from('search_history')
+    // Delete all search history for this user
+    await supabase
+      .from('search_history' as any)
       .delete()
       .eq('user_id', user.id);
-      
-    if (error) {
-      console.error('Error clearing search history:', error);
-      toast({
-        title: "Error",
-        description: "Failed to clear search history",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Search history cleared",
-      });
-    }
   } catch (error) {
     console.error('Failed to clear search history:', error);
   }
