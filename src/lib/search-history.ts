@@ -8,7 +8,7 @@ const MAX_HISTORY_ITEMS = 5;
 
 export interface SearchHistoryItem {
   id?: string;
-  user_id?: string;
+  user_id: string;  // Changed from optional to required to match Supabase's expectation
   query: string;
   timestamp: number;
 }
@@ -35,7 +35,7 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
       return [];
     }
 
-    return data as SearchHistoryItem[] || [];
+    return (data as SearchHistoryItem[]) || [];
   } catch (error) {
     console.error('Failed to load search history:', error);
     return [];
@@ -69,8 +69,8 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
         .eq('id', existingQuery.id);
     }
     
-    // Insert new search record
-    const newSearch: SearchHistoryItem = {
+    // Insert new search record - explicitly define object shape to match what Supabase expects
+    const newSearch = {
       user_id: user.id,
       query: query.trim(),
       timestamp: Date.now()
@@ -91,7 +91,8 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     if (allSearches && allSearches.length > MAX_HISTORY_ITEMS) {
       const itemsToDelete = allSearches.slice(MAX_HISTORY_ITEMS);
       if (itemsToDelete.length > 0) {
-        const idsToDelete = itemsToDelete.map(item => item.id);
+        // Safely access the id property by casting to the expected type
+        const idsToDelete = itemsToDelete.map(item => (item as SearchHistoryItem).id);
         
         await supabase
           .from('search_history')
