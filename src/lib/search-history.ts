@@ -23,9 +23,8 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
     if (!user) return [];
 
     // Fetch search history for this user
-    // We need to use any here because the search_history table isn't in the types
     const { data, error } = await supabase
-      .from('search_history' as any)
+      .from('search_history')
       .select('*')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false })
@@ -56,7 +55,7 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     
     // Check if this query already exists for this user
     const { data: existingQuery } = await supabase
-      .from('search_history' as any)
+      .from('search_history')
       .select('id')
       .eq('user_id', user.id)
       .eq('query', query.toLowerCase())
@@ -65,7 +64,7 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     // If it exists, delete it so we can add it again with updated timestamp
     if (existingQuery?.id) {
       await supabase
-        .from('search_history' as any)
+        .from('search_history')
         .delete()
         .eq('id', existingQuery.id);
     }
@@ -78,25 +77,27 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     };
     
     await supabase
-      .from('search_history' as any)
+      .from('search_history')
       .insert(newSearch);
     
     // After inserting the new search, check if we have more than MAX_HISTORY_ITEMS
     // If so, delete the oldest ones
     const { data: allSearches } = await supabase
-      .from('search_history' as any)
+      .from('search_history')
       .select('*')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false });
       
     if (allSearches && allSearches.length > MAX_HISTORY_ITEMS) {
       const itemsToDelete = allSearches.slice(MAX_HISTORY_ITEMS);
-      const idsToDelete = itemsToDelete.map(item => item.id);
-      
-      await supabase
-        .from('search_history' as any)
-        .delete()
-        .in('id', idsToDelete);
+      if (itemsToDelete.length > 0) {
+        const idsToDelete = itemsToDelete.map(item => item.id);
+        
+        await supabase
+          .from('search_history')
+          .delete()
+          .in('id', idsToDelete);
+      }
     }
     
     // Return updated search history
@@ -118,7 +119,7 @@ export const clearSearchHistory = async (): Promise<void> => {
     
     // Delete all search history for this user
     await supabase
-      .from('search_history' as any)
+      .from('search_history')
       .delete()
       .eq('user_id', user.id);
   } catch (error) {
