@@ -9,9 +9,13 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
 
+// Daily.co API key
+const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e349269b5308d435a925cd138613a5458f296';
+
 const LiveButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [joinCode, setJoinCode] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   const { user } = useSupabase();
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,14 +27,24 @@ const LiveButton: React.FC = () => {
       return;
     }
     
-    // Generate a random room code
-    const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setIsCreating(true);
     
-    toast.success('Creating your live stream...');
-    setIsOpen(false);
-    
-    // Navigate to the live page with the generated room code
-    navigate(`/live/${roomCode}?host=true`);
+    try {
+      // Generate a random room code
+      const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      // No need to create room here as it will be created when navigating to the page
+      toast.success('Creating your live stream...');
+      setIsOpen(false);
+      
+      // Navigate to the live page with the generated room code
+      navigate(`/live/${roomCode}?host=true`);
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast.error('Failed to create live stream');
+    } finally {
+      setIsCreating(false);
+    }
   };
   
   const joinLiveStream = () => {
@@ -72,9 +86,16 @@ const LiveButton: React.FC = () => {
               <Button 
                 onClick={createLiveStream}
                 className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white"
+                disabled={isCreating}
               >
-                <Video className="w-5 h-5" /> 
-                Start Live Stream
+                {isCreating ? (
+                  <>Preparing stream...</>
+                ) : (
+                  <>
+                    <Video className="w-5 h-5" /> 
+                    Start Live Stream
+                  </>
+                )}
               </Button>
               
               <Button

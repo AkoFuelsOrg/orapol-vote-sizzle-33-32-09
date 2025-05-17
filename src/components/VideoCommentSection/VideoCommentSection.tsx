@@ -1,110 +1,61 @@
 
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import CommentList from './CommentList';
 import ReplyInput from './ReplyInput';
-import { useVideoComments } from './hooks/useVideoComments';
-import { useState } from 'react';
-import { VideoComment } from '@/lib/types';
+import useVideoComments from './hooks/useVideoComments';
+import { useSupabase } from '@/context/SupabaseContext';
+import { Loader2 } from 'lucide-react';
 
 interface VideoCommentSectionProps {
   videoId: string;
-  onCommentCountChange?: (count: number) => void;
 }
 
-const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onCommentCountChange }) => {
-  const { 
-    user,
-    comments, 
-    loading, 
-    submittingComment,
-    updatingLike,
-    handleLikeComment,
-    addComment,
-    setComments
-  } = useVideoComments(videoId, onCommentCountChange);
-  
-  const [replyingId, setReplyingId] = useState<string | null>(null);
-  const [replyContent, setReplyContent] = useState('');
-  const [submittingReply, setSubmittingReply] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) => {
+  const { user } = useSupabase();
+  const { comments, loading, error, addComment } = useVideoComments(videoId);
+  const [commentText, setCommentText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddComment = (content: string) => {
-    addComment(content, inputRef);
-  };
-
-  const handleReplyTo = (comment: VideoComment) => {
-    setReplyingId(comment.id);
-    setReplyContent('');
-  };
-
-  const handleReplyCancel = () => {
-    setReplyingId(null);
-    setReplyContent('');
-  };
-
-  const handleReplySubmit = async () => {
-    if (!replyingId || !replyContent.trim()) return;
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    setSubmittingReply(true);
-    try {
-      // For now, we'll add it as a normal comment
-      // In a real implementation, we would handle reply differently
-      await addComment(`Reply to comment: ${replyContent}`, inputRef);
-      setReplyingId(null);
-      setReplyContent('');
-    } catch (error) {
-      console.error('Error submitting reply:', error);
-    } finally {
-      setSubmittingReply(false);
-    }
-  };
-
-  const handleReplyInputChange = (value: string) => {
-    setReplyContent(value);
-  };
-
-  const handleLikeReply = (parentId: string, reply: VideoComment) => {
-    // For now, we'll just handle it like a regular comment
-    handleLikeComment(reply);
-  };
-
-  const replyState = {
-    replyingId,
-    replyContent,
-    submittingReply
+    if (!commentText.trim()) return;
+    
+    setIsSubmitting(true);
+    await addComment(commentText);
+    setCommentText('');
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="flex flex-col space-y-4 p-4">
-      <h3 className="text-lg font-medium">Comments</h3>
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 space-y-4">
+      <h3 className="text-lg font-semibold">Comments</h3>
       
-      <ReplyInput 
-        user={user}
-        replyContent=""
-        onChange={handleAddComment}
-        onSubmit={() => {}}
-        onCancel={() => {}}
-        submittingReply={false}
-        placeholder="Add a comment..."
-      />
+      {user && (
+        <form onSubmit={handleSubmitComment} className="mb-6">
+          <ReplyInput
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Add a comment..."
+            disabled={isSubmitting}
+          />
+        </form>
+      )}
       
       {loading ? (
-        <div className="flex justify-center py-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex justify-center p-4">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        </div>
+      ) : error ? (
+        <div className="text-red-500 text-center p-4">
+          Error loading comments. Please try again.
+        </div>
+      ) : comments.length === 0 ? (
+        <div className="text-gray-500 dark:text-gray-400 text-center p-4">
+          No comments yet. Be the first to comment!
         </div>
       ) : (
-        <CommentList 
-          comments={comments}
-          user={user}
-          updatingLike={updatingLike}
-          replyState={replyState}
-          onLikeComment={handleLikeComment}
-          onReplyTo={handleReplyTo}
-          onReplyInputChange={handleReplyInputChange}
-          onReplyCancel={handleReplyCancel}
-          onReplySubmit={handleReplySubmit}
-          onLikeReply={handleLikeReply}
-        />
+        <CommentList comments={comments} />
       )}
     </div>
   );

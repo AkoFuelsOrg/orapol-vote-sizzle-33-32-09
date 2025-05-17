@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -7,6 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import SplashScreen from '@/components/SplashScreen';
+import DailyIframe from '@/components/DailyIframe';
+
+// Daily.co API key
+const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e349269b5308d435a925cd138613a5458f296';
 
 const Live: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -20,8 +25,8 @@ const Live: React.FC = () => {
   const [viewers, setViewers] = useState(1);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{id: string, user: string, message: string}>>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [dailyCallObject, setDailyCallObject] = useState<any>(null);
   
   useEffect(() => {
     // Handle direct navigation to /live/new
@@ -38,104 +43,114 @@ const Live: React.FC = () => {
       return;
     }
     
-    // Simulate connection to a live stream
-    const timer = setTimeout(() => {
-      setLoading(false);
-      toast.success(isHost ? 'Your live stream has started!' : 'Connected to live stream!');
-      
-      // Start camera if host
-      if (isHost) {
-        startCamera();
+    const loadDailyScript = async () => {
+      // Check if Daily.co script is already loaded
+      if (!window.DailyIframe) {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@daily-co/daily-js';
+        script.async = true;
         
-        // Mock some viewers joining
-        const viewerInterval = setInterval(() => {
-          setViewers(prev => {
-            const newCount = prev + Math.floor(Math.random() * 3);
-            return Math.min(newCount, 25); // Cap at 25 viewers for demo
-          });
-        }, 5000);
+        script.onload = () => {
+          createOrJoinRoom();
+        };
         
-        return () => clearInterval(viewerInterval);
+        document.body.appendChild(script);
+      } else {
+        createOrJoinRoom();
       }
-    }, 2000);
+    };
     
+    const createOrJoinRoom = async () => {
+      try {
+        setLoading(true);
+        
+        // If host, create a room
+        if (isHost) {
+          const response = await fetch(`https://api.daily.co/v1/rooms`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${DAILY_API_KEY}`
+            },
+            body: JSON.stringify({
+              name: roomCode,
+              properties: {
+                start_audio_off: false,
+                start_video_off: false,
+              }
+            })
+          });
+          
+          if (!response.ok) {
+            // If room already exists, just use it
+            if (response.status === 409) {
+              console.log('Room already exists, joining instead');
+            } else {
+              const errorData = await response.json();
+              throw new Error(errorData.message || 'Failed to create room');
+            }
+          }
+        }
+        
+        // Room URL to join
+        const url = `https://lovable.daily.co/${roomCode}`;
+        setRoomUrl(url);
+        
+        // Initialize call when not in host mode (host initializes in the DailyIframe component)
+        if (!isHost) {
+          toast.success('Joined the live stream!');
+          
+          // Mock some viewers joining
+          const viewerInterval = setInterval(() => {
+            setViewers(prev => {
+              const newCount = prev + Math.floor(Math.random() * 3);
+              return Math.min(newCount, 25); // Cap at 25 viewers for demo
+            });
+          }, 5000);
+          
+          return () => clearInterval(viewerInterval);
+        } else {
+          toast.success('Your live stream is starting!');
+        }
+      } catch (error) {
+        console.error('Error creating/joining room:', error);
+        toast.error('Failed to start livestream');
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDailyScript();
+    
+    // Cleanup function
     return () => {
-      clearTimeout(timer);
-      stopCamera();
+      if (dailyCallObject) {
+        dailyCallObject.destroy();
+      }
     };
   }, [roomCode, isHost, navigate]);
   
-  const startCamera = async () => {
-    try {
-      if (!videoEnabled) return;
-      
-      const constraints = {
-        audio: audioEnabled,
-        video: videoEnabled
-      };
-      
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      
-      streamRef.current = stream;
-      console.log('Camera started successfully');
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      toast.error('Could not access camera or microphone');
-      setVideoEnabled(false);
-    }
-  };
-  
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
-      streamRef.current = null;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-    }
-  };
-  
   const toggleAudio = () => {
-    if (streamRef.current) {
-      streamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = !audioEnabled;
-      });
+    if (dailyCallObject) {
+      dailyCallObject.setLocalAudio(audioEnabled ? false : true);
     }
-    
     setAudioEnabled(prev => !prev);
     toast(audioEnabled ? 'Microphone muted' : 'Microphone unmuted');
-    
-    if (!streamRef.current && isHost) {
-      // Restart camera with new audio setting
-      startCamera();
-    }
   };
   
   const toggleVideo = () => {
-    if (streamRef.current) {
-      streamRef.current.getVideoTracks().forEach(track => {
-        track.enabled = !videoEnabled;
-      });
+    if (dailyCallObject) {
+      dailyCallObject.setLocalVideo(videoEnabled ? false : true);
     }
-    
     setVideoEnabled(prev => !prev);
     toast(videoEnabled ? 'Video turned off' : 'Video turned on');
-    
-    if (!videoEnabled && !streamRef.current && isHost) {
-      // If we're turning video back on and don't have a stream
-      startCamera();
-    }
   };
   
   const endStream = () => {
-    stopCamera();
+    if (dailyCallObject) {
+      dailyCallObject.destroy();
+    }
     toast.info('Ending stream...');
     setTimeout(() => {
       navigate('/live-streams');
@@ -145,6 +160,10 @@ const Live: React.FC = () => {
   const sendChatMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
+    
+    if (dailyCallObject) {
+      dailyCallObject.sendAppMessage({ type: 'chat', message: chatMessage }, '*');
+    }
     
     const newMessage = {
       id: Math.random().toString(),
@@ -156,6 +175,33 @@ const Live: React.FC = () => {
     setChatMessage('');
   };
   
+  const handleDailyInit = (callObject: any) => {
+    setDailyCallObject(callObject);
+    
+    // Set up event handlers for Daily.co events
+    callObject.on('participant-joined', (event: any) => {
+      setViewers(prev => Math.min(prev + 1, 25)); // Cap at 25 viewers for UI
+    });
+    
+    callObject.on('participant-left', (event: any) => {
+      setViewers(prev => Math.max(prev - 1, 1)); // Ensure at least 1 viewer (the host)
+    });
+    
+    callObject.on('app-message', (event: any) => {
+      if (event.data.type === 'chat') {
+        const newMessage = {
+          id: Math.random().toString(),
+          user: event.fromId === callObject.participants().local.user_id 
+            ? user?.user_metadata?.username || 'Me'
+            : callObject.participants()[event.fromId]?.user_name || 'Anonymous',
+          message: event.data.message
+        };
+        
+        setChatMessages(prev => [...prev, newMessage]);
+      }
+    });
+  };
+  
   if (loading) {
     return <SplashScreen message={isHost ? "Starting your live stream..." : "Joining live stream..."} />;
   }
@@ -164,27 +210,19 @@ const Live: React.FC = () => {
     <div className="container mx-auto pt-14 pb-16 px-4 md:px-8 min-h-screen">
       <Card className="overflow-hidden rounded-xl shadow-lg border-none bg-gradient-to-br from-gray-900 to-black">
         <div className="flex flex-col md:flex-row h-[calc(100vh-180px)]">
-          {/* Video area */}
+          {/* Video area with Daily.co iframe */}
           <div className="flex-1 relative bg-black">
-            {isHost && videoEnabled ? (
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline 
-                muted 
-                className="w-full h-full object-cover"
+            {roomUrl ? (
+              <DailyIframe 
+                url={roomUrl}
+                onCallObjectReady={handleDailyInit}
+                isHost={isHost}
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
-                {videoEnabled ? (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                    <div className="text-white text-2xl font-bold">Live Stream</div>
-                  </div>
-                ) : (
-                  <div className="bg-gray-800 p-8 rounded-full">
-                    <VideoOff size={48} className="text-gray-400" />
-                  </div>
-                )}
+                <div className="bg-gray-800 p-8 rounded-full">
+                  <VideoOff size={48} className="text-gray-400" />
+                </div>
               </div>
             )}
             
