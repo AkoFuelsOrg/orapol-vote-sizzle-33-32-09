@@ -4,9 +4,10 @@ import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { User } from '@/lib/types';
 
 interface ReplyInputProps {
-  user: any;
+  user: User | null;
   replyContent: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
@@ -30,7 +31,7 @@ const ReplyInput: React.FC<ReplyInputProps> = ({
         {user?.user_metadata?.avatar_url && (
           <img
             src={user?.user_metadata?.avatar_url as string}
-            alt={user?.user_metadata?.username as string}
+            alt={user?.user_metadata?.username as string || 'User'}
             className="rounded-full"
           />
         )}

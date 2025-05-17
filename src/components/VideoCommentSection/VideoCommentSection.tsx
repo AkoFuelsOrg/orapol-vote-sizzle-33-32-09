@@ -1,20 +1,27 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import CommentList from './CommentList';
 import ReplyInput from './ReplyInput';
-import useVideoComments from './hooks/useVideoComments';
+import { useVideoComments } from './hooks/useVideoComments';
 import { useSupabase } from '@/context/SupabaseContext';
 import { Loader2 } from 'lucide-react';
 
 interface VideoCommentSectionProps {
   videoId: string;
+  onCommentCountChange?: (count: number) => void;
 }
 
-const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) => {
+const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId, onCommentCountChange }) => {
   const { user } = useSupabase();
-  const { comments, loading, error, addComment } = useVideoComments(videoId);
+  const { comments, loading, error, addComment, handleLikeComment, updatingLike } = useVideoComments(videoId, onCommentCountChange);
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [replyState, setReplyState] = useState({
+    replyingId: null as string | null,
+    replyContent: '',
+    submittingReply: false
+  });
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,9 +29,47 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
     if (!commentText.trim()) return;
     
     setIsSubmitting(true);
-    await addComment(commentText);
+    await addComment(commentText, inputRef);
     setCommentText('');
     setIsSubmitting(false);
+  };
+
+  const handleReplyTo = (comment: any) => {
+    setReplyState({
+      ...replyState,
+      replyingId: comment.id,
+      replyContent: ''
+    });
+  };
+
+  const handleReplyInputChange = (value: string) => {
+    setReplyState({
+      ...replyState,
+      replyContent: value
+    });
+  };
+
+  const handleReplyCancel = () => {
+    setReplyState({
+      ...replyState,
+      replyingId: null,
+      replyContent: ''
+    });
+  };
+
+  const handleReplySubmit = async () => {
+    // Function stub for reply submission
+    // Will be implemented in future
+    setReplyState({
+      ...replyState,
+      replyingId: null,
+      replyContent: ''
+    });
+  };
+
+  const handleLikeReply = (parentId: string, reply: any) => {
+    // Function stub for liking replies
+    // Will be implemented in future
   };
 
   return (
@@ -34,10 +79,13 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
       {user && (
         <form onSubmit={handleSubmitComment} className="mb-6">
           <ReplyInput
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
+            user={user}
+            replyContent={commentText}
+            onChange={setCommentText}
+            onSubmit={handleSubmitComment}
+            onCancel={() => setCommentText('')}
+            submittingReply={isSubmitting}
             placeholder="Add a comment..."
-            disabled={isSubmitting}
           />
         </form>
       )}
@@ -55,7 +103,18 @@ const VideoCommentSection: React.FC<VideoCommentSectionProps> = ({ videoId }) =>
           No comments yet. Be the first to comment!
         </div>
       ) : (
-        <CommentList comments={comments} />
+        <CommentList 
+          comments={comments} 
+          user={user}
+          updatingLike={updatingLike}
+          replyState={replyState}
+          onLikeComment={handleLikeComment}
+          onReplyTo={handleReplyTo}
+          onReplyInputChange={handleReplyInputChange}
+          onReplyCancel={handleReplyCancel}
+          onReplySubmit={handleReplySubmit}
+          onLikeReply={handleLikeReply}
+        />
       )}
     </div>
   );

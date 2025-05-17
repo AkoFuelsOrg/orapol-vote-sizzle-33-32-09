@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useSupabase } from '@/context/SupabaseContext';
 
 interface DailyIframeProps {
   url: string;
@@ -12,6 +13,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const callObjectRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useSupabase();
 
   useEffect(() => {
     if (!window.DailyIframe) {
@@ -45,11 +47,8 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     }
     
     // Set username from authenticated user if available
-    if (window.supabase) {
-      const auth = window.supabase.auth.getSession();
-      if (auth) {
-        joinOptions.userName = auth.data?.session?.user?.user_metadata?.username || 'Anonymous';
-      }
+    if (user) {
+      joinOptions.userName = user.user_metadata?.username || 'Anonymous';
     }
     
     const joinCall = async () => {
@@ -69,7 +68,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         callObjectRef.current.destroy();
       }
     };
-  }, [url, isHost, onCallObjectReady]);
+  }, [url, isHost, onCallObjectReady, user]);
 
   return (
     <div className="w-full h-full relative">

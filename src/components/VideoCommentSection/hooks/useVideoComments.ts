@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -10,6 +11,7 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
   const { fetchVideoComments, addVideoComment } = useVibezone();
   const [comments, setComments] = useState<VideoComment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingLike, setUpdatingLike] = useState<string | null>(null);
   const [commentsFetched, setCommentsFetched] = useState(false);
@@ -80,6 +82,7 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
     } catch (error) {
       console.error('Error fetching comments:', error);
       if (mountedRef.current) {
+        setError(error as Error);
         toast.error('Failed to load comments');
       }
     } finally {
@@ -232,6 +235,7 @@ export function useVideoComments(videoId: string, onCommentCountChange?: (count:
     user,
     comments,
     loading,
+    error,
     submittingComment,
     updatingLike,
     setUpdatingLike,
