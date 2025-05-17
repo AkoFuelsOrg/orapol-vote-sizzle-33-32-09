@@ -3,14 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useSupabase } from '@/context/SupabaseContext';
 
-// Declare the DailyIframe type for TypeScript
-declare global {
-  interface Window {
-    DailyIframe?: {
-      createCallObject: (options: any) => any;
-    }
-  }
-}
+// We'll remove the global declaration from here since it's causing conflicts
 
 interface DailyIframeProps {
   url: string;

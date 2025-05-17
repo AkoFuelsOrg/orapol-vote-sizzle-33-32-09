@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -11,9 +10,9 @@ import SplashScreen from '@/components/SplashScreen';
 import DailyIframe from '@/components/DailyIframe';
 
 // Daily.co API key
-const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e349269b5308d435a925cd138613a5458f296';
+const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e349269b5308d435a925cd138613a5458f496';
 
-// Declare global DailyIframe type
+// Define the global DailyIframe type
 declare global {
   interface Window {
     DailyIframe?: {
