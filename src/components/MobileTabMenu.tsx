@@ -36,7 +36,7 @@ const MobileTabMenu: React.FC = () => {
               "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
               path === '/' ? "bg-primary/10" : "bg-transparent"
             )}>
-              <Home size={22} strokeWidth={2.5} className={cn(path === '/' ? "text-primary" : "text-gray-500")} />
+              <Home size={22} strokeWidth={3.5} className={cn(path === '/' ? "text-primary" : "text-gray-500")} />
             </div>
             <span className="text-[10px]">Home</span>
           </Link>
@@ -52,13 +52,14 @@ const MobileTabMenu: React.FC = () => {
               "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
               path === '/vibezone' || path.startsWith('/vibezone/') ? "bg-primary/10" : "bg-transparent"
             )}>
-              <Video size={22} strokeWidth={2.5} className={cn(
+              <Video size={22} strokeWidth={3.5} className={cn(
                 path === '/vibezone' || path.startsWith('/vibezone/') ? "text-primary" : "text-gray-500"
               )} />
             </div>
             <span className="text-[10px]">Vibezone</span>
           </Link>
           
+          {/* AI Chat Button - Icon is text "AI", no strokeWidth prop here */}
           <button 
             onClick={openAIChat}
             className="flex flex-col items-center justify-center w-full h-full text-xs text-gray-500 transition-colors"
@@ -80,7 +81,7 @@ const MobileTabMenu: React.FC = () => {
               "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
               path === '/reels' || path.startsWith('/reels/') ? "bg-primary/10" : "bg-transparent"
             )}>
-              <Film size={22} strokeWidth={2.5} className={cn(
+              <Film size={22} strokeWidth={3.5} className={cn(
                 path === '/reels' || path.startsWith('/reels/') ? "text-primary" : "text-gray-500"
               )} />
             </div>
@@ -98,7 +99,7 @@ const MobileTabMenu: React.FC = () => {
               "flex items-center justify-center w-10 h-10 rounded-full mb-0.5",
               path === '/messages' || path.startsWith('/messages/') ? "bg-primary/10" : "bg-transparent"
             )}>
-              <MessageSquare size={22} strokeWidth={2.5} className={cn(
+              <MessageSquare size={22} strokeWidth={3.5} className={cn(
                 path === '/messages' || path.startsWith('/messages/') ? "text-primary" : "text-gray-500"
               )} />
             </div>
@@ -116,4 +117,3 @@ const MobileTabMenu: React.FC = () => {
 };
 
 export default MobileTabMenu;
-

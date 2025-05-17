@@ -1,127 +1,95 @@
+const SEARCH_HISTORY_KEY = 'tuwaye-search-history';
+const MAX_HISTORY_SIZE = 20;
 
-/**
- * Utility functions for managing search history in Supabase
- */
+export interface SearchHistoryItem {
+  id: string;
+  query: string;
+  timestamp: number;
+}
 
-import { supabase } from '@/integrations/supabase/client';
-import { SearchHistoryItem } from './types';
-
-const MAX_HISTORY_ITEMS = 5;
-
-/**
- * Get the current search history from Supabase
- */
-export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
+export const getSearchHistory = (): SearchHistoryItem[] => {
+  const historyString = localStorage.getItem(SEARCH_HISTORY_KEY);
+  if (!historyString) {
+    return [];
+  }
   try {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    // Fetch search history for this user
-    // We need to use any here because the search_history table isn't in the types
-    const { data, error } = await supabase
-      .from('search_history' as any)
-      .select('*')
-      .eq('user_id', user.id)
-      .order('timestamp', { ascending: false })
-      .limit(MAX_HISTORY_ITEMS);
-
-    if (error) {
-      console.error('Failed to fetch search history:', error);
-      return [];
-    }
-
-    return (data as unknown as SearchHistoryItem[]) || [];
+    return JSON.parse(historyString);
   } catch (error) {
-    console.error('Failed to load search history:', error);
+    console.error('Error parsing search history:', error);
     return [];
   }
 };
 
-/**
- * Add a search query to history and limit to MAX_HISTORY_ITEMS
- */
-export const addToSearchHistory = async (query: string): Promise<SearchHistoryItem[]> => {
-  if (!query.trim()) return await getSearchHistory();
+export const addToSearchHistory = async (query: string): Promise<void> => {
+  const history = getSearchHistory();
   
-  try {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-    
-    // Check if this query already exists for this user
-    const { data: existingQuery } = await supabase
-      .from('search_history' as any)
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('query', query.toLowerCase())
-      .maybeSingle();
-    
-    // If it exists, delete it so we can add it again with updated timestamp
-    if (existingQuery && 'id' in existingQuery) {
-      await supabase
-        .from('search_history' as any)
-        .delete()
-        .eq('id', existingQuery.id);
-    }
-    
-    // Insert new search record
-    const newSearch: SearchHistoryItem = {
-      user_id: user.id,
-      query: query.trim(),
-      timestamp: Date.now()
-    };
-    
-    await supabase
-      .from('search_history' as any)
-      .insert(newSearch);
-    
-    // After inserting the new search, check if we have more than MAX_HISTORY_ITEMS
-    // If so, delete the oldest ones
-    const { data: allSearches } = await supabase
-      .from('search_history' as any)
-      .select('*')
-      .eq('user_id', user.id)
-      .order('timestamp', { ascending: false });
-      
-    if (allSearches && allSearches.length > MAX_HISTORY_ITEMS) {
-      // Safely extract ids by checking if each item has an id property
-      const idsToDelete = allSearches
-        .slice(MAX_HISTORY_ITEMS)
-        .filter(item => item && typeof item === 'object' && 'id' in item)
-        .map(item => (item as unknown as SearchHistoryItem).id as string);
-      
-      if (idsToDelete.length > 0) {
-        await supabase
-          .from('search_history' as any)
-          .delete()
-          .in('id', idsToDelete);
-      }
-    }
-    
-    // Return updated search history
-    return await getSearchHistory();
-  } catch (error) {
-    console.error('Failed to save search history:', error);
-    return await getSearchHistory();
+  // Check if query already exists (case insensitive)
+  const existingIndex = history.findIndex(
+    item => item.query.toLowerCase() === query.toLowerCase()
+  );
+  
+  let updatedHistory = [...history];
+  
+  if (existingIndex !== -1) {
+    // Remove existing entry
+    updatedHistory.splice(existingIndex, 1);
   }
+  
+  // Add new entry at the beginning
+  updatedHistory.unshift({
+    id: Date.now().toString(),
+    query,
+    timestamp: Date.now()
+  });
+  
+  // Remove oldest items if history exceeds max size
+  if (updatedHistory.length > MAX_HISTORY_SIZE) {
+    updatedHistory = updatedHistory.slice(0, MAX_HISTORY_SIZE);
+  }
+
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
 };
 
-/**
- * Clear all search history
- */
+export const removeFromSearchHistory = async (id: string): Promise<void> => {
+  const history = getSearchHistory();
+  const updatedHistory = history.filter(item => item.id !== id);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+};
+
 export const clearSearchHistory = async (): Promise<void> => {
-  try {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    // Delete all search history for this user
-    await supabase
-      .from('search_history' as any)
-      .delete()
-      .eq('user_id', user.id);
-  } catch (error) {
-    console.error('Failed to clear search history:', error);
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify([]));
+};
+
+export const getFuzzySearchSuggestions = (query: string, history: SearchHistoryItem[]): SearchHistoryItem[] => {
+  if (!query.trim()) {
+    return history.slice(0, 5); // Return most recent 5 if no query
+  }
+  
+  const lowerQuery = query.toLowerCase();
+  const results = history
+    .filter(item => {
+      if (item) {
+        return item.query.toLowerCase().includes(lowerQuery);
+      }
+      return false;
+    })
+    .slice(0, 5);
+  
+  return results;
+};
+
+export const printOldestQueryIfMatches = (queryToMatch: string): void => {
+  const history = getSearchHistory();
+  if (history.length === 0) {
+    console.log("Search history is empty.");
+    return;
+  }
+
+  const item = history.find(h => h.query === queryToMatch);
+
+  if (item) {
+    console.log(item.query);
+  } else {
+    console.log("No matching item found or item is null/undefined.");
   }
 };

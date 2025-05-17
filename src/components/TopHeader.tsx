@@ -117,10 +117,10 @@ const TopHeader: React.FC = () => {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onKeyDown={handleSearchKeyDown}
-                onFocus={() => setShowSuggestions(true)} // Always show suggestions on focus
+                onFocus={() => setShowSuggestions(true)}
                 className="pl-9 pr-8 py-2 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full focus-visible:ring-white/30"
               />
-              <Search size={16} strokeWidth={2.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
+              <Search size={16} strokeWidth={3.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
               <Button
                 type="button"
                 variant="ghost"
@@ -132,7 +132,7 @@ const TopHeader: React.FC = () => {
                   setSearchQuery('');
                 }}
               >
-                <X size={14} />
+                <X size={14} strokeWidth={3.5} />
               </Button>
               
               {showSuggestions && (
@@ -150,7 +150,7 @@ const TopHeader: React.FC = () => {
               className="flex items-center gap-2 text-white hover:bg-white/20 transition-all duration-300 rounded-full px-4"
               size="sm"
             >
-              <Search size={18} strokeWidth={2.5} />
+              <Search size={18} strokeWidth={3.5} />
               <span>Search</span>
             </Button>
           )}
@@ -161,7 +161,7 @@ const TopHeader: React.FC = () => {
             size="icon"
             onClick={() => navigate('/vibezone')}
           >
-            <Video size={18} strokeWidth={2.5} />
+            <Video size={18} strokeWidth={3.5} />
           </Button>
           
           <Button 
@@ -170,7 +170,7 @@ const TopHeader: React.FC = () => {
             size="icon"
             onClick={() => navigate('/messages')}
           >
-            <MessageSquare size={18} strokeWidth={2.5} />
+            <MessageSquare size={18} strokeWidth={3.5} />
           </Button>
           
           <Button 
@@ -179,7 +179,7 @@ const TopHeader: React.FC = () => {
             size="icon"
             onClick={() => navigate('/favourites')}
           >
-            <Heart size={18} strokeWidth={2.5} />
+            <Heart size={18} strokeWidth={3.5} />
           </Button>
           
           {user ? (
@@ -193,11 +193,11 @@ const TopHeader: React.FC = () => {
                       alt={profile.username || "Profile"} 
                       key={profile.avatar_url}
                     />
-                    <AvatarFallback><User size={18} strokeWidth={2.5} /></AvatarFallback>
+                    <AvatarFallback><User size={18} strokeWidth={3.5} /></AvatarFallback>
                   </Avatar>
                 ) : (
                   <div className="h-8 w-8 flex items-center justify-center">
-                    <User size={18} strokeWidth={2.5} />
+                    <User size={18} strokeWidth={3.5} />
                   </div>
                 )}
               </div>
