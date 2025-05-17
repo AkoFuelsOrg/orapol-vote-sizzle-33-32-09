@@ -443,7 +443,7 @@ const Index: React.FC = () => {
           <Card className="overflow-hidden border-none shadow-lg mb-8 animate-fade-in hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50">
             <div className="p-6 text-center relative">
               <div className="absolute inset-0 bg-primary/5 backdrop-blur-sm rounded-xl -z-10"></div>
-              <h3 className="text-xl font-semibold mb-3 text-gray-800">Join TUWAYE Today</h3>
+              <h3 className="text-xl font-semibold mb-3 text-gray-800">Join Tuwaye Today</h3>
               <p className="text-muted-foreground mb-5 max-w-md mx-auto">Connect with others, share your thoughts, and join the growing community</p>
               <div className="flex gap-4 justify-center">
                 <Link 
@@ -537,12 +537,12 @@ const Index: React.FC = () => {
           <div className="flex justify-center items-center gap-2 mb-4">
             <div className="p-1.5 rounded-full bg-primary/10 shadow-inner">
               <img 
-                src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+                src="/lovable-uploads/95591de9-b621-4bd0-b1a8-c28c6d4e09c9.png" 
                 alt="Tuwaye Logo" 
                 className="h-7 w-auto"
               />
             </div>
-            <span className="font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">TUWAYE</span>
+            <span className="font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Tuwaye</span>
           </div>
           <p className="text-sm text-muted-foreground">
             Connect, share and discover with Tuwaye

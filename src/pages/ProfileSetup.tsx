@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabase } from '@/context/SupabaseContext';
@@ -169,7 +168,7 @@ const ProfileSetup = () => {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">Complete Your Profile</h1>
           <p className="text-muted-foreground">
-            Set up your TUWAYE profile to get started.
+            Set up your Tuwaye profile to get started.
           </p>
         </div>
         <Separator />
@@ -266,4 +265,3 @@ const ProfileSetup = () => {
 };
 
 export default ProfileSetup;
-
