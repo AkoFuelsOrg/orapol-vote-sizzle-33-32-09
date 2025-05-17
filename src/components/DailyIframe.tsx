@@ -3,6 +3,15 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useSupabase } from '@/context/SupabaseContext';
 
+// Declare the DailyIframe type for TypeScript
+declare global {
+  interface Window {
+    DailyIframe?: {
+      createCallObject: (options: any) => any;
+    }
+  }
+}
+
 interface DailyIframeProps {
   url: string;
   onCallObjectReady: (callObject: any) => void;
@@ -16,6 +25,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
   const { user } = useSupabase();
 
   useEffect(() => {
+    // Check if Daily.co script is already loaded
     if (!window.DailyIframe) {
       console.error('Daily.co SDK not loaded');
       return;

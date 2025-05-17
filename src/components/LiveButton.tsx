@@ -7,10 +7,6 @@ import { Input } from '@/components/ui/input';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useLocation } from 'react-router-dom';
-
-// Daily.co API key
-const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e349269b5308d435a925cd138613a5458f296';
 
 const LiveButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +14,6 @@ const LiveButton: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const { user } = useSupabase();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const createLiveStream = async () => {
     if (!user) {
@@ -33,7 +28,6 @@ const LiveButton: React.FC = () => {
       // Generate a random room code
       const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       
-      // No need to create room here as it will be created when navigating to the page
       toast.success('Creating your live stream...');
       setIsOpen(false);
       

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { Card } from '@/components/ui/card';
-import { Mic, MicOff, Video, VideoOff, Users, Cast, MessageCircle } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Users, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -12,6 +12,15 @@ import DailyIframe from '@/components/DailyIframe';
 
 // Daily.co API key
 const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e349269b5308d435a925cd138613a5458f296';
+
+// Declare global DailyIframe type
+declare global {
+  interface Window {
+    DailyIframe?: {
+      createCallObject: (options: any) => any;
+    }
+  }
+}
 
 const Live: React.FC = () => {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -27,6 +36,7 @@ const Live: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<Array<{id: string, user: string, message: string}>>([]);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyCallObject, setDailyCallObject] = useState<any>(null);
+  const dailyScriptLoaded = useRef(false);
   
   useEffect(() => {
     // Handle direct navigation to /live/new
@@ -43,64 +53,71 @@ const Live: React.FC = () => {
       return;
     }
     
-    const loadDailyScript = async () => {
-      // Check if Daily.co script is already loaded
-      if (!window.DailyIframe) {
+    const loadDailyScript = () => {
+      return new Promise<void>((resolve, reject) => {
+        // Check if Daily.co script is already loaded
+        if (window.DailyIframe || dailyScriptLoaded.current) {
+          resolve();
+          return;
+        }
+        
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/@daily-co/daily-js';
         script.async = true;
         
         script.onload = () => {
-          createOrJoinRoom();
+          dailyScriptLoaded.current = true;
+          resolve();
+        };
+        
+        script.onerror = () => {
+          reject(new Error('Failed to load Daily.co script'));
         };
         
         document.body.appendChild(script);
-      } else {
-        createOrJoinRoom();
-      }
+      });
     };
     
     const createOrJoinRoom = async () => {
       try {
         setLoading(true);
         
+        // Load the Daily.co script first
+        await loadDailyScript();
+        
         // If host, create a room
         if (isHost) {
-          const response = await fetch(`https://api.daily.co/v1/rooms`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${DAILY_API_KEY}`
-            },
-            body: JSON.stringify({
-              name: roomCode,
-              properties: {
-                start_audio_off: false,
-                start_video_off: false,
-              }
-            })
-          });
-          
-          if (!response.ok) {
-            // If room already exists, just use it
-            if (response.status === 409) {
-              console.log('Room already exists, joining instead');
-            } else {
+          try {
+            const response = await fetch(`https://api.daily.co/v1/rooms`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${DAILY_API_KEY}`
+              },
+              body: JSON.stringify({
+                name: roomCode,
+                properties: {
+                  start_audio_off: false,
+                  start_video_off: false,
+                }
+              })
+            });
+            
+            if (!response.ok && response.status !== 409) {
               const errorData = await response.json();
               throw new Error(errorData.message || 'Failed to create room');
             }
+            
+            toast.success('Your live stream is starting!');
+          } catch (error) {
+            console.error('Error creating room:', error);
+            // If room already exists (409 error), we'll just use it
+            console.log('Room may already exist, attempting to join anyway');
           }
-        }
-        
-        // Room URL to join
-        const url = `https://lovable.daily.co/${roomCode}`;
-        setRoomUrl(url);
-        
-        // Initialize call when not in host mode (host initializes in the DailyIframe component)
-        if (!isHost) {
+        } else {
           toast.success('Joined the live stream!');
           
-          // Mock some viewers joining
+          // Mock some viewers joining for non-host users
           const viewerInterval = setInterval(() => {
             setViewers(prev => {
               const newCount = prev + Math.floor(Math.random() * 3);
@@ -109,9 +126,12 @@ const Live: React.FC = () => {
           }, 5000);
           
           return () => clearInterval(viewerInterval);
-        } else {
-          toast.success('Your live stream is starting!');
         }
+        
+        // Room URL to join
+        const url = `https://lovable.daily.co/${roomCode}`;
+        setRoomUrl(url);
+        
       } catch (error) {
         console.error('Error creating/joining room:', error);
         toast.error('Failed to start livestream');
@@ -121,7 +141,7 @@ const Live: React.FC = () => {
       }
     };
     
-    loadDailyScript();
+    createOrJoinRoom();
     
     // Cleanup function
     return () => {
