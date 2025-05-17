@@ -40,18 +40,12 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
   };
 
-  const handlePostDeleted = (postId: string) => {
-    // This function is required by PostCard but not used in EnhancedPostCard
-    // Adding empty implementation to satisfy type requirements
-    console.log("Post deleted:", postId);
-  };
-
-  // Pass both required props to PostCard
+  // Pass only the props that PostCard accepts
   return (
     <PostCard
       post={enhancedPost}
       onPostUpdate={handlePostUpdate}
-      onPostDeleted={handlePostDeleted}
+      onPostDeleted={() => {}}
     />
   );
 };

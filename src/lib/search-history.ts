@@ -4,13 +4,11 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
-
 const MAX_HISTORY_ITEMS = 5;
 
 export interface SearchHistoryItem {
   id?: string;
-  user_id: string; // Changed from optional to required to match database schema
+  user_id?: string;
   query: string;
   timestamp: number;
 }
@@ -25,8 +23,9 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
     if (!user) return [];
 
     // Fetch search history for this user
+    // We need to use any here because the search_history table isn't in the types
     const { data, error } = await supabase
-      .from('search_history')
+      .from('search_history' as any)
       .select('*')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false })
@@ -57,7 +56,7 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     
     // Check if this query already exists for this user
     const { data: existingQuery } = await supabase
-      .from('search_history')
+      .from('search_history' as any)
       .select('id')
       .eq('user_id', user.id)
       .eq('query', query.toLowerCase())
@@ -66,35 +65,26 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
     // If it exists, delete it so we can add it again with updated timestamp
     if (existingQuery?.id) {
       await supabase
-        .from('search_history')
+        .from('search_history' as any)
         .delete()
         .eq('id', existingQuery.id);
     }
     
-    // Insert new search record with explicit user_id field
+    // Insert new search record
     const newSearch: SearchHistoryItem = {
       user_id: user.id,
       query: query.trim(),
       timestamp: Date.now()
     };
     
-    const { error } = await supabase
-      .from('search_history')
+    await supabase
+      .from('search_history' as any)
       .insert(newSearch);
-
-    if (error) {
-      console.error('Error adding search to history:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save search history",
-        variant: "destructive"
-      });
-    }
     
     // After inserting the new search, check if we have more than MAX_HISTORY_ITEMS
     // If so, delete the oldest ones
     const { data: allSearches } = await supabase
-      .from('search_history')
+      .from('search_history' as any)
       .select('*')
       .eq('user_id', user.id)
       .order('timestamp', { ascending: false });
@@ -103,12 +93,10 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
       const itemsToDelete = allSearches.slice(MAX_HISTORY_ITEMS);
       const idsToDelete = itemsToDelete.map(item => item.id);
       
-      if (idsToDelete.length > 0) {
-        await supabase
-          .from('search_history')
-          .delete()
-          .in('id', idsToDelete);
-      }
+      await supabase
+        .from('search_history' as any)
+        .delete()
+        .in('id', idsToDelete);
     }
     
     // Return updated search history
@@ -129,19 +117,10 @@ export const clearSearchHistory = async (): Promise<void> => {
     if (!user) return;
     
     // Delete all search history for this user
-    const { error } = await supabase
-      .from('search_history')
+    await supabase
+      .from('search_history' as any)
       .delete()
       .eq('user_id', user.id);
-      
-    if (error) {
-      console.error('Error clearing search history:', error);
-      toast({
-        title: "Error",
-        description: "Failed to clear search history",
-        variant: "destructive"
-      });
-    }
   } catch (error) {
     console.error('Failed to clear search history:', error);
   }

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,7 +9,6 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Fuse from 'fuse.js';
 import { addToSearchHistory } from '@/lib/search-history';
-import { toast } from '@/components/ui/use-toast';
 
 const SearchResults = () => {
   const location = useLocation();
@@ -26,13 +26,8 @@ const SearchResults = () => {
         // Add to search history when a search is performed
         try {
           await addToSearchHistory(query);
-          console.log('Search saved to history:', query);
         } catch (error) {
           console.error('Error saving search history:', error);
-          toast({
-            description: "Failed to save search history",
-            variant: "destructive"
-          });
         }
       }
       

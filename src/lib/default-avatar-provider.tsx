@@ -2,7 +2,6 @@
 import React from 'react';
 
 export const DEFAULT_AVATAR_URL = '/lovable-uploads/a031d96a-edf1-46c7-a8b5-2b75b8ff96ec.png';
-export const USER_AVATAR_FALLBACK = 'U';
 
 export const DefaultAvatarProvider: React.FC = () => {
   return (

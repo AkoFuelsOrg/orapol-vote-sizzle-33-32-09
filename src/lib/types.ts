@@ -105,24 +105,6 @@ export interface Post {
   shared_from_post_id?: string; // Added field for sharing functionality
 }
 
-// Add PostWithAuthor interface that matches the requirements in PostCard.tsx
-export interface PostWithAuthor {
-  id: string;
-  title?: string;
-  content: string;
-  created_at: string;
-  image_url?: string;
-  author?: {
-    id: string;
-    username?: string;
-    avatar_url?: string;
-  };
-  likes_count?: number;
-  comments_count?: number;
-  is_liked?: boolean;
-  is_saved?: boolean;
-}
-
 export interface Comment {
   id: string;
   pollId: string;

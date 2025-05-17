@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
@@ -32,7 +32,6 @@ import CreatePostModal from './CreatePostModal';
 import SearchSuggestions from './SearchSuggestions';
 import { AIChatModal } from './AIChatModal';
 import { addToSearchHistory } from '@/lib/search-history';
-import { toast } from '@/components/ui/use-toast';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -63,10 +62,6 @@ const Header: React.FC = () => {
           setShowSuggestions(false);
         } catch (error) {
           console.error('Error adding to search history:', error);
-          toast({
-            description: "Failed to save search history",
-            variant: "destructive"
-          });
           // Navigate anyway even if saving history fails
           navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
           setSearchQuery('');
@@ -94,10 +89,6 @@ const Header: React.FC = () => {
         setShowSuggestions(false);
       } catch (error) {
         console.error('Error adding to search history:', error);
-        toast({
-          description: "Failed to save search history",
-          variant: "destructive"
-        });
         // Navigate anyway even if saving history fails
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
@@ -123,8 +114,7 @@ const Header: React.FC = () => {
 
   const handleSuggestionSelect = (query: string) => {
     setSearchQuery(query);
-    // Keep suggestions visible after selecting from history
-    setShowSuggestions(true);
+    // Don't hide suggestions after selecting from history
   };
 
   const navItems = [
@@ -186,13 +176,11 @@ const Header: React.FC = () => {
                 </Button>
                 
                 {showSuggestions && (
-                  <div className="relative z-[9999]">
-                    <SearchSuggestions
-                      query={searchQuery}
-                      onSelect={handleSuggestionSelect}
-                      onClose={() => setShowSuggestions(false)}
-                    />
-                  </div>
+                  <SearchSuggestions
+                    query={searchQuery}
+                    onSelect={handleSuggestionSelect}
+                    onClose={() => setShowSuggestions(false)}
+                  />
                 )}
               </div>
             </form>

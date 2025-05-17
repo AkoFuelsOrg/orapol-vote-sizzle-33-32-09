@@ -8,7 +8,6 @@ import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import SearchSuggestions from './SearchSuggestions';
 import { addToSearchHistory } from '@/lib/search-history';
-import { toast } from '@/components/ui/use-toast';
 
 const TopHeader: React.FC = () => {
   const breakpoint = useBreakpoint();
@@ -36,10 +35,6 @@ const TopHeader: React.FC = () => {
           setShowSuggestions(false);
         } catch (error) {
           console.error('Error adding to search history:', error);
-          toast({
-            description: "Failed to save search history",
-            variant: "destructive"
-          });
           // Navigate anyway even if saving history fails
           navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
           setSearchQuery('');
@@ -67,10 +62,6 @@ const TopHeader: React.FC = () => {
         setShowSuggestions(false);
       } catch (error) {
         console.error('Error adding to search history:', error);
-        toast({
-          description: "Failed to save search history",
-          variant: "destructive"
-        });
         // Navigate anyway even if saving history fails
         navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         setSearchQuery('');
@@ -96,12 +87,11 @@ const TopHeader: React.FC = () => {
 
   const handleSuggestionSelect = (query: string) => {
     setSearchQuery(query);
-    // Keep suggestions visible after selecting from history
-    setShowSuggestions(true);
+    // Don't hide suggestions after selecting from history
   };
   
   return (
-    <div className="w-full bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-white py-3 shadow-lg fixed top-0 left-0 right-0 z-40 backdrop-blur-sm">
+    <div className="w-full bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-white py-3 shadow-lg fixed top-0 left-0 right-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-8 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-3 group ml-0">
           <div className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm shadow-inner transition-all duration-300 group-hover:bg-white/30">
