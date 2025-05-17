@@ -96,7 +96,7 @@ const TopHeader: React.FC = () => {
         <Link to="/" className="flex items-center gap-3 group ml-0">
           <div className="p-1.5 rounded-full bg-white/20 backdrop-blur-sm shadow-inner transition-all duration-300 group-hover:bg-white/30">
             <img 
-              src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+              src="/lovable-uploads/95591de9-b621-4bd0-b1a8-c28c6d4e09c9.png" 
               alt="Tuwaye Logo" 
               className="h-8 w-auto"
             />

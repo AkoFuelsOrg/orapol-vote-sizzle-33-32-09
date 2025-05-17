@@ -12,7 +12,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message }) => {
       <div className="text-center">
         <div className="flex justify-center items-center mb-6">
           <img 
-            src="/lovable-uploads/26f8f928-28ac-46f3-857a-e06edd03c91d.png" 
+            src="/lovable-uploads/95591de9-b621-4bd0-b1a8-c28c6d4e09c9.png" 
             alt="Tuwaye Logo" 
             className="h-20 w-20 object-contain"
           />
