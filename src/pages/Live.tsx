@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -9,8 +10,8 @@ import { toast } from 'sonner';
 import SplashScreen from '@/components/SplashScreen';
 import DailyIframe from '@/components/DailyIframe';
 
-// Daily.co API key
-const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e349269b5308d435a925cd138613a5458f496';
+// Daily.co API key - Updated with correct key
+const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e359269b5308d435a925cd138613a5458f296';
 
 // Define the global DailyIframe type
 declare global {
@@ -127,8 +128,8 @@ const Live: React.FC = () => {
           return () => clearInterval(viewerInterval);
         }
         
-        // Room URL to join
-        const url = `https://lovable.daily.co/${roomCode}`;
+        // Room URL to join - Updated with correct domain
+        const url = `https://worldwidehotspot.daily.co/${roomCode}`;
         setRoomUrl(url);
         
       } catch (error) {
