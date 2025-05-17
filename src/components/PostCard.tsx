@@ -18,14 +18,19 @@ import { Post } from '@/lib/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { timeAgo } from '@/lib/utils';
+import ReactDOM from 'react-dom'; // Added import
 
 export interface PostCardProps {
   post: Post;
-  onPostUpdate: () => void;
-  onPostDeleted: () => void;
+  onPostUpdate?: () => void;
+  onPostDeleted?: (postId: string) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate = () => {}, onPostDeleted = () => {} }) => {
+const PostCard: React.FC<PostCardProps> = ({ 
+  post, 
+  onPostUpdate = () => {}, 
+  onPostDeleted = () => {} 
+}) => {
   const { user } = useSupabase();
   const [isLiked, setIsLiked] = useState<boolean>(post.userLiked || false);
   const [likeCount, setLikeCount] = useState<number>(post.likeCount || 0);
@@ -96,7 +101,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onPostUpdate = () => {}, onPo
 
       if (error) throw error;
       toast.success('Post deleted successfully');
-      onPostDeleted();
+      onPostDeleted(post.id);
     } catch (error) {
       console.error('Error deleting post:', error);
       toast.error('Failed to delete post');
