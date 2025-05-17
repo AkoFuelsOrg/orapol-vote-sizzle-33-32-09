@@ -118,12 +118,12 @@ const Header: React.FC = () => {
   };
 
   const navItems = [
-    { href: '/', icon: <Home size={20} />, label: 'Home' },
-    { href: '/vibezone', icon: <Video size={20} />, label: 'Vibezone' },
-    { href: '/groups', icon: <Users size={20} />, label: 'Groups' },
-    { href: '/marketplaces', icon: <ShoppingBag size={20} />, label: 'Marketplaces' },
-    { href: '/messages', icon: <MessageSquare size={20} />, label: 'Messages' },
-    { href: '/favourites', icon: <Heart size={20} />, label: 'Favourites' }
+    { href: '/', icon: <Home size={20} strokeWidth={2.5} />, label: 'Home' },
+    { href: '/vibezone', icon: <Video size={20} strokeWidth={2.5} />, label: 'Vibezone' },
+    { href: '/groups', icon: <Users size={20} strokeWidth={2.5} />, label: 'Groups' },
+    { href: '/marketplaces', icon: <ShoppingBag size={20} strokeWidth={2.5} />, label: 'Marketplaces' },
+    { href: '/messages', icon: <MessageSquare size={20} strokeWidth={2.5} />, label: 'Messages' },
+    { href: '/favourites', icon: <Heart size={20} strokeWidth={2.5} />, label: 'Favourites' }
   ];
   
   return (
@@ -160,7 +160,7 @@ const Header: React.FC = () => {
                   autoFocus
                   className="pl-9 pr-8 py-2 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full focus-visible:ring-white/30"
                 />
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
+                <Search size={16} strokeWidth={2.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
                 <Button
                   type="button"
                   variant="ghost"
@@ -195,7 +195,7 @@ const Header: React.FC = () => {
                 location.pathname === '/search' ? 'bg-white/30 text-white' : 'text-white/90 hover:text-white hover:bg-white/20'
               }`}
             >
-              <Search size={20} />
+              <Search size={20} strokeWidth={2.5} />
             </Button>
             
             {!showSearch && (
@@ -206,7 +206,7 @@ const Header: React.FC = () => {
                   size="icon"
                   className={`p-2.5 rounded-full transition-all duration-300 text-white/90 hover:text-white hover:bg-white/20`}
                 >
-                  <PenLine size={20} />
+                  <PenLine size={20} strokeWidth={2.5} />
                 </Button>
                 
                 <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -216,7 +216,7 @@ const Header: React.FC = () => {
                       size="icon"
                       className="p-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/20 transition-all duration-300"
                     >
-                      <Menu size={20} />
+                      <Menu size={20} strokeWidth={2.5} />
                     </Button>
                   </DrawerTrigger>
                   <DrawerContent className="px-4 py-6 bg-gradient-to-b from-primary/5 to-background border-t border-primary/10">
@@ -266,7 +266,7 @@ const Header: React.FC = () => {
                           }}
                           className="flex items-center space-x-3 p-3 rounded-lg w-full justify-start font-normal text-primary/80 hover:bg-primary/5 hover:text-primary transition-all duration-300"
                         >
-                          <Bot className="flex-shrink-0" size={20} />
+                          <Bot className="flex-shrink-0" size={20} strokeWidth={2.5} />
                           <span>Tuwaye AI Gen 0</span>
                         </Button>
                         
@@ -278,7 +278,7 @@ const Header: React.FC = () => {
                             }}
                             className="flex items-center space-x-3 p-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300 mt-2"
                           >
-                            <LogOut size={20} />
+                            <LogOut size={20} strokeWidth={2.5} />
                             <span className="font-medium">Sign Out</span>
                           </button>
                         )}
@@ -314,11 +314,11 @@ const Header: React.FC = () => {
                             key={profile.avatar_url}
                           />
                           <AvatarFallback>
-                            <User size={20} />
+                            <User size={20} strokeWidth={2.5} />
                           </AvatarFallback>
                         </Avatar>
                       ) : (
-                        <User size={20} />
+                        <User size={20} strokeWidth={2.5} />
                       )}
                     </Link>
                   </>
