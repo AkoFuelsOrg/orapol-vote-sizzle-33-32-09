@@ -268,8 +268,7 @@ const Index: React.FC = () => {
           image,
           profiles:user_id(id, username, avatar_url)
         `)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
       
       if (pollsError) throw pollsError;
       
@@ -283,8 +282,7 @@ const Index: React.FC = () => {
           comment_count,
           user_id
         `)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
       
       if (postsError) throw postsError;
       

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import PostCard from "./PostCard";
 import { Post } from "../lib/types";
 import { getAvatarUrl } from "../lib/avatar-utils";
@@ -40,7 +40,7 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
   };
 
-  // Pass only the props that PostCard accepts
+  // Pass the props to PostCard with empty handlers for required props that aren't needed here
   return (
     <PostCard
       post={enhancedPost}
