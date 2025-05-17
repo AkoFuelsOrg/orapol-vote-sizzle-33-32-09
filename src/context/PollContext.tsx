@@ -54,9 +54,8 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
 
     const author = {
-      id: currentUser.id,
-      name: currentUser.name || currentUser.username || "Anonymous User", // Ensure name is always provided
-      avatar: currentUser.avatar || currentUser.avatar_url || defaultAvatarUrl
+      ...currentUser,
+      avatar: currentUser.avatar || defaultAvatarUrl
     };
 
     const newPoll: Poll = {
@@ -81,9 +80,8 @@ export const PollProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const author = {
-      id: currentUser.id,
-      name: currentUser.name || currentUser.username || "Anonymous User", // Ensure name is always provided
-      avatar: currentUser.avatar || currentUser.avatar_url || defaultAvatarUrl
+      ...currentUser,
+      avatar: currentUser.avatar || defaultAvatarUrl
     };
 
     const newPost: Post = {

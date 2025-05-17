@@ -1,5 +1,4 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
@@ -30,7 +29,9 @@ import {
   DrawerTrigger
 } from './ui/drawer';
 import CreatePostModal from './CreatePostModal';
+import SearchSuggestions from './SearchSuggestions';
 import { AIChatModal } from './AIChatModal';
+import { addToSearchHistory } from '@/lib/search-history';
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -40,6 +41,7 @@ const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -48,12 +50,24 @@ const Header: React.FC = () => {
     return null;
   }
 
-  const handleSearchClick = () => {
+  const handleSearchClick = async () => {
     if (showSearch) {
       if (searchQuery.trim()) {
-        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        setSearchQuery('');
-        setShowSearch(false);
+        try {
+          // Add to search history before navigating
+          await addToSearchHistory(searchQuery.trim());
+          navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+          setSearchQuery('');
+          setShowSearch(false);
+          setShowSuggestions(false);
+        } catch (error) {
+          console.error('Error adding to search history:', error);
+          // Navigate anyway even if saving history fails
+          navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+          setSearchQuery('');
+          setShowSearch(false);
+          setShowSuggestions(false);
+        }
       }
     } else {
       setShowSearch(true);
@@ -63,18 +77,31 @@ const Header: React.FC = () => {
     }
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
-      setShowSearch(false);
+      try {
+        // Add to search history before navigating
+        await addToSearchHistory(searchQuery.trim());
+        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchQuery('');
+        setShowSearch(false);
+        setShowSuggestions(false);
+      } catch (error) {
+        console.error('Error adding to search history:', error);
+        // Navigate anyway even if saving history fails
+        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchQuery('');
+        setShowSearch(false);
+        setShowSuggestions(false);
+      }
     }
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       setShowSearch(false);
+      setShowSuggestions(false);
       setSearchQuery('');
     }
   };
@@ -82,6 +109,12 @@ const Header: React.FC = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
+    setShowSuggestions(true); // Always show suggestions when typing
+  };
+
+  const handleSuggestionSelect = (query: string) => {
+    setSearchQuery(query);
+    // Don't hide suggestions after selecting from history
   };
 
   const navItems = [
@@ -123,6 +156,7 @@ const Header: React.FC = () => {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onKeyDown={handleSearchKeyDown}
+                  onFocus={() => setShowSuggestions(true)} // Always show suggestions on focus
                   autoFocus
                   className="pl-9 pr-8 py-2 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full focus-visible:ring-white/30"
                 />
@@ -134,11 +168,20 @@ const Header: React.FC = () => {
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-white/70 hover:text-white hover:bg-transparent"
                   onClick={() => {
                     setShowSearch(false);
+                    setShowSuggestions(false);
                     setSearchQuery('');
                   }}
                 >
                   <X size={16} />
                 </Button>
+                
+                {showSuggestions && (
+                  <SearchSuggestions
+                    query={searchQuery}
+                    onSelect={handleSuggestionSelect}
+                    onClose={() => setShowSuggestions(false)}
+                  />
+                )}
               </div>
             </form>
           )}
@@ -275,9 +318,7 @@ const Header: React.FC = () => {
                           </AvatarFallback>
                         </Avatar>
                       ) : (
-                        <div className="h-8 w-8 flex items-center justify-center">
-                          <User size={20} />
-                        </div>
+                        <User size={20} />
                       )}
                     </Link>
                   </>

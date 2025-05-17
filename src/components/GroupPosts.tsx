@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabase } from '../context/SupabaseContext';
@@ -241,7 +240,7 @@ const GroupPosts: React.FC<GroupPostsProps> = ({ groupId }) => {
           <PostCard 
             key={item.id} 
             post={item} 
-            onPostUpdate={() => fetchGroupPosts()}
+            onPostUpdate={fetchGroupPosts} 
             onPostDeleted={handlePostDeleted}
           />
         )
