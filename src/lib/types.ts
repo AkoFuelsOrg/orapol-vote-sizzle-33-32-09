@@ -92,7 +92,11 @@ export interface PollOption {
 export interface Post {
   id: string;
   content: string;
-  author: User;
+  author: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
   createdAt: string;
   image?: string;
   commentCount: number;

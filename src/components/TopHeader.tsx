@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { Search, MessageSquare, Video, User, Heart, X } from 'lucide-react';
@@ -6,8 +7,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useSupabase } from '../context/SupabaseContext';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import SearchSuggestions from './SearchSuggestions';
-import { addToSearchHistory } from '@/lib/search-history';
 
 const TopHeader: React.FC = () => {
   const breakpoint = useBreakpoint();
@@ -16,31 +15,18 @@ const TopHeader: React.FC = () => {
   const isDesktop = breakpoint === "desktop";
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   if (!isDesktop) {
     return null;
   }
 
-  const handleSearchClick = async () => {
+  const handleSearchClick = () => {
     if (showSearch) {
       if (searchQuery.trim()) {
-        try {
-          // Add to search history before navigating
-          await addToSearchHistory(searchQuery.trim());
-          navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-          setSearchQuery('');
-          setShowSearch(false);
-          setShowSuggestions(false);
-        } catch (error) {
-          console.error('Error adding to search history:', error);
-          // Navigate anyway even if saving history fails
-          navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-          setSearchQuery('');
-          setShowSearch(false);
-          setShowSuggestions(false);
-        }
+        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchQuery('');
+        setShowSearch(false);
       }
     } else {
       setShowSearch(true);
@@ -50,31 +36,18 @@ const TopHeader: React.FC = () => {
     }
   };
 
-  const handleSearchSubmit = async (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      try {
-        // Add to search history before navigating
-        await addToSearchHistory(searchQuery.trim());
-        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        setSearchQuery('');
-        setShowSearch(false);
-        setShowSuggestions(false);
-      } catch (error) {
-        console.error('Error adding to search history:', error);
-        // Navigate anyway even if saving history fails
-        navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        setSearchQuery('');
-        setShowSearch(false);
-        setShowSuggestions(false);
-      }
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setShowSearch(false);
     }
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       setShowSearch(false);
-      setShowSuggestions(false);
       setSearchQuery('');
     }
   };
@@ -82,14 +55,8 @@ const TopHeader: React.FC = () => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    setShowSuggestions(true); // Always show suggestions when typing
   };
 
-  const handleSuggestionSelect = (query: string) => {
-    setSearchQuery(query);
-    // Don't hide suggestions after selecting from history
-  };
-  
   return (
     <div className="w-full bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-white py-3 shadow-lg fixed top-0 left-0 right-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-8 flex justify-between items-center">
@@ -117,7 +84,6 @@ const TopHeader: React.FC = () => {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onKeyDown={handleSearchKeyDown}
-                onFocus={() => setShowSuggestions(true)} // Always show suggestions on focus
                 className="pl-9 pr-8 py-2 h-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-full focus-visible:ring-white/30"
               />
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
@@ -128,20 +94,11 @@ const TopHeader: React.FC = () => {
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-white/70 hover:text-white hover:bg-transparent p-0"
                 onClick={() => {
                   setShowSearch(false);
-                  setShowSuggestions(false);
                   setSearchQuery('');
                 }}
               >
                 <X size={14} />
               </Button>
-              
-              {showSuggestions && (
-                <SearchSuggestions
-                  query={searchQuery}
-                  onSelect={handleSuggestionSelect}
-                  onClose={() => setShowSuggestions(false)}
-                />
-              )}
             </form>
           ) : (
             <Button 
