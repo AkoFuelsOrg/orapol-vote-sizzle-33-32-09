@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import * as ReactDOM from "react-dom/client";
 
 interface ConfirmAlertProps {
   title: string;
