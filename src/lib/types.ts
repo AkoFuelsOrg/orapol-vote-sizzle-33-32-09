@@ -43,8 +43,8 @@ export interface VideoComment {
   parent_id?: string; 
   replies?: VideoComment[];
   user_has_liked?: boolean;
-  username?: string;     // Adding the missing property
-  user_avatar?: string;  // Adding the missing property
+  username?: string;
+  user_avatar?: string;
 }
 
 export interface Message {
@@ -157,4 +157,10 @@ export interface MarketplaceMember {
     username: string;
     avatar_url: string;
   };
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  hasMore: boolean;
+  nextPage?: number;
 }

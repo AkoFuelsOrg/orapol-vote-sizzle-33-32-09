@@ -3,11 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useSupabase } from './SupabaseContext';
-import { Video, VideoComment } from '@/lib/types';
+import { Video, VideoComment, PaginatedResponse } from '@/lib/types';
 import { PostgrestSingleResponse, PostgrestResponse, SupabaseClient } from '@supabase/supabase-js';
 
 type VibezoneContextType = {
-  fetchVideos: (limit?: number) => Promise<Video[]>;
+  fetchVideos: (limit?: number, page?: number) => Promise<PaginatedResponse<Video>>;
   fetchVideo: (id: string) => Promise<Video | null>;
   fetchVideoComments: (videoId: string) => Promise<VideoComment[]>;
   addVideoComment: (videoId: string, content: string) => Promise<VideoComment | null>;
@@ -92,25 +92,34 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return pendingOperations.has(opId);
   }, [pendingOperations]);
 
-  const fetchVideos = async (limit = 20): Promise<Video[]> => {
+  const fetchVideos = async (limit = 10, page = 1): Promise<PaginatedResponse<Video>> => {
     try {
       setLoading(true);
       setError(null);
+      
+      const offset = (page - 1) * limit;
       
       const { data: videosData, error: videosError } = await withRetry(
         () => supabase
             .from('videos')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(limit)
+            .range(offset, offset + limit - 1)
       );
       
       if (videosError) throw videosError;
       
       if (!videosData || videosData.length === 0) {
         console.log("No videos data returned from database");
-        return cachedVideos;
+        return {
+          data: cachedVideos,
+          hasMore: false
+        };
       }
+      
+      const { count } = await supabase
+        .from('videos')
+        .select('*', { count: 'exact', head: true });
       
       const authorPromises = videosData.map(video => {
         if (!video.user_id) return Promise.resolve(null);
@@ -151,20 +160,35 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       });
       
       if (transformedVideos.length > 0) {
-        setCachedVideos(transformedVideos);
+        // Only store the first page in cache
+        if (page === 1) {
+          setCachedVideos(transformedVideos);
+        }
       }
       
-      return transformedVideos;
+      const hasMore = videosData.length === limit && (offset + limit < (count || 0));
+      
+      return {
+        data: transformedVideos,
+        hasMore,
+        nextPage: hasMore ? page + 1 : undefined
+      };
     } catch (error: any) {
       setError(error.message);
       console.error('Error fetching videos:', error);
       
-      if (cachedVideos.length > 0) {
+      if (cachedVideos.length > 0 && page === 1) {
         console.log("Returning cached videos due to fetch error");
-        return cachedVideos;
+        return {
+          data: cachedVideos,
+          hasMore: false
+        };
       }
       
-      return [];
+      return {
+        data: [],
+        hasMore: false
+      };
     } finally {
       setLoading(false);
     }
@@ -732,8 +756,8 @@ export const VibezoneProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const initialLoad = async () => {
       const videos = await fetchVideos();
-      if (videos && videos.length > 0) {
-        setCachedVideos(videos);
+      if (videos && videos.data.length > 0) {
+        setCachedVideos(videos.data);
       }
     };
     

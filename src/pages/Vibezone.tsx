@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -18,10 +19,13 @@ import { Link } from 'react-router-dom';
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [showComments, setShowComments] = useState(false);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreVideos, setHasMoreVideos] = useState(true);
   const { fetchVideos, loading, hasLikedVideo, likeVideo, unlikeVideo, downloadVideo } = useVibezone();
   const navigate = useNavigate();
   const { user } = useSupabase();
@@ -44,6 +48,7 @@ const Vibezone: React.FC = () => {
   const videoDataRef = useRef<Record<string, Video>>({});
   const isMounted = useRef(true);
   const videosRef = useRef<Video[]>([]);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     videosRef.current = videos;
@@ -67,155 +72,179 @@ const Vibezone: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const loadVideos = async () => {
-      try {
-        if (!isMounted.current) return;
-        
+  const loadVideos = useCallback(async (page: number = 1, replace: boolean = false) => {
+    try {
+      if (!isMounted.current) return;
+      
+      if (page === 1) {
         setIsInitialLoading(true);
-        isLoadingRef.current = true;
-        const fetchedVideos = await fetchVideos();
-        console.log("Fetched videos:", fetchedVideos?.length || 0);
-        
-        if (!isMounted.current) return;
-        
-        if (fetchedVideos && fetchedVideos.length > 0) {
-          fetchedVideos.forEach(video => {
-            if (video.id) {
-              videoDataRef.current[video.id] = video;
-            }
-          });
-          
-          setVideos(prevVideos => {
-            if (!prevVideos.length && fetchedVideos.length > 0) {
-              return [...fetchedVideos];
-            }
-            if (prevVideos.length !== fetchedVideos.length) {
-              return [...fetchedVideos]; 
-            }
-            
-            const hasChanges = fetchedVideos.some((video, index) => {
-              return !prevVideos[index] || prevVideos[index].id !== video.id;
-            });
-            
-            return hasChanges ? [...fetchedVideos] : prevVideos;
-          });
-          
-          if (user && isMounted.current) {
-            const likedStatus: Record<string, boolean> = {};
-            const following: Record<string, boolean> = {};
-            const canMessage: Record<string, boolean> = {};
-            
-            const likePromises = fetchedVideos.map(async video => {
-              if (video.id) {
-                const isLiked = await hasLikedVideo(video.id);
-                return { id: video.id, isLiked };
-              }
-              return null;
-            });
-            
-            const likeResults = await Promise.all(likePromises);
-            if (isMounted.current) {
-              likeResults.forEach(result => {
-                if (result) {
-                  likedStatus[result.id] = result.isLiked;
-                }
-              });
-              
-              setLikedVideos(likedStatus);
-            }
-            
-            const followPromises = fetchedVideos.map(async video => {
-              if (video.author?.id && user.id !== video.author.id) {
-                const { data } = await supabase
-                  .from('follows')
-                  .select('id')
-                  .eq('follower_id', user.id)
-                  .eq('following_id', video.author.id)
-                  .maybeSingle();
-                
-                return { authorId: video.author.id, isFollowing: !!data };
-              }
-              return null;
-            });
-            
-            const followResults = await Promise.all(followPromises);
-            if (isMounted.current) {
-              followResults.forEach(result => {
-                if (result) {
-                  following[result.authorId] = result.isFollowing;
-                }
-              });
-              
-              setFollowingStatus(following);
-            }
-            
-            const messagePromises = fetchedVideos.map(async video => {
-              if (video.author?.id && user.id !== video.author.id) {
-                const { data } = await supabase
-                  .rpc('can_message', { 
-                    user_id_1: user.id, 
-                    user_id_2: video.author.id 
-                  });
-                
-                return { authorId: video.author.id, canMessage: !!data };
-              }
-              return null;
-            });
-            
-            const messageResults = await Promise.all(messagePromises);
-            if (isMounted.current) {
-              messageResults.forEach(result => {
-                if (result) {
-                  canMessage[result.authorId] = result.canMessage;
-                }
-              });
-              
-              setCanMessageUsers(canMessage);
-            }
+      } else {
+        setIsLoadingMore(true);
+      }
+      
+      isLoadingRef.current = true;
+      const response = await fetchVideos(10, page);
+      console.log(`Fetched videos for page ${page}:`, response?.data?.length || 0);
+      
+      if (!isMounted.current) return;
+      
+      if (response && response.data && response.data.length > 0) {
+        response.data.forEach(video => {
+          if (video.id) {
+            videoDataRef.current[video.id] = video;
           }
+        });
+        
+        setVideos(prevVideos => {
+          if (replace) {
+            return [...response.data];
+          } else {
+            // Filter out duplicates based on video ID
+            const existingIds = new Set(prevVideos.map(v => v.id));
+            const newVideos = response.data.filter(v => !existingIds.has(v.id));
+            return [...prevVideos, ...newVideos];
+          }
+        });
+        
+        setHasMoreVideos(response.hasMore);
+        
+        if (user && isMounted.current) {
+          const newVideos = replace ? response.data : response.data.filter(v => 
+            !videos.some(existingVideo => existingVideo.id === v.id)
+          );
           
-          const commentPromises = fetchedVideos.map(async video => {
+          if (newVideos.length === 0) return;
+          
+          const likedStatus: Record<string, boolean> = {};
+          const following: Record<string, boolean> = {};
+          const canMessage: Record<string, boolean> = {};
+          
+          const likePromises = newVideos.map(async video => {
             if (video.id) {
-              const { count } = await supabase
-                .from('video_comments')
-                .select('id', { count: 'exact', head: true })
-                .eq('video_id', video.id);
-              
-              return { id: video.id, count: count || 0 };
+              const isLiked = await hasLikedVideo(video.id);
+              return { id: video.id, isLiked };
             }
             return null;
           });
           
-          const commentResults = await Promise.all(commentPromises);
+          const likeResults = await Promise.all(likePromises);
           if (isMounted.current) {
-            const commentCountsData: Record<string, number> = {};
-            commentResults.forEach(result => {
+            likeResults.forEach(result => {
               if (result) {
-                commentCountsData[result.id] = result.count;
+                likedStatus[result.id] = result.isLiked;
               }
             });
             
-            setCommentCounts(commentCountsData);
+            setLikedVideos(prev => ({
+              ...prev,
+              ...likedStatus
+            }));
           }
-        } else if (isMounted.current) {
-          console.log("No videos returned or empty array");
+          
+          const followPromises = newVideos.map(async video => {
+            if (video.author?.id && user.id !== video.author.id) {
+              const { data } = await supabase
+                .from('follows')
+                .select('id')
+                .eq('follower_id', user.id)
+                .eq('following_id', video.author.id)
+                .maybeSingle();
+              
+              return { authorId: video.author.id, isFollowing: !!data };
+            }
+            return null;
+          });
+          
+          const followResults = await Promise.all(followPromises);
+          if (isMounted.current) {
+            followResults.forEach(result => {
+              if (result) {
+                following[result.authorId] = result.isFollowing;
+              }
+            });
+            
+            setFollowingStatus(prev => ({
+              ...prev,
+              ...following
+            }));
+          }
+          
+          const messagePromises = newVideos.map(async video => {
+            if (video.author?.id && user.id !== video.author.id) {
+              const { data } = await supabase
+                .rpc('can_message', { 
+                  user_id_1: user.id, 
+                  user_id_2: video.author.id 
+                });
+              
+              return { authorId: video.author.id, canMessage: !!data };
+            }
+            return null;
+          });
+          
+          const messageResults = await Promise.all(messagePromises);
+          if (isMounted.current) {
+            messageResults.forEach(result => {
+              if (result) {
+                canMessage[result.authorId] = result.canMessage;
+              }
+            });
+            
+            setCanMessageUsers(prev => ({
+              ...prev,
+              ...canMessage
+            }));
+          }
         }
-      } catch (error) {
-        console.error("Error loading videos:", error);
+        
+        const commentPromises = response.data.map(async video => {
+          if (video.id) {
+            const { count } = await supabase
+              .from('video_comments')
+              .select('id', { count: 'exact', head: true })
+              .eq('video_id', video.id);
+            
+            return { id: video.id, count: count || 0 };
+          }
+          return null;
+        });
+        
+        const commentResults = await Promise.all(commentPromises);
         if (isMounted.current) {
-          toast.error("Failed to load videos");
+          const commentCountsData: Record<string, number> = {};
+          commentResults.forEach(result => {
+            if (result) {
+              commentCountsData[result.id] = result.count;
+            }
+          });
+          
+          setCommentCounts(prev => ({
+            ...prev,
+            ...commentCountsData
+          }));
         }
-      } finally {
-        if (isMounted.current) {
-          setIsInitialLoading(false);
-          isLoadingRef.current = false;
-          initialRenderCompleteRef.current = true;
-        }
+      } else if (isMounted.current) {
+        console.log("No videos returned or empty array");
+        setHasMoreVideos(false);
       }
-    };
-    
-    loadVideos();
+    } catch (error) {
+      console.error("Error loading videos:", error);
+      if (isMounted.current) {
+        toast.error("Failed to load videos");
+        setHasMoreVideos(false);
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsInitialLoading(false);
+        setIsLoadingMore(false);
+        isLoadingRef.current = false;
+        initialRenderCompleteRef.current = true;
+      }
+    }
+  }, [fetchVideos, user, hasLikedVideo, videos]);
+
+  useEffect(() => {
+    loadVideos(1, true);
     
     const videosChannel = supabase
       .channel('vibezone_videos_changes')
@@ -227,7 +256,7 @@ const Vibezone: React.FC = () => {
         }, 
         () => {
           if (isMounted.current) {
-            loadVideos();
+            loadVideos(1, true);
           }
         }
       )
@@ -298,7 +327,37 @@ const Vibezone: React.FC = () => {
       supabase.removeChannel(commentsChannel);
       supabase.removeChannel(followsChannel);
     };
-  }, [fetchVideos, user, hasLikedVideo]);
+  }, [loadVideos, user]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (!loadMoreTriggerRef.current || isLoadingMore || !hasMoreVideos) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMore && hasMoreVideos) {
+          setCurrentPage(prev => prev + 1);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(loadMoreTriggerRef.current);
+
+    return () => {
+      if (loadMoreTriggerRef.current) {
+        observer.unobserve(loadMoreTriggerRef.current);
+      }
+    };
+  }, [isLoadingMore, hasMoreVideos]);
+
+  // Load more videos when currentPage changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadVideos(currentPage);
+    }
+  }, [currentPage, loadVideos]);
 
   const setupVideoObservers = useCallback(() => {
     if (isLoadingRef.current || videos.length === 0 || showComments) {
@@ -879,6 +938,22 @@ const Vibezone: React.FC = () => {
               </div>
             </div>
           ))}
+          
+          {/* Load more trigger element */}
+          {hasMoreVideos && !isInitialLoading && (
+            <div 
+              ref={loadMoreTriggerRef} 
+              className="h-20 flex items-center justify-center"
+            >
+              {isLoadingMore ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                </div>
+              ) : (
+                <div className="h-1 w-1 opacity-0">Loading more</div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
