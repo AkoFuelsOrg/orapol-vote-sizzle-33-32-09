@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AIChatButton from '../components/AIChatButton';
 import { Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,12 +24,15 @@ const Index: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [animateItems, setAnimateItems] = useState(false);
   const [isAIChatOpen, setAIChatOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [hasMore, setHasMore] = useState(true);
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
+  const loaderRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     fetchContent();
@@ -82,10 +85,34 @@ const Index: React.FC = () => {
     };
   }, []);
   
+  // Add intersection observer for infinite scrolling
+  const observer = useRef<IntersectionObserver | null>(null);
+  
+  const lastItemRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading || loadingMore) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMoreContent();
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [loading, loadingMore, hasMore]);
+  
+  const loadMoreContent = async () => {
+    if (!hasMore || loadingMore) return;
+    
+    setLoadingMore(true);
+    setVisibleCount(prev => prev + 5);
+    setLoadingMore(false);
+  };
+  
   useEffect(() => {
     setAnimateItems(true);
   }, [polls, posts]);
-  
+
   const convertJsonToPollOptions = (jsonOptions: Json): PollOption[] => {
     if (typeof jsonOptions === 'string') {
       try {
@@ -386,6 +413,10 @@ const Index: React.FC = () => {
       
       setPolls(formattedPolls);
       setPosts(formattedPosts);
+      
+      // Set hasMore flag based on content length and visibleCount
+      setHasMore(formattedPolls.length + formattedPosts.length > visibleCount);
+      
     } catch (error: any) {
       console.error('Error fetching content:', error);
       toast.error('Failed to load content');
@@ -398,10 +429,6 @@ const Index: React.FC = () => {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const loadMore = () => {
-    setVisibleCount(prev => prev + 5);
-  };
-  
   return (
     <div className="w-full">
       <Header />
@@ -464,34 +491,43 @@ const Index: React.FC = () => {
           </Card>
         ) : (
           <div className="space-y-5">
-            {allContent.slice(0, visibleCount).map((item, index) => (
-              <div 
-                key={item.id} 
-                className={`transition-all duration-500 transform ${
-                  animateItems 
-                    ? 'opacity-100 translate-y-0' 
-                    : 'opacity-0 translate-y-4'
-                } hover:shadow-md`}
-                style={{ transitionDelay: `${index * 75}ms` }}
-              >
-                {'question' in item ? (
-                  <PollCard poll={item as Poll} />
-                ) : (
-                  <PostCard post={item as Post} />
-                )}
-              </div>
-            ))}
-            
-            {visibleCount < allContent.length && (
-              <div className="flex justify-center pt-4 pb-2">
-                <button 
-                  onClick={loadMore}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 rounded-full transition-colors font-medium border border-gray-200 shadow-sm hover:shadow"
+            {allContent.slice(0, visibleCount).map((item, index) => {
+              // Check if this is the last item being rendered
+              const isLastItem = index === visibleCount - 1;
+              
+              return (
+                <div 
+                  key={item.id} 
+                  ref={isLastItem ? lastItemRef : null}
+                  className={`transition-all duration-500 transform ${
+                    animateItems 
+                      ? 'opacity-100 translate-y-0' 
+                      : 'opacity-0 translate-y-4'
+                  } hover:shadow-md`}
+                  style={{ transitionDelay: `${index * 75}ms` }}
                 >
-                  Load More <ChevronDown size={18} className="text-primary" />
-                </button>
+                  {'question' in item ? (
+                    <PollCard poll={item as Poll} />
+                  ) : (
+                    <PostCard 
+                      post={item as Post}
+                      onPostUpdate={() => {}}
+                      onPostDeleted={() => {}}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            
+            {/* Loading indicator for infinite scroll */}
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             )}
+            
+            {/* Hidden loader element for intersection observer */}
+            <div ref={loaderRef} className="h-10 w-full" />
           </div>
         )}
       </main>
