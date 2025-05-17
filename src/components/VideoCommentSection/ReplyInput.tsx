@@ -10,7 +10,7 @@ interface ReplyInputProps {
   user: User | null;
   replyContent: string;
   onChange: (v: string) => void;
-  onSubmit: () => void;
+  onSubmit: (e?: React.FormEvent) => void; // Updated to accept an optional event parameter
   onCancel: () => void;
   submittingReply: boolean;
   placeholder?: string;
@@ -45,14 +45,14 @@ const ReplyInput: React.FC<ReplyInputProps> = ({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            onSubmit();
+            onSubmit(); // This now accepts no parameters, which matches our updated definition
           }
         }}
       />
       <div className="flex space-x-1">
         <Button
           size="sm"
-          onClick={onSubmit}
+          onClick={() => onSubmit()} // Call without event, which matches our updated definition
           disabled={submittingReply || !replyContent.trim()}
           className="h-8"
         >

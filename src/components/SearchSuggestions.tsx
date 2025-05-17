@@ -131,11 +131,11 @@ const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     if (debouncedQuery.trim()) {
       try {
         // Update both database and local state
-        const updatedHistory = await addToSearchHistory(debouncedQuery.trim());
-        // Fix for the TypeScript error - make sure we only set state if we got a valid return value
-        if (updatedHistory) {
-          setSearchHistory(updatedHistory);
-        }
+        await addToSearchHistory(debouncedQuery.trim());
+        // Load the updated history
+        const updatedHistory = await getSearchHistory();
+        setSearchHistory(updatedHistory);
+        
         navigate(`/search?q=${encodeURIComponent(debouncedQuery.trim())}`);
         onClose();
       } catch (error) {
