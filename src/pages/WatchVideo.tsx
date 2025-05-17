@@ -1,666 +1,1064 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
-import { useSupabase } from '@/context/SupabaseContext';
-import { Video, VideoComment } from '@/lib/types';
+import { Video } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2, ThumbsUp, MessageSquare, Share2, Bell, BellOff, Download, FilmIcon, Sparkles, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, FilmIcon, Plus, Sparkles, Heart, MessageCircle, Download, BookmarkIcon, Volume2, VolumeX, Music, X, ArrowLeft, UserPlus, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Avatar } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
+import { Card } from '@/components/ui/card';
+import { useSupabase } from '@/context/SupabaseContext';
+import { useBreakpoint } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Avatar } from '@/components/ui/avatar';
 import VideoCommentSection from '@/components/VideoCommentSection';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { useBreakpoint } from '@/hooks/use-mobile';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Link } from 'react-router-dom';
 
-const WatchVideo: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+const Vibezone: React.FC = () => {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [nextVideoPreloaded, setNextVideoPreloaded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [showComments, setShowComments] = useState(false);
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreVideos, setHasMoreVideos] = useState(true);
+  const { fetchVideos, loading, hasLikedVideo, likeVideo, unlikeVideo, downloadVideo } = useVibezone();
   const navigate = useNavigate();
-  const { 
-    fetchVideo, 
-    fetchVideos, 
-    hasLikedVideo, 
-    likeVideo, 
-    unlikeVideo, 
-    viewVideo,
-    subscribeToChannel,
-    unsubscribeFromChannel,
-    hasSubscribedToChannel,
-    getSubscriberCount,
-    downloadVideo
-  } = useVibezone();
   const { user } = useSupabase();
-  const [video, setVideo] = useState<Video | null>(null);
-  const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingRelated, setLoadingRelated] = useState(true);
-  const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [subscribed, setSubscribed] = useState(false);
-  const [subscriberCount, setSubscriberCount] = useState(0);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [videoRequestProgress, setVideoRequestProgress] = useState(0);
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const viewRecorded = useRef(false);
-  const relatedVideosRef = useRef<{ id: string, videos: Video[] } | null>(null);
-  const mountedRef = useRef(true);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const scrollPositionRef = useRef(0);
+  const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
+  const [canMessageUsers, setCanMessageUsers] = useState<Record<string, boolean>>({});
+  const [actionLoadingUsers, setActionLoadingUsers] = useState<Record<string, boolean>>({});
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const isLoadingRef = useRef(true);
+  const videosLoadedRef = useRef<Set<string>>(new Set());
+  const videoPlayingStateRef = useRef<Record<string, boolean>>({});
+  const loadedMetadataRef = useRef<Set<string>>(new Set());
+  const initialRenderCompleteRef = useRef(false);
+  const videoElementsRef = useRef<Record<string, HTMLVideoElement>>({});
+  const videoDataRef = useRef<Record<string, Video>>({});
+  const isMounted = useRef(true);
+  const videosRef = useRef<Video[]>([]);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const preloadingRef = useRef<Record<string, boolean>>({});
 
+  // Keep track of videos array in ref for use in callbacks
   useEffect(() => {
-    if (video) {
-      console.log("Video author ID:", video?.author?.id);
-      console.log("Current user ID:", user?.id);
-      console.log("Show channel actions:", Boolean(video?.author?.id) && Boolean(user?.id) && video.author.id !== user?.id);
-    }
-  }, [video, user]);
+    videosRef.current = videos;
+  }, [videos]);
 
+  // Cleanup on unmount
   useEffect(() => {
-    if (loading) {
-      const interval = setInterval(() => {
-        setVideoRequestProgress(prev => {
-          const newProgress = prev + (Math.random() * 10);
-          return newProgress > 95 ? 95 : newProgress; // Cap at 95%
-        });
-      }, 300);
-      
-      return () => clearInterval(interval);
-    } else {
-      setVideoRequestProgress(100);
-    }
-  }, [loading]);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    viewRecorded.current = false;
-    
-    const loadVideo = async () => {
-      if (!id) return;
-      setLoading(true);
-      
-      try {
-        const videoData = await fetchVideo(id);
-        if (videoData && mountedRef.current) {
-          setVideo(videoData);
-          setLikesCount(videoData.likes || 0);
-          
-          if (retryTimeoutRef.current) {
-            clearTimeout(retryTimeoutRef.current);
-            retryTimeoutRef.current = null;
-          }
-          
-          if (mountedRef.current) {
-            if (user) {
-              try {
-                const userLiked = await hasLikedVideo(id);
-                if (mountedRef.current) setLiked(userLiked);
-              } catch (error) {
-                console.error('Error checking if user liked video:', error);
-              }
-            }
-            
-            if (videoData.author?.id) {
-              try {
-                const count = await getSubscriberCount(videoData.author.id);
-                if (mountedRef.current) setSubscriberCount(count);
-                
-                if (user) {
-                  const userSubscribed = await hasSubscribedToChannel(videoData.author.id);
-                  if (mountedRef.current) setSubscribed(userSubscribed);
-                }
-              } catch (error) {
-                console.error('Error fetching subscription data:', error);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading video:', error);
-        if (mountedRef.current) {
-          if (retryCount < maxRetries) {
-            retryCount++;
-            const delay = Math.min(2000 * retryCount, 10000);
-            console.log(`Attempt ${retryCount}/${maxRetries}: Retrying video load in ${delay}ms`);
-            
-            retryTimeoutRef.current = setTimeout(() => {
-              if (mountedRef.current) loadVideo();
-            }, delay);
-          } else {
-            toast.error('Unable to load video after multiple attempts');
-          }
-        }
-      } finally {
-        if (mountedRef.current) setLoading(false);
-      }
-    };
-    
-    loadVideo();
+    isMounted.current = true;
     
     return () => {
-      mountedRef.current = false;
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
+      isMounted.current = false;
+      
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+      
+      // Clean up video elements to prevent memory leaks
+      Object.values(videoElementsRef.current).forEach(video => {
+        video.pause();
+        video.src = '';
+        video.load();
+      });
+    };
+  }, []);
+
+  // Function to preload the next video
+  const preloadNextVideo = useCallback((currentIndex: number) => {
+    if (currentIndex >= videos.length - 1 || !videos[currentIndex + 1]?.id) return;
+    
+    const nextVideoId = videos[currentIndex + 1].id;
+    if (preloadingRef.current[nextVideoId]) return;
+    
+    // Mark this video as being preloaded
+    preloadingRef.current[nextVideoId] = true;
+    
+    console.log(`Preloading next video: ${nextVideoId}`);
+    
+    // Get the video element for the next video
+    const nextVideoElement = videoRefs.current[currentIndex + 1];
+    if (nextVideoElement) {
+      // Set preload attribute to auto to start loading the video
+      nextVideoElement.preload = "auto";
+      
+      // Create an event listener for when metadata is loaded
+      const handleMetadataLoaded = () => {
+        console.log(`Next video metadata loaded: ${nextVideoId}`);
+        loadedMetadataRef.current.add(nextVideoId);
+        setNextVideoPreloaded(true);
+        nextVideoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+      };
+      
+      // Add event listener for metadata loaded
+      if (!loadedMetadataRef.current.has(nextVideoId)) {
+        nextVideoElement.addEventListener('loadedmetadata', handleMetadataLoaded);
+      } else {
+        setNextVideoPreloaded(true);
+      }
+    }
+  }, [videos]);
+
+  // Load initial videos and setup data
+  const loadVideos = useCallback(async (page: number = 1, replace: boolean = false) => {
+    try {
+      if (!isMounted.current) return;
+      
+      if (page === 1) {
+        setIsInitialLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+      
+      isLoadingRef.current = true;
+      const response = await fetchVideos(10, page);
+      console.log(`Fetched videos for page ${page}:`, response?.data?.length || 0);
+      
+      if (!isMounted.current) return;
+      
+      if (response && response.data && response.data.length > 0) {
+        // Store video data in ref for quick access
+        response.data.forEach(video => {
+          if (video.id) {
+            videoDataRef.current[video.id] = video;
+          }
+        });
+        
+        setVideos(prevVideos => {
+          if (replace) {
+            return [...response.data];
+          } else {
+            // Filter out duplicates based on video ID
+            const existingIds = new Set(prevVideos.map(v => v.id));
+            const newVideos = response.data.filter(v => !existingIds.has(v.id));
+            return [...prevVideos, ...newVideos];
+          }
+        });
+        
+        setHasMoreVideos(response.hasMore);
+        
+        if (user && isMounted.current) {
+          const newVideos = replace ? response.data : response.data.filter(v => 
+            !videos.some(existingVideo => existingVideo.id === v.id)
+          );
+          
+          if (newVideos.length === 0) return;
+          
+          // Get liked status for new videos
+          const likedStatus: Record<string, boolean> = {};
+          const following: Record<string, boolean> = {};
+          const canMessage: Record<string, boolean> = {};
+          
+          const likePromises = newVideos.map(async video => {
+            if (video.id) {
+              const isLiked = await hasLikedVideo(video.id);
+              return { id: video.id, isLiked };
+            }
+            return null;
+          });
+          
+          const likeResults = await Promise.all(likePromises);
+          if (isMounted.current) {
+            likeResults.forEach(result => {
+              if (result) {
+                likedStatus[result.id] = result.isLiked;
+              }
+            });
+            
+            setLikedVideos(prev => ({
+              ...prev,
+              ...likedStatus
+            }));
+          }
+          
+          // Get following status for video authors
+          const followPromises = newVideos.map(async video => {
+            if (video.author?.id && user.id !== video.author.id) {
+              const { data } = await supabase
+                .from('follows')
+                .select('id')
+                .eq('follower_id', user.id)
+                .eq('following_id', video.author.id)
+                .maybeSingle();
+              
+              return { authorId: video.author.id, isFollowing: !!data };
+            }
+            return null;
+          });
+          
+          const followResults = await Promise.all(followPromises);
+          if (isMounted.current) {
+            followResults.forEach(result => {
+              if (result) {
+                following[result.authorId] = result.isFollowing;
+              }
+            });
+            
+            setFollowingStatus(prev => ({
+              ...prev,
+              ...following
+            }));
+          }
+          
+          // Get messaging permissions
+          const messagePromises = newVideos.map(async video => {
+            if (video.author?.id && user.id !== video.author.id) {
+              const { data } = await supabase
+                .rpc('can_message', { 
+                  user_id_1: user.id, 
+                  user_id_2: video.author.id 
+                });
+              
+              return { authorId: video.author.id, canMessage: !!data };
+            }
+            return null;
+          });
+          
+          const messageResults = await Promise.all(messagePromises);
+          if (isMounted.current) {
+            messageResults.forEach(result => {
+              if (result) {
+                canMessage[result.authorId] = result.canMessage;
+              }
+            });
+            
+            setCanMessageUsers(prev => ({
+              ...prev,
+              ...canMessage
+            }));
+          }
+        }
+        
+        // Get comment counts for videos
+        const commentPromises = response.data.map(async video => {
+          if (video.id) {
+            const { count } = await supabase
+              .from('video_comments')
+              .select('id', { count: 'exact', head: true })
+              .eq('video_id', video.id);
+            
+            return { id: video.id, count: count || 0 };
+          }
+          return null;
+        });
+        
+        const commentResults = await Promise.all(commentPromises);
+        if (isMounted.current) {
+          const commentCountsData: Record<string, number> = {};
+          commentResults.forEach(result => {
+            if (result) {
+              commentCountsData[result.id] = result.count;
+            }
+          });
+          
+          setCommentCounts(prev => ({
+            ...prev,
+            ...commentCountsData
+          }));
+        }
+      } else if (isMounted.current) {
+        console.log("No videos returned or empty array");
+        setHasMoreVideos(false);
+      }
+    } catch (error) {
+      console.error("Error loading videos:", error);
+      if (isMounted.current) {
+        toast.error("Failed to load videos");
+        setHasMoreVideos(false);
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsInitialLoading(false);
+        setIsLoadingMore(false);
+        isLoadingRef.current = false;
+        initialRenderCompleteRef.current = true;
+      }
+    }
+  }, [fetchVideos, user, hasLikedVideo, videos]);
+
+  // Initial load and subscription to changes
+  useEffect(() => {
+    loadVideos(1, true);
+    
+    // Set up realtime subscriptions
+    const videosChannel = supabase
+      .channel('vibezone_videos_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'videos'
+        }, 
+        () => {
+          if (isMounted.current) {
+            loadVideos(1, true);
+          }
+        }
+      )
+      .subscribe();
+      
+    const commentsChannel = supabase
+      .channel('vibezone_comments_changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'video_comments'
+        },
+        async (payload: { new: { video_id?: string } }) => {
+          if (payload.new && payload.new.video_id && isMounted.current) {
+            const videoId = payload.new.video_id;
+            const { count } = await supabase
+              .from('video_comments')
+              .select('id', { count: 'exact', head: true })
+              .eq('video_id', videoId);
+            
+            if (isMounted.current) {
+              setCommentCounts(prev => ({
+                ...prev,
+                [videoId]: count || 0
+              }));
+            }
+          }
+        }
+      )
+      .subscribe();
+      
+    const followsChannel = supabase
+      .channel('vibezone_follows_changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'follows'
+        },
+        async () => {
+          if (user && isMounted.current) {
+            const following: Record<string, boolean> = {};
+            
+            for (const video of videosRef.current) {
+              if (video.author?.id && user.id !== video.author.id) {
+                const { data } = await supabase
+                  .from('follows')
+                  .select('id')
+                  .eq('follower_id', user.id)
+                  .eq('following_id', video.author.id)
+                  .maybeSingle();
+                
+                following[video.author.id] = !!data;
+              }
+            }
+            
+            if (isMounted.current) {
+              setFollowingStatus(following);
+            }
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(videosChannel);
+      supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(followsChannel);
+    };
+  }, [loadVideos, user]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (!loadMoreTriggerRef.current || isLoadingMore || !hasMoreVideos) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMore && hasMoreVideos) {
+          setCurrentPage(prev => prev + 1);
+        }
+      },
+      { threshold: 0.1 } // Lower threshold for earlier loading
+    );
+
+    observer.observe(loadMoreTriggerRef.current);
+
+    return () => {
+      if (loadMoreTriggerRef.current) {
+        observer.unobserve(loadMoreTriggerRef.current);
       }
     };
-  }, [id, fetchVideo, hasLikedVideo, hasSubscribedToChannel, getSubscriberCount, user]);
+  }, [isLoadingMore, hasMoreVideos]);
+
+  // Load more videos when currentPage changes
+  useEffect(() => {
+    if (currentPage > 1) {
+      loadVideos(currentPage);
+    }
+  }, [currentPage, loadVideos]);
+
+  // Optimized video playing and observer setup
+  const setupVideoObservers = useCallback(() => {
+    if (isLoadingRef.current || videos.length === 0 || showComments) {
+      return;
+    }
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+    
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const video = entry.target as HTMLVideoElement;
+        const videoId = video.dataset.videoId;
+        
+        if (!videoId) return;
+        
+        const index = videos.findIndex(v => v.id === videoId);
+        if (index === -1) return;
+        
+        if (entry.isIntersecting) {
+          console.log(`Video ${videoId} is intersecting, index: ${index}`);
+          
+          // Set current video index and trigger preloading for next video
+          if (currentVideoIndex !== index) {
+            setCurrentVideoIndex(index);
+            preloadNextVideo(index);
+          }
+          
+          // Pause all other videos first
+          Object.entries(videoElementsRef.current).forEach(([id, videoEl]) => {
+            if (id !== videoId && !videoEl.paused) {
+              console.log(`Pausing video ${id}`);
+              videoEl.pause();
+              videoPlayingStateRef.current[id] = false;
+            }
+          });
+          
+          if (!showComments && video && loadedMetadataRef.current.has(videoId)) {
+            console.log(`Attempting to play video ${videoId}`);
+            if (video.paused) {
+              video.muted = isMuted;
+              videoPlayingStateRef.current[videoId] = true;
+              
+              // Ensure the video is ready to play
+              if (video.readyState >= 2) {
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch((err) => {
+                    console.error(`Error playing video ${videoId}:`, err);
+                    // Try with muted as fallback
+                    video.muted = true;
+                    video.play().catch(err => {
+                      console.error(`Still couldn't play video ${videoId}:`, err);
+                      videoPlayingStateRef.current[videoId] = false;
+                    });
+                  });
+                }
+              } else {
+                // If video is not ready, set up event listener
+                const handleCanPlay = () => {
+                  console.log(`Video ${videoId} can play now`);
+                  const playPromise = video.play();
+                  if (playPromise !== undefined) {
+                    playPromise.catch(() => {
+                      video.muted = true;
+                      video.play().catch(err => {
+                        console.error(`Error playing video on canplay event:`, err);
+                      });
+                    });
+                  }
+                  video.removeEventListener('canplay', handleCanPlay);
+                };
+                
+                video.addEventListener('canplay', handleCanPlay);
+              }
+            }
+          }
+        } else if (videoPlayingStateRef.current[videoId]) {
+          console.log(`Video ${videoId} is no longer intersecting, pausing`);
+          video.pause();
+          videoPlayingStateRef.current[videoId] = false;
+        }
+      });
+    }, { 
+      threshold: 0.7, // Increased threshold for more precise intersection detection
+      rootMargin: "-10% 0px" // Adjusted rootMargin for better visibility requirement
+    });
+
+    // Add a small delay to ensure DOM is ready
+    setTimeout(() => {
+      videoRefs.current.forEach((video) => {
+        if (video && video.dataset.videoId) {
+          observerRef.current!.observe(video);
+        }
+      });
+    }, 50);
+    
+  }, [videos, showComments, isMuted, currentVideoIndex, preloadNextVideo]);
 
   useEffect(() => {
-    const loadRelatedVideos = async () => {
-      if (!id) return;
-      
-      if (relatedVideosRef.current && relatedVideosRef.current.id === id) {
-        setRelatedVideos(relatedVideosRef.current.videos);
-        setLoadingRelated(false);
-        return;
-      }
-      
-      setLoadingRelated(true);
-      
-      try {
-        const allVideos = await fetchVideos(10);
-        
-        if (mountedRef.current) {
-          const filteredVideos = allVideos.filter(v => v.id !== id);
-          setRelatedVideos(filteredVideos);
-          
-          relatedVideosRef.current = {
-            id: id,
-            videos: filteredVideos
-          };
-        }
-      } catch (error) {
-        console.error('Error loading related videos:', error);
-      } finally {
-        if (mountedRef.current) setLoadingRelated(false);
+    console.log("Setting up video observers");
+    setupVideoObservers();
+    
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
       }
     };
-    
-    loadRelatedVideos();
-  }, [id, fetchVideos]);
+  }, [setupVideoObservers]);
 
-  const handleVideoPlay = useCallback(async () => {
-    if (!id || viewRecorded.current) return;
+  // Update all video elements when mute state changes
+  useEffect(() => {
+    videoRefs.current.forEach(video => {
+      if (video) {
+        video.muted = isMuted;
+      }
+    });
+  }, [isMuted]);
+
+  // Handle video metadata loading
+  const handleVideoMetadataLoaded = (video: HTMLVideoElement, videoId: string, index: number) => {
+    if (!video || !videoId || !isMounted.current) return;
     
-    try {
-      const success = await viewVideo(id);
-      if (success) {
-        viewRecorded.current = true;
-        if (video) {
-          setVideo({
-            ...video,
-            views: video.views + 1
+    console.log(`Video ${videoId} metadata loaded, index: ${index}`);
+    videoElementsRef.current[videoId] = video;
+    
+    videosLoadedRef.current.add(videoId);
+    loadedMetadataRef.current.add(videoId);
+    
+    // If this is the current video, play it immediately
+    if (index === currentVideoIndex && !showComments) {
+      videoPlayingStateRef.current[videoId] = true;
+      video.muted = isMuted;
+      
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.error(`Error playing video ${videoId} on metadata load:`, err);
+          video.muted = true;
+          video.play().catch(err => {
+            console.error("Still couldn't play video on metadata load:", err);
+            videoPlayingStateRef.current[videoId] = false;
+          });
+        });
+      }
+      
+      // Preload next video after current one starts playing
+      preloadNextVideo(index);
+    }
+  };
+
+  // Create refs for video elements
+  const handleVideoRef = (element: HTMLVideoElement | null, index: number) => {
+    if (!element || !videos[index]?.id || !isMounted.current) return;
+    
+    const videoId = videos[index].id;
+    videoRefs.current[index] = element;
+    
+    console.log(`Video ref set for index ${index}, id: ${videoId}`);
+    element.dataset.videoId = videoId;
+    
+    videoElementsRef.current[videoId] = element;
+    
+    // Add priority loading for first few videos
+    if (index < 3) {
+      element.preload = "auto";
+    }
+    
+    if (!loadedMetadataRef.current.has(videoId)) {
+      const handleMetadata = () => {
+        handleVideoMetadataLoaded(element, videoId, index);
+        element.removeEventListener('loadedmetadata', handleMetadata);
+      };
+      
+      element.addEventListener('loadedmetadata', handleMetadata);
+      
+      if (element.readyState >= 2) {
+        handleMetadata();
+      }
+    } else if (index === currentVideoIndex && !showComments) {
+      if (element.paused && !videoPlayingStateRef.current[videoId]) {
+        videoPlayingStateRef.current[videoId] = true;
+        element.muted = isMuted;
+        
+        console.log(`Playing video ${videoId} on ref assignment`);
+        const playPromise = element.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.error(`Error playing video ${videoId} on ref assignment:`, err);
+            element.muted = true;
+            element.play().catch(err => {
+              console.error(`Still couldn't play video ${videoId}:`, err);
+              videoPlayingStateRef.current[videoId] = false;
+            });
           });
         }
       }
-    } catch (error) {
-      console.error('Error recording view:', error);
     }
-  }, [id, viewVideo, video]);
+  };
 
-  const handleLike = useCallback(async () => {
-    if (!user) {
-      toast.error('You must be logged in to like videos');
-      return;
-    }
-    
-    if (!id) return;
-    
-    try {
-      const previousLiked = liked;
-      const previousCount = likesCount;
-      
-      setLiked(!liked);
-      setLikesCount(prev => prev + (liked ? -1 : 1));
-      
-      if (liked) {
-        const success = await unlikeVideo(id);
-        if (!success && mountedRef.current) {
-          setLiked(previousLiked);
-          setLikesCount(previousCount);
-          toast.error('Failed to unlike video');
-        }
-      } else {
-        const success = await likeVideo(id);
-        if (!success && mountedRef.current) {
-          setLiked(previousLiked);
-          setLikesCount(previousCount);
-          toast.error('Failed to like video');
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error);
-      toast.error('Failed to update like');
-    }
-  }, [user, id, liked, likesCount, unlikeVideo, likeVideo]);
-
-  const handleSubscribe = useCallback(async () => {
-    if (!user) {
-      toast.error('You must be logged in to subscribe');
-      return;
-    }
-    
-    if (!video || !video.author?.id) {
-      toast.error('Cannot identify channel to subscribe to');
-      return;
-    }
-    
-    if (subscriptionLoading) return;
-    
-    try {
-      setSubscriptionLoading(true);
-      
-      const previousSubscribed = subscribed;
-      const previousCount = subscriberCount;
-      
-      setSubscribed(!subscribed);
-      setSubscriberCount(prev => prev + (subscribed ? -1 : 1));
-      
-      const channelId = video.author.id;
-      let success = false;
-      
-      if (previousSubscribed) {
-        success = await unsubscribeFromChannel(channelId);
-      } else {
-        success = await subscribeToChannel(channelId);
-      }
-      
-      if (!success && mountedRef.current) {
-        setSubscribed(previousSubscribed);
-        setSubscriberCount(previousCount);
-        toast.error(`Failed to ${previousSubscribed ? 'unsubscribe from' : 'subscribe to'} channel`);
-      }
-    } catch (error) {
-      console.error('Error updating subscription:', error);
-      toast.error('Failed to update subscription');
-    } finally {
-      if (mountedRef.current) {
-        setSubscriptionLoading(false);
-      }
-    }
-  }, [user, video, subscribed, subscriberCount, unsubscribeFromChannel, subscribeToChannel, subscriptionLoading]);
-
-  const handleDownload = useCallback(async () => {
-    if (!video) return;
-    
-    try {
-      toast.loading('Preparing download...');
-      
-      const response = await fetch(video.video_url);
-      const blob = await response.blob();
-      
-      const blobUrl = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `${video.title.replace(/\s+/g, '_')}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      
-      toast.dismiss();
-      toast.success('Video download started');
-    } catch (error) {
-      console.error('Error downloading video:', error);
-      toast.dismiss();
-      toast.error('Failed to download video');
-    }
-  }, [video]);
-
+  // Utility functions for UI display
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
-      return `${(views / 1000000).toFixed(1)}M views`;
+      return `${(views / 1000000).toFixed(1)}M`;
     } else if (views >= 1000) {
-      return `${(views / 1000).toFixed(1)}K views`;
+      return `${(views / 1000).toFixed(1)}K`;
     } else {
-      return `${views} ${views === 1 ? 'view' : 'views'}`;
+      return `${views}`;
     }
   };
 
-  const handleRelatedVideoClick = (videoId: string) => {
-    navigate(`/vibezone/watch/${videoId}`);
-    viewRecorded.current = false;
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
+  // UI interaction handlers
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted(prev => !prev);
+  };
+
+  const handleLikeVideo = async (e: React.MouseEvent, video: Video) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please sign in to like videos");
+      return;
+    }
+    
+    if (!video.id) return;
+    
+    try {
+      const isLiked = likedVideos[video.id] || false;
+      
+      setLikedVideos(prev => ({
+        ...prev,
+        [video.id]: !isLiked
+      }));
+      
+      if (isLiked) {
+        await unlikeVideo(video.id);
+        setVideos(prev => prev.map(v => 
+          v.id === video.id ? { ...v, likes: Math.max((v.likes || 1) - 1, 0) } : v
+        ));
+      } else {
+        await likeVideo(video.id);
+        setVideos(prev => prev.map(v => 
+          v.id === video.id ? { ...v, likes: (v.likes || 0) + 1 } : v
+        ));
+      }
+    } catch (error) {
+      console.error('Error handling like:', error);
+      if (video.id) {
+        setLikedVideos(prev => ({
+          ...prev,
+          [video.id]: !likedVideos[video.id]
+        }));
+      }
+      toast.error('Failed to update like status');
     }
   };
 
-  const renderVideoSkeleton = () => (
-    <div className="space-y-2">
-      <div className="bg-black rounded-lg overflow-hidden aspect-video shadow-xl">
-        <Skeleton className="w-full h-full" />
-      </div>
-      {videoRequestProgress < 100 && (
-        <Progress value={videoRequestProgress} className="h-2" />
-      )}
-    </div>
-  );
+  const handleDownloadVideo = (e: React.MouseEvent, video: Video) => {
+    e.stopPropagation();
+    
+    if (!video.video_url || !video.title) {
+      toast.error("Video information is incomplete");
+      return;
+    }
+    
+    downloadVideo(video.video_url, video.title);
+  };
 
-  const renderVideoInfoSkeleton = () => (
-    <div className="mt-4 space-y-2">
-      <Skeleton className="h-8 w-4/5" />
-      <div className="flex items-center justify-between mt-2">
-        <Skeleton className="h-5 w-1/4" />
-        <div className="flex space-x-4">
-          <Skeleton className="h-8 w-16" />
-          <Skeleton className="h-8 w-16" />
-        </div>
-      </div>
-    </div>
-  );
+  const handleShowComments = (e: React.MouseEvent, videoId: string) => {
+    e.stopPropagation();
+    scrollPositionRef.current = window.scrollY;
+    setActiveVideoId(videoId);
+    setShowComments(true);
+    
+    Object.values(videoElementsRef.current).forEach(video => {
+      if (video) {
+        const videoId = video.dataset.videoId;
+        if (videoId) {
+          videoPlayingStateRef.current[videoId] = false;
+        }
+        video.pause();
+      }
+    });
+    
+    document.body.style.overflow = 'hidden';
+  };
 
-  const renderUserSkeleton = () => (
-    <div className="flex items-center">
-      <Skeleton className="h-10 w-10 rounded-full" />
-      <Skeleton className="h-5 w-32 ml-3" />
-    </div>
-  );
+  const handleCloseComments = () => {
+    setShowComments(false);
+    setActiveVideoId(null);
+    
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollPositionRef.current);
+      
+      if (videoRefs.current[currentVideoIndex] && videos[currentVideoIndex]?.id) {
+        const videoId = videos[currentVideoIndex].id;
+        const video = videoRefs.current[currentVideoIndex];
+        
+        if (video) {
+          videoPlayingStateRef.current[videoId] = true;
+          video.muted = isMuted;
+          
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              video.muted = true;
+              video.play().catch(err => {
+                console.error("Error playing video after closing comments:", err);
+                videoPlayingStateRef.current[videoId] = false;
+              });
+            });
+          }
+        }
+      }
+    });
+    
+    document.body.style.overflow = 'auto';
+  };
 
-  const renderRelatedVideoItem = (relatedVideo: Video) => (
-    <div 
-      key={relatedVideo.id} 
-      className="block cursor-pointer video-card"
-      onClick={() => handleRelatedVideoClick(relatedVideo.id)}
-    >
-      <Card className="hover:bg-gray-50 transition-colors duration-300 border-0 shadow-md hover:shadow-lg">
-        <CardContent className="p-3">
-          <div className="flex">
-            <div className="flex-shrink-0 w-32 h-20 bg-gray-200 rounded-lg overflow-hidden">
-              {relatedVideo.thumbnail_url ? (
-                <img 
-                  src={relatedVideo.thumbnail_url} 
-                  alt={relatedVideo.title} 
-                  className="w-full h-full object-cover transform transition-transform duration-500 hover:scale-110"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500 text-xs">
-                  <FilmIcon className="h-8 w-8 text-gray-400 opacity-60" />
-                </div>
-              )}
-            </div>
-            <div className="ml-3 flex-1 min-w-0">
-              <h4 className="text-sm font-medium line-clamp-2 text-gray-800 group-hover:text-primary transition-colors">{relatedVideo.title}</h4>
-              <p className="text-xs text-gray-500 mt-1 font-medium">
-                {relatedVideo.author?.name || relatedVideo.author?.username || 'Unknown'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {formatViews(relatedVideo.views)} • {formatDistanceToNow(new Date(relatedVideo.created_at), { addSuffix: true })}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const updateCommentCount = (videoId: string, count: number) => {
+    setCommentCounts(prev => ({
+      ...prev,
+      [videoId]: count
+    }));
+  };
 
-  const renderRelatedVideosSkeleton = () => (
-    <div className="space-y-4">
-      {[1, 2, 3, 4].map((_, index) => (
-        <Card key={index} className="mb-4 shadow-md border-0">
-          <CardContent className="p-3">
-            <div className="flex">
-              <Skeleton className="flex-shrink-0 w-32 h-20 rounded-lg" />
-              <div className="ml-3 space-y-2 flex-1">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-3 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+  const handleFollowUser = async (e: React.MouseEvent, authorId: string) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please sign in to follow users");
+      return;
+    }
+    
+    if (user.id === authorId) {
+      toast.info("You cannot follow yourself");
+      return;
+    }
+    
+    setActionLoadingUsers(prev => ({ ...prev, [authorId]: true }));
+    
+    try {
+      const isFollowing = followingStatus[authorId];
+      
+      setFollowingStatus(prev => ({ ...prev, [authorId]: !isFollowing }));
+      
+      if (isFollowing) {
+        await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', authorId);
+          
+        toast.success("Unfollowed successfully");
+      } else {
+        await supabase
+          .from('follows')
+          .insert({ follower_id: user.id, following_id: authorId });
+          
+        toast.success("Followed successfully");
+        
+        const { data: canMessageData } = await supabase
+          .rpc('can_message', { user_id_1: user.id, user_id_2: authorId });
+        
+        setCanMessageUsers(prev => ({ ...prev, [authorId]: !!canMessageData }));
+      }
+    } catch (error) {
+      console.error("Error updating follow status:", error);
+      toast.error("Failed to update follow status");
+      
+      setFollowingStatus(prev => ({ ...prev, [authorId]: !followingStatus[authorId] }));
+    } finally {
+      setActionLoadingUsers(prev => ({ ...prev, [authorId]: false }));
+    }
+  };
 
-  const canShowSubscribeButton = Boolean(video?.author?.id) && Boolean(user?.id) && video?.author?.id !== user?.id;
-
-  if (loading && !video) {
-    return (
-      <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            {renderVideoSkeleton()}
-            {renderVideoInfoSkeleton()}
-            <Separator className="my-4" />
-            {renderUserSkeleton()}
-          </div>
-          <div className="lg:block">
-            <Skeleton className="h-6 w-32 mb-4" />
-            {renderRelatedVideosSkeleton()}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!video && !loading) {
-    return (
-      <div className="container mx-auto py-10 px-4 sm:px-6 animate-fade-in">
-        <div className="text-center py-16 bg-gradient-to-b from-gray-50 to-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="bg-primary/5 p-4 rounded-full inline-flex items-center justify-center mb-5">
-            <FilmIcon className="h-12 w-12 text-primary/70" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Video not found</h2>
-          <p className="mt-2 text-gray-600 max-w-md mx-auto mb-6">The video you're looking for doesn't exist or has been removed.</p>
-          <Button 
-            variant="outline" 
-            className="shadow-sm hover:shadow-md transition-all duration-300"
-            onClick={() => window.location.href = "/vibezone"}
-          >
-            Return to Videos
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const shouldShowSkeleton = isInitialLoading && videos.length === 0;
 
   return (
-    <div className="container mx-auto py-8 px-4 sm:px-6 animate-fade-in">
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="mb-4 hover:bg-gray-100 transition-colors flex items-center text-gray-600" 
-        onClick={() => navigate('/vibezone')}
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Back to videos
-      </Button>
+    <div className="bg-black min-h-screen w-full">
+      <div className="fixed top-16 sm:top-4 left-0 w-full z-30 px-4 flex justify-between items-center">
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold text-white flex items-center">
+            Vibezone
+            <Sparkles className="h-4 w-4 text-yellow-400 ml-1 animate-pulse-slow" />
+          </h1>
+        </div>
+        <Button 
+          onClick={() => navigate('/vibezone/upload')}
+          variant="ghost"
+          className="rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500 p-2"
+          size="icon"
+        >
+          <Plus className="h-5 w-5 text-white" />
+        </Button>
+      </div>
 
-      {video && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-black rounded-xl overflow-hidden shadow-xl">
-              <video
-                ref={videoRef}
-                src={video.video_url}
-                className="w-full h-auto"
-                controls
-                onPlay={handleVideoPlay}
-                poster={video.thumbnail_url}
-                preload="metadata"
-              />
-            </div>
-            
-            <div className="mt-5">
-              <h1 className="text-2xl font-bold text-gray-800 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{video.title}</h1>
-              <div className="flex flex-wrap items-center justify-between mt-3">
-                <div className="text-sm text-gray-600">
-                  {formatViews(video.views)} • {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
-                </div>
-                <div className="flex space-x-2 mt-2 sm:mt-0">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex items-center rounded-full hover:bg-gray-100 transition-colors" 
-                    onClick={handleLike}
-                  >
-                    <ThumbsUp 
-                      className={`h-5 w-5 mr-1 ${liked ? 'fill-red-500 text-red-500' : ''}`} 
-                    />
-                    {likesCount > 0 && <span>{likesCount}</span>}
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex items-center rounded-full hover:bg-gray-100 transition-colors"
-                    onClick={handleDownload}
-                  >
-                    <Download className="h-5 w-5 mr-1" />
-                    Download
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="flex items-center rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <Share2 className="h-5 w-5 mr-1" />
-                    Share
-                  </Button>
-                </div>
-              </div>
-            </div>
-            
-            <Separator className="my-5" />
-            
-            <div className="flex items-center justify-between p-5 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100 shadow-sm transition-all duration-300 hover:shadow">
-              <div className="flex items-center">
-                <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
-                  <img 
-                    src={video.author?.avatar || video.author?.avatar_url || "https://via.placeholder.com/40"} 
-                    alt={video.author?.name || video.author?.username || 'Author'} 
-                    className="rounded-full"
-                    loading="lazy"
-                  />
-                </Avatar>
-                <div className="ml-3">
-                  <h3 className="font-semibold text-gray-800">{video.author?.name || video.author?.username || 'Unknown'}</h3>
-                  <p className="text-sm text-gray-500">{subscriberCount} {subscriberCount === 1 ? 'subscriber' : 'subscribers'}</p>
-                </div>
-              </div>
-              
-              {canShowSubscribeButton && (
-                <Button
-                  variant={subscribed ? "outline" : "default"}
-                  size="sm"
-                  onClick={handleSubscribe}
-                  disabled={subscriptionLoading}
-                  className={`flex items-center min-w-[120px] justify-center transition-all duration-300 ${
-                    subscribed 
-                      ? 'border-primary/30 text-primary hover:bg-primary/5' 
-                      : 'bg-primary hover:bg-primary/90 text-white shadow-sm hover:shadow'
-                  }`}
-                >
-                  {subscriptionLoading ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : subscribed ? (
-                    <BellOff className="h-4 w-4 mr-1" />
-                  ) : (
-                    <Bell className="h-4 w-4 mr-1" />
-                  )}
-                  {subscriptionLoading ? 'Processing...' : subscribed ? 'Unsubscribe' : 'Subscribe'}
-                </Button>
-              )}
-            </div>
-            
-            {video.description && (
-              <div className="mt-5 p-6 rounded-xl bg-white border border-gray-100 shadow-sm">
-                <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{video.description}</p>
-              </div>
-            )}
-            
-            {isMobile && (
-              <div className="mt-6">
-                <Collapsible
-                  open={commentsOpen}
-                  onOpenChange={setCommentsOpen}
-                  className="rounded-xl border border-gray-100 shadow-sm bg-white mb-6"
-                >
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-5 text-left">
-                    <h3 className="font-semibold text-lg text-gray-800 flex items-center">
-                      <MessageSquare className="h-4 w-4 text-primary mr-2" />
-                      Comments
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      {commentsOpen ? (
-                        <ChevronUp className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
-                      )}
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="px-5 pb-5">
-                      {id && <VideoCommentSection videoId={id} />}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-4 text-gray-800 flex items-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                    <Sparkles className="h-4 w-4 text-primary mr-2" />
-                    Related Videos
-                  </h3>
-                  <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    {loadingRelated ? (
-                      renderRelatedVideosSkeleton()
-                    ) : relatedVideos.length > 0 ? (
-                      <div className="space-y-3">
-                        {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
-                        <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                        <p>No related videos found</p>
-                      </div>
-                    )}
+      {shouldShowSkeleton ? (
+        <div className="pt-20 pb-16 flex flex-col items-center gap-4">
+          {[...Array(2)].map((_, index) => (
+            <div key={`skeleton-${index}`} className="relative w-full aspect-[9/16] bg-gray-800 rounded-xl overflow-hidden">
+              <Skeleton className="w-full h-full" />
+              <div className="absolute bottom-0 left-0 w-full p-4">
+                <div className="flex items-center">
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <div className="ml-2 space-y-2 flex-1">
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 w-1/3" />
                   </div>
                 </div>
               </div>
-            )}
-            
-            {!isMobile && (
-              <div>
-                <Separator className="my-6" />
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-semibold text-lg mb-4 text-gray-800 flex items-center">
-                    <MessageSquare className="h-4 w-4 text-primary mr-2" />
-                    Comments
+              <div className="absolute right-2 bottom-20 flex flex-col gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="w-10 h-10 rounded-full" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : videos.length === 0 ? (
+        <div className="pt-20 pb-16 flex flex-col items-center justify-center min-h-[80vh] text-center">
+          <div className="bg-gray-800/50 p-8 rounded-xl">
+            <FilmIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No videos yet</h3>
+            <p className="mt-1 text-sm text-gray-400 max-w-md mx-auto mb-6">
+              Be the first to upload a video to Vibezone and start sharing your creativity with others!
+            </p>
+            <Button 
+              onClick={() => navigate('/vibezone/upload')}
+              className="bg-red-500 hover:bg-red-600 transition-all duration-300"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Upload Video
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="snap-y snap-mandatory h-[calc(100vh-4rem)] overflow-y-scroll scrollbar-hide will-change-transform">
+          {videos.map((video, index) => (
+            <div 
+              key={video.id || `video-${index}`}
+              className="snap-start h-[calc(100vh-4rem)] w-full flex items-center justify-center relative will-change-transform"
+              data-index={index}
+            >
+              <div className="relative w-full h-full bg-black">
+                <video 
+                  ref={(el) => handleVideoRef(el, index)}
+                  src={video.video_url}
+                  className="w-full h-full object-contain bg-black"
+                  loop
+                  playsInline
+                  muted={isMuted}
+                  preload="metadata"
+                  poster={video.thumbnail_url || undefined}
+                  data-video-id={video.id}
+                  key={`video-element-${video.id || index}`}
+                />
+                
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60 pointer-events-none" />
+                
+                <div className="absolute bottom-4 left-0 p-4 w-full pr-20">
+                  <h3 className="font-semibold text-white line-clamp-2 text-lg">
+                    {video.title || 'Untitled Video'}
                   </h3>
-                  {id && <VideoCommentSection videoId={id} />}
+                  <div className="flex items-center mt-2">
+                    <Link to={video.author?.id ? `/user/${video.author.id}` : '#'} className="flex-shrink-0">
+                      {video.author?.avatar ? (
+                        <Avatar className="w-8 h-8 border-2 border-red-500">
+                          <img 
+                            src={video.author.avatar} 
+                            alt={video.author.name || ''} 
+                            className="object-cover"
+                          />
+                        </Avatar>
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-red-500/30 flex items-center justify-center">
+                          <FilmIcon className="h-4 w-4 text-red-500" />
+                        </div>
+                      )}
+                    </Link>
+                    <div className="ml-2 overflow-hidden">
+                      <Link 
+                        to={video.author?.id ? `/user/${video.author.id}` : '#'} 
+                        className="text-sm font-medium text-white hover:underline"
+                      >
+                        @{video.author?.username || 'unknown'}
+                      </Link>
+                      <p className="text-xs text-gray-300">
+                        {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {user && video.author?.id && user.id !== video.author.id && (
+                    <div className="flex space-x-2 mt-2" style={{ display: 'none' }}>
+                      <Button
+                        onClick={(e) => handleFollowUser(e, video.author?.id || '')}
+                        disabled={!!actionLoadingUsers[video.author?.id || '']}
+                        variant={followingStatus[video.author?.id || ''] ? "secondary" : "default"}
+                        size="sm"
+                        className="h-8 text-xs"
+                      >
+                        {actionLoadingUsers[video.author?.id || ''] ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : followingStatus[video.author?.id || ''] ? (
+                          <>
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            <span>Following</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            <span>Follow</span>
+                          </>
+                        )}
+                      </Button>
+                      
+                      {canMessageUsers[video.author?.id || ''] && (
+                        <Button 
+                          asChild
+                          variant="secondary"
+                          size="sm"
+                          className="h-8 text-xs"
+                        >
+                          <Link to={`/messages/${video.author?.id}`}>
+                            <MessageCircle className="h-3 w-3 mr-1" />
+                            <span>Message</span>
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="absolute right-3 bottom-16 flex flex-col gap-6">
+                  <button 
+                    className="flex flex-col items-center"
+                    onClick={(e) => handleLikeVideo(e, video)}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      <Heart 
+                        className={`h-6 w-6 ${video.id && likedVideos[video.id] ? 'text-red-500 fill-red-500' : 'text-white'}`} 
+                      />
+                    </div>
+                    <span className="text-white text-xs mt-1">
+                      {formatViews(video.likes || 0)}
+                    </span>
+                  </button>
+                  
+                  <button 
+                    className="flex flex-col items-center"
+                    onClick={(e) => video.id && handleShowComments(e, video.id)}
+                    style={{ display: 'none' }}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      <MessageCircle className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-white text-xs mt-1">
+                      {video.id && formatViews(commentCounts[video.id] || 0)}
+                    </span>
+                  </button>
+                  
+                  <button 
+                    className="flex flex-col items-center"
+                    onClick={(e) => handleDownloadVideo(e, video)}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      <Download className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-white text-xs mt-1">
+                      Download
+                    </span>
+                  </button>
+                  
+                  <button 
+                    className="flex flex-col items-center" 
+                    onClick={toggleMute}
+                  >
+                    <div className="bg-gray-800/50 p-2 rounded-full hover:bg-gray-700/70 transition-colors">
+                      {isMuted ? (
+                        <VolumeX className="h-6 w-6 text-white" />
+                      ) : (
+                        <Volume2 className="h-6 w-6 text-white" />
+                      )}
+                    </div>
+                  </button>
+                </div>
+
+                {/* Loading indicator for next video preloading */}
+                {index === currentVideoIndex + 1 && !loadedMetadataRef.current.has(video.id) && (
+                  <div className="absolute bottom-4 right-4 animate-pulse">
+                    <div className="h-2 w-2 bg-white rounded-full"></div>
+                  </div>
+                )}
+
+                <div className="absolute bottom-28 left-4 flex items-center">
+                  <Music className="h-4 w-4 text-white mr-2 animate-spin-slow" />
+                  <div className="overflow-hidden max-w-[60%]">
+                    <p className="text-xs text-white whitespace-nowrap overflow-hidden text-ellipsis">
+                      {video.title ? `Original audio - ${video.title}` : 'Original audio'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          ))}
           
-          <div className="hidden lg:block">
-            <h3 className="font-semibold mb-4 text-gray-800 flex items-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              <Sparkles className="h-4 w-4 text-primary mr-2" />
-              Related Videos
-            </h3>
-            <div className="bg-gradient-to-br from-gray-50 to-white p-4 rounded-xl border border-gray-100 shadow-sm">
-              {loadingRelated ? (
-                renderRelatedVideosSkeleton()
-              ) : relatedVideos.length > 0 ? (
-                <div className="space-y-3">
-                  {relatedVideos.map(relatedVideo => renderRelatedVideoItem(relatedVideo))}
+          {/* Load more trigger element */}
+          {hasMoreVideos && !isInitialLoading && (
+            <div 
+              ref={loadMoreTriggerRef} 
+              className="h-20 flex items-center justify-center"
+            >
+              {isLoadingMore ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
                 </div>
               ) : (
-                <div className="text-center py-10 bg-gray-50 rounded-xl text-gray-500">
-                  <FilmIcon className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                  <p>No related videos found</p>
-                </div>
+                <div className="h-1 w-1 opacity-0">Loading more</div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showComments && activeVideoId && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
+          <div className="bg-white dark:bg-gray-900 w-full md:w-[450px] h-full md:max-h-[80vh] md:max-w-[450px] md:rounded-xl overflow-hidden flex flex-col md:m-auto animate-fade-in">
+            <div className="p-4 border-b flex items-center justify-between">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-gray-700 dark:text-gray-300"
+                onClick={handleCloseComments}
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+              <h3 className="font-semibold text-lg flex-1 text-center">Comments</h3>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="text-gray-700 dark:text-gray-300"
+                onClick={handleCloseComments}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4">
+              <VideoCommentSection 
+                videoId={activeVideoId} 
+                onCommentCountChange={(count) => updateCommentCount(activeVideoId, count)} 
+              />
             </div>
           </div>
         </div>
@@ -669,4 +1067,4 @@ const WatchVideo: React.FC = () => {
   );
 };
 
-export default WatchVideo;
+export default Vibezone;

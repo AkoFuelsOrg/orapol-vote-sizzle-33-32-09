@@ -4,14 +4,9 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-const MAX_HISTORY_ITEMS = 5;
+import { SearchHistoryItem } from './types';
 
-export interface SearchHistoryItem {
-  id?: string;
-  user_id?: string;
-  query: string;
-  timestamp: number;
-}
+const MAX_HISTORY_ITEMS = 5;
 
 /**
  * Get the current search history from Supabase
@@ -36,7 +31,7 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
       return [];
     }
 
-    return data as SearchHistoryItem[] || [];
+    return (data as unknown as SearchHistoryItem[]) || [];
   } catch (error) {
     console.error('Failed to load search history:', error);
     return [];
@@ -63,7 +58,7 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
       .maybeSingle();
     
     // If it exists, delete it so we can add it again with updated timestamp
-    if (existingQuery?.id) {
+    if (existingQuery && 'id' in existingQuery) {
       await supabase
         .from('search_history' as any)
         .delete()
@@ -90,13 +85,18 @@ export const addToSearchHistory = async (query: string): Promise<SearchHistoryIt
       .order('timestamp', { ascending: false });
       
     if (allSearches && allSearches.length > MAX_HISTORY_ITEMS) {
-      const itemsToDelete = allSearches.slice(MAX_HISTORY_ITEMS);
-      const idsToDelete = itemsToDelete.map(item => item.id);
+      // Safely extract ids by checking if each item has an id property
+      const idsToDelete = allSearches
+        .slice(MAX_HISTORY_ITEMS)
+        .filter(item => item && typeof item === 'object' && 'id' in item)
+        .map(item => (item as unknown as SearchHistoryItem).id as string);
       
-      await supabase
-        .from('search_history' as any)
-        .delete()
-        .in('id', idsToDelete);
+      if (idsToDelete.length > 0) {
+        await supabase
+          .from('search_history' as any)
+          .delete()
+          .in('id', idsToDelete);
+      }
     }
     
     // Return updated search history

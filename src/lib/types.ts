@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name?: string;
@@ -163,4 +164,11 @@ export interface PaginatedResponse<T> {
   data: T[];
   hasMore: boolean;
   nextPage?: number;
+}
+
+export interface SearchHistoryItem {
+  id?: string;
+  user_id?: string;
+  query: string;
+  timestamp: number;
 }

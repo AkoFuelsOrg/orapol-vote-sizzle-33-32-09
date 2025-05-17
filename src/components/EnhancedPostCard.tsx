@@ -49,4 +49,3 @@ export const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     />
   );
 };
-

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVibezone } from '@/context/VibezoneContext';
@@ -21,6 +20,7 @@ const Vibezone: React.FC = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [nextVideoPreloaded, setNextVideoPreloaded] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showComments, setShowComments] = useState(false);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
@@ -49,11 +49,14 @@ const Vibezone: React.FC = () => {
   const isMounted = useRef(true);
   const videosRef = useRef<Video[]>([]);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+  const preloadingRef = useRef<Record<string, boolean>>({});
 
+  // Keep track of videos array in ref for use in callbacks
   useEffect(() => {
     videosRef.current = videos;
   }, [videos]);
 
+  // Cleanup on unmount
   useEffect(() => {
     isMounted.current = true;
     
@@ -64,6 +67,7 @@ const Vibezone: React.FC = () => {
         observerRef.current.disconnect();
       }
       
+      // Clean up video elements to prevent memory leaks
       Object.values(videoElementsRef.current).forEach(video => {
         video.pause();
         video.src = '';
@@ -72,6 +76,42 @@ const Vibezone: React.FC = () => {
     };
   }, []);
 
+  // Function to preload the next video
+  const preloadNextVideo = useCallback((currentIndex: number) => {
+    if (currentIndex >= videos.length - 1 || !videos[currentIndex + 1]?.id) return;
+    
+    const nextVideoId = videos[currentIndex + 1].id;
+    if (preloadingRef.current[nextVideoId]) return;
+    
+    // Mark this video as being preloaded
+    preloadingRef.current[nextVideoId] = true;
+    
+    console.log(`Preloading next video: ${nextVideoId}`);
+    
+    // Get the video element for the next video
+    const nextVideoElement = videoRefs.current[currentIndex + 1];
+    if (nextVideoElement) {
+      // Set preload attribute to auto to start loading the video
+      nextVideoElement.preload = "auto";
+      
+      // Create an event listener for when metadata is loaded
+      const handleMetadataLoaded = () => {
+        console.log(`Next video metadata loaded: ${nextVideoId}`);
+        loadedMetadataRef.current.add(nextVideoId);
+        setNextVideoPreloaded(true);
+        nextVideoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+      };
+      
+      // Add event listener for metadata loaded
+      if (!loadedMetadataRef.current.has(nextVideoId)) {
+        nextVideoElement.addEventListener('loadedmetadata', handleMetadataLoaded);
+      } else {
+        setNextVideoPreloaded(true);
+      }
+    }
+  }, [videos]);
+
+  // Load initial videos and setup data
   const loadVideos = useCallback(async (page: number = 1, replace: boolean = false) => {
     try {
       if (!isMounted.current) return;
@@ -89,6 +129,7 @@ const Vibezone: React.FC = () => {
       if (!isMounted.current) return;
       
       if (response && response.data && response.data.length > 0) {
+        // Store video data in ref for quick access
         response.data.forEach(video => {
           if (video.id) {
             videoDataRef.current[video.id] = video;
@@ -115,6 +156,7 @@ const Vibezone: React.FC = () => {
           
           if (newVideos.length === 0) return;
           
+          // Get liked status for new videos
           const likedStatus: Record<string, boolean> = {};
           const following: Record<string, boolean> = {};
           const canMessage: Record<string, boolean> = {};
@@ -141,6 +183,7 @@ const Vibezone: React.FC = () => {
             }));
           }
           
+          // Get following status for video authors
           const followPromises = newVideos.map(async video => {
             if (video.author?.id && user.id !== video.author.id) {
               const { data } = await supabase
@@ -169,6 +212,7 @@ const Vibezone: React.FC = () => {
             }));
           }
           
+          // Get messaging permissions
           const messagePromises = newVideos.map(async video => {
             if (video.author?.id && user.id !== video.author.id) {
               const { data } = await supabase
@@ -197,6 +241,7 @@ const Vibezone: React.FC = () => {
           }
         }
         
+        // Get comment counts for videos
         const commentPromises = response.data.map(async video => {
           if (video.id) {
             const { count } = await supabase
@@ -243,9 +288,11 @@ const Vibezone: React.FC = () => {
     }
   }, [fetchVideos, user, hasLikedVideo, videos]);
 
+  // Initial load and subscription to changes
   useEffect(() => {
     loadVideos(1, true);
     
+    // Set up realtime subscriptions
     const videosChannel = supabase
       .channel('vibezone_videos_changes')
       .on('postgres_changes', 
@@ -340,7 +387,7 @@ const Vibezone: React.FC = () => {
           setCurrentPage(prev => prev + 1);
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.1 } // Lower threshold for earlier loading
     );
 
     observer.observe(loadMoreTriggerRef.current);
@@ -359,6 +406,7 @@ const Vibezone: React.FC = () => {
     }
   }, [currentPage, loadVideos]);
 
+  // Optimized video playing and observer setup
   const setupVideoObservers = useCallback(() => {
     if (isLoadingRef.current || videos.length === 0 || showComments) {
       return;
@@ -380,7 +428,12 @@ const Vibezone: React.FC = () => {
         
         if (entry.isIntersecting) {
           console.log(`Video ${videoId} is intersecting, index: ${index}`);
-          setCurrentVideoIndex(index);
+          
+          // Set current video index and trigger preloading for next video
+          if (currentVideoIndex !== index) {
+            setCurrentVideoIndex(index);
+            preloadNextVideo(index);
+          }
           
           // Pause all other videos first
           Object.entries(videoElementsRef.current).forEach(([id, videoEl]) => {
@@ -438,8 +491,8 @@ const Vibezone: React.FC = () => {
         }
       });
     }, { 
-      threshold: 0.6,
-      rootMargin: "-5%"
+      threshold: 0.7, // Increased threshold for more precise intersection detection
+      rootMargin: "-10% 0px" // Adjusted rootMargin for better visibility requirement
     });
 
     // Add a small delay to ensure DOM is ready
@@ -451,7 +504,7 @@ const Vibezone: React.FC = () => {
       });
     }, 50);
     
-  }, [videos, showComments, isMuted]);
+  }, [videos, showComments, isMuted, currentVideoIndex, preloadNextVideo]);
 
   useEffect(() => {
     console.log("Setting up video observers");
@@ -464,6 +517,7 @@ const Vibezone: React.FC = () => {
     };
   }, [setupVideoObservers]);
 
+  // Update all video elements when mute state changes
   useEffect(() => {
     videoRefs.current.forEach(video => {
       if (video) {
@@ -472,6 +526,7 @@ const Vibezone: React.FC = () => {
     });
   }, [isMuted]);
 
+  // Handle video metadata loading
   const handleVideoMetadataLoaded = (video: HTMLVideoElement, videoId: string, index: number) => {
     if (!video || !videoId || !isMounted.current) return;
     
@@ -481,6 +536,7 @@ const Vibezone: React.FC = () => {
     videosLoadedRef.current.add(videoId);
     loadedMetadataRef.current.add(videoId);
     
+    // If this is the current video, play it immediately
     if (index === currentVideoIndex && !showComments) {
       videoPlayingStateRef.current[videoId] = true;
       video.muted = isMuted;
@@ -496,9 +552,13 @@ const Vibezone: React.FC = () => {
           });
         });
       }
+      
+      // Preload next video after current one starts playing
+      preloadNextVideo(index);
     }
   };
 
+  // Create refs for video elements
   const handleVideoRef = (element: HTMLVideoElement | null, index: number) => {
     if (!element || !videos[index]?.id || !isMounted.current) return;
     
@@ -509,6 +569,11 @@ const Vibezone: React.FC = () => {
     element.dataset.videoId = videoId;
     
     videoElementsRef.current[videoId] = element;
+    
+    // Add priority loading for first few videos
+    if (index < 3) {
+      element.preload = "auto";
+    }
     
     if (!loadedMetadataRef.current.has(videoId)) {
       const handleMetadata = () => {
@@ -542,6 +607,7 @@ const Vibezone: React.FC = () => {
     }
   };
 
+  // Utility functions for UI display
   const formatViews = (views: number): string => {
     if (views >= 1000000) {
       return `${(views / 1000000).toFixed(1)}M`;
@@ -552,6 +618,7 @@ const Vibezone: React.FC = () => {
     }
   };
 
+  // UI interaction handlers
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsMuted(prev => !prev);
@@ -926,6 +993,13 @@ const Vibezone: React.FC = () => {
                     </div>
                   </button>
                 </div>
+
+                {/* Loading indicator for next video preloading */}
+                {index === currentVideoIndex + 1 && !loadedMetadataRef.current.has(video.id) && (
+                  <div className="absolute bottom-4 right-4 animate-pulse">
+                    <div className="h-2 w-2 bg-white rounded-full"></div>
+                  </div>
+                )}
 
                 <div className="absolute bottom-28 left-4 flex items-center">
                   <Music className="h-4 w-4 text-white mr-2 animate-spin-slow" />
