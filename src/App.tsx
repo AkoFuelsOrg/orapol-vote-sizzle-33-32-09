@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -62,7 +63,7 @@ const queryClient = new QueryClient({
 });
 
 const ResponsiveLayout = ({ children }: { children: React.ReactNode }) => {
-  const breakpoint = useBreakpoint();
+  const { breakpoint } = useBreakpoint();
   const isDesktop = breakpoint === "desktop";
   const location = useLocation();
   

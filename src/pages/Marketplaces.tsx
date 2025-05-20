@@ -12,7 +12,7 @@ const Marketplaces: React.FC = () => {
   const { user } = useSupabase();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const breakpoint = useBreakpoint();
+  const { breakpoint } = useBreakpoint();
   const isMobile = breakpoint === "mobile";
 
   return (
