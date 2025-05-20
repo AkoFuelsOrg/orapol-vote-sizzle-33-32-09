@@ -22,3 +22,9 @@ export const useBreakpoint = () => {
 
   return { isMobile, isTablet, isDesktop };
 };
+
+// For backward compatibility with components using the old format
+export const useIsMobile = () => {
+  const { isMobile } = useBreakpoint();
+  return isMobile;
+};

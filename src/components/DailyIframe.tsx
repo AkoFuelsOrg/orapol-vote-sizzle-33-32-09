@@ -111,15 +111,15 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         return;
       }
 
-      // Pre-check permissions for hosts
-      if (isHost && !permissionsChecked) {
-        console.log("Host needs to check permissions");
+      // Pre-check permissions for hosts and participants (enable for all)
+      if (!permissionsChecked) {
+        console.log("Checking camera permissions for user");
         const { success, stream } = await checkMediaPermissions();
         setPermissionsChecked(true);
         
         if (success && stream) {
           userStream = stream;
-          console.log("Successfully acquired camera stream for host");
+          console.log("Successfully acquired camera stream");
         } else {
           setLoading(false);
           return;
@@ -163,22 +163,18 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           }
         };
         
-        if (isHost) {
-          joinOptions.startVideoOff = false;
-          joinOptions.startAudioOff = false;
-          
-          // If we have a stream already, try to use it
-          if (userStream) {
-            joinOptions.videoSource = userStream.getVideoTracks()[0];
-            joinOptions.audioSource = userStream.getAudioTracks()[0];
-            console.log("Using pre-acquired media tracks:", {
-              video: userStream.getVideoTracks().length > 0,
-              audio: userStream.getAudioTracks().length > 0
-            });
-          }
-        } else {
-          joinOptions.startVideoOff = true;
-          joinOptions.startAudioOff = true;
+        // Important: Enable video for both host and viewers by default
+        joinOptions.startVideoOff = false; // Changed from isHost logic
+        joinOptions.startAudioOff = !isHost; // Only host has audio enabled by default
+        
+        // If we have a stream already, try to use it
+        if (userStream) {
+          joinOptions.videoSource = userStream.getVideoTracks()[0];
+          joinOptions.audioSource = userStream.getAudioTracks()[0];
+          console.log("Using pre-acquired media tracks:", {
+            video: userStream.getVideoTracks().length > 0,
+            audio: userStream.getAudioTracks().length > 0
+          });
         }
         
         // Set username from authenticated user if available
@@ -195,6 +191,28 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         
         callObject.on('joined-meeting', () => {
           console.log('Successfully joined meeting!');
+          
+          // Ensure video and audio state is set correctly after joining
+          setTimeout(async () => {
+            if (!destroyed && callObjectRef.current) {
+              try {
+                // Make sure viewers have video enabled but audio disabled
+                if (!isHost) {
+                  await callObjectRef.current.setLocalVideo(true);
+                  await callObjectRef.current.setLocalAudio(false);
+                  console.log("Viewer camera enabled, microphone disabled");
+                } else {
+                  // Host should have both enabled
+                  await callObjectRef.current.setLocalVideo(true);
+                  await callObjectRef.current.setLocalAudio(true);
+                  console.log("Host camera and microphone enabled");
+                }
+              } catch (err) {
+                console.error("Error setting initial media state:", err);
+              }
+            }
+          }, 1000);
+          
           setLoading(false);
         });
         
@@ -223,22 +241,6 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
             toast.error("Failed to create video call interface");
             setLoading(false);
             return;
-          }
-          
-          // Ensure we get access to video after joining (especially important for host)
-          if (isHost) {
-            console.log("Host ensuring video is turned on");
-            setTimeout(async () => {
-              if (!destroyed && callObjectRef.current) {
-                try {
-                  await callObjectRef.current.setLocalVideo(true);
-                  await callObjectRef.current.setLocalAudio(true);
-                  console.log("Local video and audio should now be enabled for host (with delay)");
-                } catch (err) {
-                  console.error("Error enabling camera/mic:", err);
-                }
-              }
-            }, 1500); // Add a delay to ensure camera initialization
           }
           
           onCallObjectReady(callObject);

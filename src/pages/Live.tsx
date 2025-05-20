@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import SplashScreen from '@/components/SplashScreen';
 import DailyIframe from '@/components/DailyIframe';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useBreakpoint } from '@/hooks/use-mobile';
 
 // Daily.co API key
 const DAILY_API_KEY = '2f003ab69d81366c11dde4098ab14bb7bf0092acfb6511c0a3bf8cb13096d6d1';
@@ -30,9 +31,10 @@ const Live: React.FC = () => {
   const isHost = searchParams.get('host') === 'true';
   const { user } = useSupabase();
   const navigate = useNavigate();
+  const { isMobile } = useBreakpoint();
   const [loading, setLoading] = useState(true);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(isHost); // Only host starts with audio enabled
+  const [videoEnabled, setVideoEnabled] = useState(true);   // Everyone starts with video enabled
   const [viewers, setViewers] = useState(1);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{id: string, user: string, message: string}>>([]);
@@ -116,6 +118,10 @@ const Live: React.FC = () => {
                 properties: {
                   start_audio_off: false,
                   start_video_off: false,
+                  enable_screenshare: true,
+                  enable_chat: true,
+                  // Ensure both the host and participants can be seen
+                  max_participants: 20
                 }
               })
             });
@@ -174,20 +180,30 @@ const Live: React.FC = () => {
     };
   }, [roomCode, isHost, navigate]);
   
-  const toggleAudio = () => {
+  const toggleAudio = async () => {
     if (dailyCallObject) {
-      dailyCallObject.setLocalAudio(audioEnabled ? false : true);
+      try {
+        await dailyCallObject.setLocalAudio(!audioEnabled);
+        setAudioEnabled(prev => !prev);
+        toast(audioEnabled ? 'Microphone muted' : 'Microphone unmuted');
+      } catch (error) {
+        console.error('Error toggling audio:', error);
+        toast.error('Failed to toggle microphone');
+      }
     }
-    setAudioEnabled(prev => !prev);
-    toast(audioEnabled ? 'Microphone muted' : 'Microphone unmuted');
   };
   
-  const toggleVideo = () => {
+  const toggleVideo = async () => {
     if (dailyCallObject) {
-      dailyCallObject.setLocalVideo(videoEnabled ? false : true);
+      try {
+        await dailyCallObject.setLocalVideo(!videoEnabled);
+        setVideoEnabled(prev => !prev);
+        toast(videoEnabled ? 'Video turned off' : 'Video turned on');
+      } catch (error) {
+        console.error('Error toggling video:', error);
+        toast.error('Failed to toggle camera');
+      }
     }
-    setVideoEnabled(prev => !prev);
-    toast(videoEnabled ? 'Video turned off' : 'Video turned on');
   };
   
   const endStream = () => {
@@ -254,6 +270,25 @@ const Live: React.FC = () => {
         setChatMessages(prev => [...prev, newMessage]);
       }
     });
+    
+    // Track camera and mic state changes
+    callObject.on('track-started', (event: any) => {
+      console.log('Track started:', event);
+      if (event.track.kind === 'video') {
+        setVideoEnabled(true);
+      } else if (event.track.kind === 'audio') {
+        setAudioEnabled(true);
+      }
+    });
+    
+    callObject.on('track-stopped', (event: any) => {
+      console.log('Track stopped:', event);
+      if (event.track.kind === 'video') {
+        setVideoEnabled(false);
+      } else if (event.track.kind === 'audio') {
+        setAudioEnabled(false);
+      }
+    });
   };
   
   if (loading) {
@@ -312,6 +347,7 @@ const Live: React.FC = () => {
           size="icon"
           className={`rounded-full h-12 w-12 ${audioEnabled ? 'bg-gray-800/70 backdrop-blur-sm' : 'bg-red-500'}`}
           onClick={toggleAudio}
+          disabled={!isHost} // Only host can use mic
         >
           {audioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
         </Button>

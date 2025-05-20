@@ -8,6 +8,7 @@ import { useSupabase } from '@/context/SupabaseContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useBreakpoint } from '@/hooks/use-mobile';
 
 const LiveButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ const LiveButton: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const { user } = useSupabase();
   const navigate = useNavigate();
+  const { isMobile } = useBreakpoint();
 
   const createLiveStream = async () => {
     if (!user) {
