@@ -47,8 +47,8 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
       
       const script = document.createElement('script');
       script.src = 'https://unpkg.com/@daily-co/daily-js';
-      script.async = true;
-      script.crossOrigin = 'anonymous';
+      //script.async = true;
+      script.crossOrigin = 'true';
       
       script.onload = async () => {
         console.log("Daily.co script loaded successfully");
