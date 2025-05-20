@@ -12,6 +12,7 @@ import DailyIframe from '@/components/DailyIframe';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useBreakpoint } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+import { LiveMessage } from '@/lib/types';
 
 // Daily.co API key
 const DAILY_API_KEY = '2f003ab69d81366c11dde4098ab14bb7bf0092acfb6511c0a3bf8cb13096d6d1';
@@ -41,21 +42,11 @@ interface LiveStream {
   playback_url?: string;
 }
 
-interface LiveViewer {
-  id?: string;
-  live_id: string;
-  user_id: string;
-  joined_at: string;
-  left_at?: string;
-}
-
-interface LiveMessage {
-  id?: string;
-  room_code: string;
-  user_id: string;
-  content: string;
-  username?: string;
-  created_at?: string;
+// Simple chat message type
+interface ChatMessage {
+  id: string;
+  user: string;
+  message: string;
 }
 
 const Live: React.FC = () => {
@@ -71,11 +62,10 @@ const Live: React.FC = () => {
   const [videoEnabled, setVideoEnabled] = useState(true);   // Everyone starts with video enabled
   const [viewers, setViewers] = useState(1);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatMessages, setChatMessages] = useState<Array<{id: string, user: string, message: string}>>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyCallObject, setDailyCallObject] = useState<any>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const dailyScriptLoaded = useRef(false);
   const dailyInitialized = useRef(false);
   
   useEffect(() => {
@@ -113,37 +103,44 @@ const Live: React.FC = () => {
         // If host, create a room
         if (isHost) {
           try {
-            const response = await fetch(`https://api.daily.co/v1/rooms`, {
-              method: 'POST',
+            const response = await fetch(`https://api.daily.co/v1/rooms/${roomCode}`, {
+              method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${DAILY_API_KEY}`
-              },
-              body: JSON.stringify({
-                name: roomCode,
-                properties: {
-                  start_audio_off: false,
-                  start_video_off: false,
-                  enable_screenshare: true,
-                  enable_chat: true,
-                  signaling_impl: 'ws', // Use WebSocket signaling for better reliability
-                  exp: Math.floor(Date.now() / 1000) + 3600, // Room expires in 1 hour
-                  eject_at_room_exp: true,
-                  max_participants: 20,
-                  // Enable all participant videos to be visible
-                  enable_people_ui: true,
-                  enable_pip_ui: true,
-                  enable_network_ui: true,
-                  enable_video_processing_ui: true,
-                  // Better video quality settings
-                  enable_prejoin_ui: false
-                }
-              })
+              }
             });
-            
-            if (!response.ok && response.status !== 409) {
+
+            // If room doesn't exist, create it
+            if (response.status === 404) {
+              const createResponse = await fetch(`https://api.daily.co/v1/rooms`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${DAILY_API_KEY}`
+                },
+                body: JSON.stringify({
+                  name: roomCode,
+                  properties: {
+                    start_audio_off: false,
+                    start_video_off: false,
+                    enable_screenshare: true,
+                    enable_chat: true,
+                    signaling_impl: 'ws', // Use WebSocket signaling for better reliability
+                    exp: Math.floor(Date.now() / 1000) + 3600, // Room expires in 1 hour
+                    eject_at_room_exp: true,
+                    max_participants: 20
+                  }
+                })
+              });
+              
+              if (!createResponse.ok) {
+                const errorData = await createResponse.json();
+                throw new Error(errorData.info?.msg || 'Failed to create room');
+              }
+            } else if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.message || 'Failed to create room');
+              throw new Error(errorData.info?.msg || 'Error checking room existence');
             }
             
             // If we're the host, record the live stream in our database
@@ -174,7 +171,7 @@ const Live: React.FC = () => {
             }
             
             toast.success('Your live stream is starting!');
-          } catch (error) {
+          } catch (error: any) {
             console.error('Error creating room:', error);
             // If room already exists (409 error), we'll just use it
             console.log('Room may already exist, attempting to join anyway');
@@ -182,17 +179,21 @@ const Live: React.FC = () => {
         } else {
           toast.success('Joined the live stream!');
           
-          // If not host, record viewer in your database
+          // Update viewer count
           if (user) {
-            // Using a direct query without a table that might not exist
-            const { error } = await supabase
-              .rpc('add_live_viewer', { 
-                p_live_id: roomCode, 
-                p_user_id: user.id 
-              });
-                
-            if (error) {
-              console.error('Error recording viewer:', error);
+            const { data: liveData } = await supabase
+              .from('lives')
+              .select('id, viewer_count')
+              .eq('stream_key', roomCode)
+              .single();
+              
+            if (liveData?.id) {
+              await supabase
+                .from('lives')
+                .update({
+                  viewer_count: (liveData.viewer_count || 0) + 1
+                })
+                .eq('id', liveData.id);
             }
           }
         }
@@ -201,7 +202,7 @@ const Live: React.FC = () => {
         const url = `https://tuwaye.daily.co/${roomCode}`;
         setRoomUrl(url);
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error creating/joining room:', error);
         toast.error('Failed to start livestream');
         navigate('/');
@@ -219,21 +220,31 @@ const Live: React.FC = () => {
           console.log("Cleaning up Daily call object on component unmount");
           dailyCallObject.destroy();
           
-          // Update the database when leaving (if viewer)
+          // Update the database when leaving (if viewer but not host)
           if (!isHost && user) {
-            // Using RPC instead of direct table access
-            supabase
-              .rpc('update_live_viewer_exit', { 
-                p_live_id: roomCode, 
-                p_user_id: user.id 
-              })
-              .then(({ error }) => {
-                if (error) console.error('Error updating viewer exit time:', error);
-              });
+            const updateViewCount = async () => {
+              // Get the live stream
+              const { data: liveData } = await supabase
+                .from('lives')
+                .select('id, viewer_count')
+                .eq('stream_key', roomCode)
+                .single();
+                
+              if (liveData?.id) {
+                // Decrement viewer count (but never below 1 which is the host)
+                const newCount = Math.max((liveData.viewer_count || 1) - 1, 1);
+                await supabase
+                  .from('lives')
+                  .update({ viewer_count: newCount })
+                  .eq('id', liveData.id);
+              }
+            };
+            
+            updateViewCount();
           }
           
           // End the stream in database if host
-          if (isHost && user) {
+          if (isHost && user && roomCode) {
             supabase
               .from('lives')
               .update({ 
@@ -299,15 +310,20 @@ const Live: React.FC = () => {
             console.error('Error ending stream in database:', error);
           }
         } else if (!isHost && user) {
-          // Update viewer left time using RPC
-          const { error } = await supabase
-            .rpc('update_live_viewer_exit', { 
-              p_live_id: roomCode, 
-              p_user_id: user.id 
-            });
+          // Update viewer count
+          const { data: liveData } = await supabase
+            .from('lives')
+            .select('id, viewer_count')
+            .eq('stream_key', roomCode)
+            .single();
             
-          if (error) {
-            console.error('Error updating viewer exit time:', error);
+          if (liveData?.id) {
+            // Decrement viewer count (but never below 1 which is the host)
+            const newCount = Math.max((liveData.viewer_count || 1) - 1, 1);
+            await supabase
+              .from('lives')
+              .update({ viewer_count: newCount })
+              .eq('id', liveData.id);
           }
         }
       } catch (error) {
@@ -339,15 +355,18 @@ const Live: React.FC = () => {
     setChatMessage('');
     
     // Store chat message in database
-    if (user) {
+    if (user && roomCode) {
+      const chatData = {
+        room_code: roomCode,
+        user_id: user.id,
+        content: chatMessage,
+        username: user.user_metadata?.username || 'Anonymous'
+      };
+      
+      // Store chat message
       supabase
-        .from('live_messages')
-        .insert({
-          room_code: roomCode,
-          user_id: user.id,
-          content: chatMessage,
-          username: user.user_metadata?.username || 'Anonymous'
-        } as LiveMessage)
+        .from('live_chat_messages')
+        .insert(chatData)
         .then(({ error }) => {
           if (error) console.error('Error storing chat message:', error);
         });
@@ -409,10 +428,10 @@ const Live: React.FC = () => {
       }
     });
     
-    // Load previous messages from this room
-    if (roomCode && user) {
+    // Load previous messages
+    if (roomCode) {
       supabase
-        .from('live_messages')
+        .from('live_chat_messages')
         .select('content, username, created_at')
         .eq('room_code', roomCode)
         .order('created_at', { ascending: true })

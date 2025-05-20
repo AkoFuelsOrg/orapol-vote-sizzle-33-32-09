@@ -15,11 +15,11 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
   const [loading, setLoading] = useState(true);
   const [deviceError, setDeviceError] = useState<string | null>(null);
   const { user } = useSupabase();
+  const callFrameRef = useRef<any>(null);
   
   useEffect(() => {
     console.log("DailyIframe component mounted, URL:", url);
     let destroyed = false;
-    let callFrame: any = null;
     
     // Check if Daily.co script is already loaded
     const loadDailyScript = () => {
@@ -68,7 +68,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     };
     
     const initializeDaily = async () => {
-      if (destroyed || !containerRef.current || !window.DailyIframe) return;
+      if (destroyed || !window.DailyIframe) return;
       
       // Check permissions first
       const { success } = await checkMediaPermissions();
@@ -78,11 +78,24 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       }
       
       try {
-        // Clear any existing content
-        containerRef.current.innerHTML = '';
+        // Ensure we have a container element
+        if (!containerRef.current) {
+          console.error("Container ref is not available");
+          return;
+        }
         
-        // Use Daily's built-in iframe approach which handles duplicate instances
-        callFrame = window.DailyIframe.createFrame(containerRef.current, {
+        // Destroy any existing call frame to prevent duplicates
+        if (callFrameRef.current) {
+          try {
+            callFrameRef.current.destroy();
+          } catch (e) {
+            console.error("Error destroying previous call frame:", e);
+          }
+          callFrameRef.current = null;
+        }
+        
+        // Create a new call frame
+        const callFrame = window.DailyIframe.createFrame(containerRef.current, {
           showLeaveButton: false,
           showFullscreenButton: true,
           iframeStyle: {
@@ -92,6 +105,8 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
             borderRadius: '0',
           }
         });
+        
+        callFrameRef.current = callFrame;
         
         // Configure and join
         const joinOptions: any = {
@@ -163,13 +178,14 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       console.log("DailyIframe component unmounting");
       destroyed = true;
       
-      // Only destroy if we created the callFrame
-      if (callFrame) {
+      // Clean up call frame on unmount
+      if (callFrameRef.current) {
         try {
-          callFrame.destroy();
+          callFrameRef.current.destroy();
         } catch (e) {
           console.error("Error destroying callFrame:", e);
         }
+        callFrameRef.current = null;
       }
     };
   }, [url, isHost, user, onCallObjectReady]);

@@ -40,7 +40,7 @@ const LiveStreams: React.FC = () => {
             user_id,
             viewer_count,
             created_at,
-            profiles(username, avatar_url)
+            profiles (username, avatar_url)
           `)
           .eq('status', 'active')
           .order('viewer_count', { ascending: false });
