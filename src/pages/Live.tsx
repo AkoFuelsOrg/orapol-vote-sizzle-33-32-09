@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -11,7 +10,7 @@ import SplashScreen from '@/components/SplashScreen';
 import DailyIframe from '@/components/DailyIframe';
 
 // Daily.co API key - Updated with correct key
-const DAILY_API_KEY = '2394ae7c60960a8c558245b3e23e359269b5308d435a925cd138613a5458f296';
+const DAILY_API_KEY = '2f003ab69d81366c11dde4098ab14bb7bf0092acfb6511c0a3bf8cb13096d6d1';
 
 // Define the global DailyIframe type
 declare global {
@@ -129,7 +128,7 @@ const Live: React.FC = () => {
         }
         
         // Room URL to join - Updated with correct domain
-        const url = `https://worldwidehotspot.daily.co/${roomCode}`;
+        const url = `https://tuwaye.daily.co/${roomCode}`;
         setRoomUrl(url);
         
       } catch (error) {
