@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -49,8 +48,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [zoom, setZoom] = useState([1]);
   const [imgRef, setImgRef] = useState<HTMLImageElement | null>(null);
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const { isMobile } = useBreakpoint();
   
   useEffect(() => {
     // Add touch action manipulation to improve touch behavior on mobile

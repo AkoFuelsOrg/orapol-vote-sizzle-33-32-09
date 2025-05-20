@@ -14,7 +14,7 @@ interface DailyIframeProps {
 declare global {
   interface Window {
     DailyIframe?: {
-      createFrame: (container: HTMLElement, options: any) => any;
+      createFrame: (container: HTMLElement | null, options: any) => any;
     }
   }
 }
@@ -31,10 +31,10 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     let isDestroyed = false;
     
     // Load Daily.co script if not already loaded
-    const loadDailyScript = () => {
+    const loadDailyScript = async () => {
       if (window.DailyIframe) {
         console.log("Daily.co script already loaded");
-        createDailyIframe();
+        await initializeDaily();
         return;
       }
       
@@ -43,10 +43,10 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       script.async = true;
       script.crossOrigin = 'anonymous';
       
-      script.onload = () => {
+      script.onload = async () => {
         console.log("Daily.co script loaded successfully");
         if (!isDestroyed) {
-          createDailyIframe();
+          await initializeDaily();
         }
       };
       
@@ -76,7 +76,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     };
     
     // Create the Daily iframe
-    const createDailyIframe = async () => {
+    const initializeDaily = async () => {
       if (isDestroyed || !window.DailyIframe) return;
       
       // Check permissions first
@@ -87,20 +87,14 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       }
       
       try {
-        // Ensure we have a container element
-        if (!containerRef.current) {
-          console.error("Container ref is not available");
-          return;
-        }
-        
         // Destroy any existing frame to prevent duplicates
         if (frameRef.current) {
           try {
             frameRef.current.destroy();
+            frameRef.current = null;
           } catch (e) {
             console.error("Error destroying previous Daily frame:", e);
           }
-          frameRef.current = null;
         }
         
         // Create Daily frame with embedded UI
@@ -108,15 +102,24 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           url: url,
           showLeaveButton: true,
           showFullscreenButton: true,
-          userName: user?.user_metadata?.username || 'Anonymous',
           iframeStyle: {
             width: '100%',
             height: '100%',
             border: 'none',
             borderRadius: '0',
-          }
+          },
+          userName: user?.user_metadata?.username || 'Anonymous',
+          // Use Daily.co's embedded UI
+          customTrayButtons: {
+            chat: {
+              label: 'Chat',
+              tooltip: 'Toggle chat',
+              iconPath: 'https://www.svgrepo.com/show/509166/message-square.svg',
+            },
+          },
         });
         
+        // Store the call frame reference
         frameRef.current = callFrame;
         
         callFrame.on('loaded', () => {
@@ -147,13 +150,21 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
         });
         
-        // Join with audio based on host status
+        // Set initial audio based on host status
         if (!isHost) {
           callFrame.setLocalAudio(false);
         }
         
+        console.log("Joining call with options:", {
+          url: url,
+          showLeaveButton: true,
+          showFullscreenButton: true,
+          startVideoOff: false,
+          startAudioOff: !isHost,
+        });
+        
+        // Join the call
         callFrame.join();
-        console.log("Join call initiated");
         
       } catch (error: any) {
         console.error("Error in Daily.co initialization:", error);
@@ -172,10 +183,10 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       if (frameRef.current) {
         try {
           frameRef.current.destroy();
+          frameRef.current = null;
         } catch (e) {
           console.error("Error destroying Daily frame:", e);
         }
-        frameRef.current = null;
       }
     };
   }, [url, isHost, user, onCallObjectReady]);

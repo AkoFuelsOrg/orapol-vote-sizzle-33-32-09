@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -15,8 +16,7 @@ const LiveButton: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const { user } = useSupabase();
   const navigate = useNavigate();
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint.isMobile;
+  const { isMobile } = useBreakpoint();
 
   const createLiveStream = async () => {
     if (!user) {
