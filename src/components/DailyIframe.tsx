@@ -125,12 +125,21 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         if (destroyed) return; // Don't continue if component is unmounting
         console.log("Creating Daily call object with URL:", url);
         
-        // Create a call object with enhanced configuration for better quality
+        // Create a call object with optimized configuration
         const callObject = window.DailyIframe.createCallObject({
           url: url,
           dailyConfig: {
             experimentalChromeVideoMuteLightOff: true,
-            preferredVideoCodecs: { allow: ['h264', 'vp8', 'vp9'] }
+            preferredVideoCodecs: { allow: ['h264', 'vp8', 'vp9'] },
+            // Add better video quality settings
+            videoSendSettings: {
+              encodings: [
+                {
+                  maxBitrate: 1500000, // 1.5 Mbps for better video quality
+                  maxFramerate: 30
+                }
+              ]
+            }
           }
         });
         
@@ -138,7 +147,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         callObjectRef.current = callObject;
         globalDailyInstance = callObject;
         
-        // Configure join options with enhanced UX settings
+        // Configure join options with improved settings
         const joinOptions: any = {
           url: url,
           showLeaveButton: false,
@@ -149,7 +158,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           }
         };
         
-        // Important: Enable video for both host and viewers by default
+        // Enable video for both host and viewers by default
         joinOptions.startVideoOff = false;
         joinOptions.startAudioOff = !isHost; // Only host has audio enabled by default
         
@@ -212,6 +221,14 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
         });
         
+        callObject.on('participant-joined', (event: any) => {
+          console.log('Participant joined:', event);
+        });
+        
+        callObject.on('participant-left', (event: any) => {
+          console.log('Participant left:', event);
+        });
+        
         // Join the call
         try {
           if (destroyed) return; // Don't continue if component is unmounting
@@ -244,17 +261,39 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       }
     };
     
-    // Delay initialization slightly to ensure any previous instances are fully cleaned up
-    const timer = setTimeout(() => {
-      if (!destroyed) {
+    // Load Daily script if not already loaded
+    const loadDailyScript = () => {
+      if (window.DailyIframe || document.querySelector('script[src*="daily-js"]')) {
+        console.log("Daily.co script already loaded");
         initializeDaily();
+        return;
       }
-    }, 500);
+      
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@daily-co/daily-js';
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      
+      script.onload = () => {
+        console.log("Daily.co script loaded successfully");
+        initializeDaily();
+      };
+      
+      script.onerror = () => {
+        console.error("Failed to load Daily.co script");
+        toast.error("Failed to load video call service");
+        setLoading(false);
+      };
+      
+      document.body.appendChild(script);
+    };
+    
+    // Start loading Daily
+    loadDailyScript();
     
     return () => {
       console.log("DailyIframe component unmounting");
       destroyed = true;
-      clearTimeout(timer);
       
       if (userStream) {
         userStream.getTracks().forEach(track => track.stop());

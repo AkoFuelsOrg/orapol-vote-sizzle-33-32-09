@@ -7,6 +7,7 @@ import { Users, Video, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import SplashScreen from '@/components/SplashScreen';
 import { useSupabase } from '@/context/SupabaseContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LiveStream {
   id: string;
@@ -25,54 +26,42 @@ const LiveStreams: React.FC = () => {
   const { user } = useSupabase();
   
   useEffect(() => {
-    // In a real app, we would fetch this data from the backend
-    // For now, we'll create mock data
     const fetchLiveStreams = async () => {
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setLoading(true);
         
-        // Mock data
-        const mockStreams: LiveStream[] = [
-          {
-            id: '1',
-            roomCode: 'ABC123',
-            title: 'Morning Talk Show',
-            hostName: 'Sarah Johnson',
-            viewers: 24,
-            thumbnail: 'https://source.unsplash.com/random/300x200?broadcast',
-            startedAt: new Date(Date.now() - 1000 * 60 * 15) // 15 minutes ago
-          },
-          {
-            id: '2',
-            roomCode: 'XYZ456',
-            title: 'Live Music Session',
-            hostName: 'Mike Turner',
-            viewers: 78,
-            thumbnail: 'https://source.unsplash.com/random/300x200?music',
-            startedAt: new Date(Date.now() - 1000 * 60 * 45) // 45 minutes ago
-          },
-          {
-            id: '3',
-            roomCode: 'DEF789',
-            title: 'Cooking with Chef Alex',
-            hostName: 'Alex Rodriguez',
-            viewers: 56,
-            thumbnail: 'https://source.unsplash.com/random/300x200?cooking',
-            startedAt: new Date(Date.now() - 1000 * 60 * 5) // 5 minutes ago
-          },
-          {
-            id: '4',
-            roomCode: 'GHI101',
-            title: 'Tech News Today',
-            hostName: 'Taylor Kim',
-            viewers: 32,
-            thumbnail: 'https://source.unsplash.com/random/300x200?technology',
-            startedAt: new Date(Date.now() - 1000 * 60 * 20) // 20 minutes ago
-          }
-        ];
+        // Fetch active live streams from database
+        const { data, error } = await supabase
+          .from('lives')
+          .select(`
+            id, 
+            room_code,
+            title,
+            host_name,
+            viewer_count,
+            started_at,
+            host_id,
+            profiles(avatar_url)
+          `)
+          .eq('is_active', true)
+          .order('viewer_count', { ascending: false });
         
-        setLiveStreams(mockStreams);
+        if (error) {
+          throw error;
+        }
+        
+        // Transform the data
+        const activeStreams: LiveStream[] = data.map(stream => ({
+          id: stream.id,
+          roomCode: stream.room_code,
+          title: stream.title || `${stream.host_name}'s Stream`,
+          hostName: stream.host_name,
+          viewers: stream.viewer_count || 0,
+          thumbnail: undefined, // We don't have thumbnails yet, this could be added later
+          startedAt: new Date(stream.started_at)
+        }));
+        
+        setLiveStreams(activeStreams);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching live streams:', error);
@@ -82,6 +71,19 @@ const LiveStreams: React.FC = () => {
     };
     
     fetchLiveStreams();
+    
+    // Set up listener for real-time updates to lives table
+    const channel = supabase
+      .channel('lives-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'lives' }, 
+        fetchLiveStreams
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   const joinStream = (roomCode: string) => {

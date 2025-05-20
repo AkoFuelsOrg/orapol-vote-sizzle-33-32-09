@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -11,6 +10,7 @@ import SplashScreen from '@/components/SplashScreen';
 import DailyIframe from '@/components/DailyIframe';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useBreakpoint } from '@/hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
 
 // Daily.co API key
 const DAILY_API_KEY = '2f003ab69d81366c11dde4098ab14bb7bf0092acfb6511c0a3bf8cb13096d6d1';
@@ -30,7 +30,8 @@ const Live: React.FC = () => {
   const isHost = searchParams.get('host') === 'true';
   const { user } = useSupabase();
   const navigate = useNavigate();
-  const { isMobile } = useBreakpoint();
+  const { breakpoint } = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   const [loading, setLoading] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(isHost); // Only host starts with audio enabled
   const [videoEnabled, setVideoEnabled] = useState(true);   // Everyone starts with video enabled
@@ -39,9 +40,9 @@ const Live: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<Array<{id: string, user: string, message: string}>>([]);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyCallObject, setDailyCallObject] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const dailyScriptLoaded = useRef(false);
   const dailyInitialized = useRef(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   
   useEffect(() => {
     // Clear any existing listeners to prevent duplicates
@@ -71,37 +72,9 @@ const Live: React.FC = () => {
       return;
     }
     
-    const loadDailyScript = () => {
-      return new Promise<void>((resolve, reject) => {
-        // Check if Daily.co script is already loaded
-        if (window.DailyIframe || dailyScriptLoaded.current) {
-          resolve();
-          return;
-        }
-        
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@daily-co/daily-js';
-        script.async = true;
-        
-        script.onload = () => {
-          dailyScriptLoaded.current = true;
-          resolve();
-        };
-        
-        script.onerror = () => {
-          reject(new Error('Failed to load Daily.co script'));
-        };
-        
-        document.body.appendChild(script);
-      });
-    };
-    
     const createOrJoinRoom = async () => {
       try {
         setLoading(true);
-        
-        // Load the Daily.co script first
-        await loadDailyScript();
         
         // If host, create a room
         if (isHost) {
@@ -139,6 +112,36 @@ const Live: React.FC = () => {
               throw new Error(errorData.message || 'Failed to create room');
             }
             
+            // If we're the host, record the live stream in our database
+            if (user) {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('id', user.id)
+                .single();
+                
+              const hostName = profileData?.username || user.user_metadata?.username || 'Anonymous';
+              
+              // Store the live stream in our database
+              const { error: liveError } = await supabase
+                .from('lives')
+                .insert([
+                  { 
+                    room_code: roomCode,
+                    title: `${hostName}'s Stream`,
+                    host_id: user.id,
+                    host_name: hostName,
+                    started_at: new Date().toISOString(),
+                    viewer_count: 1,
+                    is_active: true
+                  }
+                ]);
+                
+              if (liveError) {
+                console.error('Error storing live stream:', liveError);
+              }
+            }
+            
             toast.success('Your live stream is starting!');
           } catch (error) {
             console.error('Error creating room:', error);
@@ -148,15 +151,20 @@ const Live: React.FC = () => {
         } else {
           toast.success('Joined the live stream!');
           
-          // Mock some viewers joining for non-host users
-          const viewerInterval = setInterval(() => {
-            setViewers(prev => {
-              const newCount = prev + Math.floor(Math.random() * 3);
-              return Math.min(newCount, 25); // Cap at 25 viewers for demo
-            });
-          }, 5000);
-          
-          return () => clearInterval(viewerInterval);
+          // If not host, increment viewer count in database
+          const { error: viewerError } = await supabase
+            .from('live_viewers')
+            .insert([
+              {
+                live_id: roomCode,
+                user_id: user?.id || 'anonymous',
+                joined_at: new Date().toISOString()
+              }
+            ]);
+            
+          if (viewerError) {
+            console.error('Error recording viewer:', viewerError);
+          }
         }
         
         // Room URL to join - Updated with correct domain
@@ -180,13 +188,38 @@ const Live: React.FC = () => {
         try {
           console.log("Cleaning up Daily call object on component unmount");
           dailyCallObject.destroy();
+          
+          // Update the database when leaving (if viewer)
+          if (!isHost && user) {
+            supabase
+              .from('live_viewers')
+              .update({ left_at: new Date().toISOString() })
+              .match({ live_id: roomCode, user_id: user.id })
+              .then(({ error }) => {
+                if (error) console.error('Error updating viewer exit time:', error);
+              });
+          }
+          
+          // End the stream in database if host
+          if (isHost && user) {
+            supabase
+              .from('lives')
+              .update({ 
+                is_active: false,
+                ended_at: new Date().toISOString()
+              })
+              .eq('room_code', roomCode)
+              .then(({ error }) => {
+                if (error) console.error('Error ending live stream in database:', error);
+              });
+          }
         } catch (error) {
           console.error('Error destroying Daily.co instance:', error);
         }
         setDailyCallObject(null);
       }
     };
-  }, [roomCode, isHost, navigate]);
+  }, [roomCode, isHost, navigate, user]);
   
   const toggleAudio = async () => {
     if (dailyCallObject) {
@@ -214,11 +247,41 @@ const Live: React.FC = () => {
     }
   };
   
-  const endStream = () => {
+  const endStream = async () => {
     if (dailyCallObject) {
-      dailyCallObject.destroy();
-      setDailyCallObject(null);
+      try {
+        dailyCallObject.destroy();
+        setDailyCallObject(null);
+        
+        // Update database if host
+        if (isHost && user) {
+          const { error } = await supabase
+            .from('lives')
+            .update({ 
+              is_active: false,
+              ended_at: new Date().toISOString()
+            })
+            .eq('room_code', roomCode);
+            
+          if (error) {
+            console.error('Error ending stream in database:', error);
+          }
+        } else if (!isHost && user) {
+          // Update viewer left time
+          const { error } = await supabase
+            .from('live_viewers')
+            .update({ left_at: new Date().toISOString() })
+            .match({ live_id: roomCode, user_id: user.id });
+            
+          if (error) {
+            console.error('Error updating viewer exit time:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error ending stream:', error);
+      }
     }
+    
     toast.info('Ending stream...');
     setTimeout(() => {
       navigate('/live-streams');
@@ -241,6 +304,23 @@ const Live: React.FC = () => {
     
     setChatMessages(prev => [...prev, newMessage]);
     setChatMessage('');
+    
+    // Store chat message in database
+    if (user) {
+      supabase
+        .from('live_messages')
+        .insert([
+          {
+            room_code: roomCode,
+            user_id: user.id,
+            content: chatMessage,
+            username: user.user_metadata?.username || 'Anonymous'
+          }
+        ])
+        .then(({ error }) => {
+          if (error) console.error('Error storing chat message:', error);
+        });
+    }
   };
   
   const handleDailyInit = (callObject: any) => {
@@ -256,7 +336,7 @@ const Live: React.FC = () => {
     // Set up event handlers for Daily.co events
     callObject.on('participant-joined', (event: any) => {
       console.log("Participant joined:", event);
-      setViewers(prev => Math.min(prev + 1, 25)); // Cap at 25 viewers for UI
+      setViewers(prev => prev + 1);
     });
     
     callObject.on('participant-left', (event: any) => {
@@ -297,6 +377,28 @@ const Live: React.FC = () => {
         setAudioEnabled(false);
       }
     });
+    
+    // Load previous messages from this room
+    if (roomCode && user) {
+      supabase
+        .from('live_messages')
+        .select('content, username, created_at')
+        .eq('room_code', roomCode)
+        .order('created_at', { ascending: true })
+        .limit(50)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error loading chat history:', error);
+          } else if (data) {
+            const oldMessages = data.map(msg => ({
+              id: Math.random().toString(),
+              user: msg.username,
+              message: msg.content
+            }));
+            setChatMessages(oldMessages);
+          }
+        });
+    }
   };
   
   if (loading) {
