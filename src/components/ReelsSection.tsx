@@ -48,8 +48,8 @@ const ReelItem: React.FC<ReelProps> = ({ imageUrl, username, isActive = false, o
 };
 
 const ReelsSection: React.FC = () => {
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const breakpointState = useBreakpoint();
+  const isMobile = breakpointState.breakpoint === "mobile";
   const [isAddReelModalOpen, setIsAddReelModalOpen] = useState(false);
   const [expandedReel, setExpandedReel] = useState<ReelItem | null>(null);
   

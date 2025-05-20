@@ -33,8 +33,8 @@ const MarketplaceProducts = ({ marketplaceId, isAdmin }: MarketplaceProductsProp
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { user } = useSupabase();
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const breakpointState = useBreakpoint();
+  const isMobile = breakpointState.breakpoint === "mobile";
 
   const fetchMarketplaceProducts = async () => {
     try {

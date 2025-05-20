@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSupabase } from '../context/SupabaseContext';
@@ -10,8 +11,8 @@ const VotedPolls: React.FC = () => {
   const { user } = useSupabase();
   const [votedPolls, setVotedPolls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const breakpoint = useBreakpoint();
-  const isDesktop = breakpoint === "desktop";
+  const breakpointState = useBreakpoint();
+  const isDesktop = breakpointState.breakpoint === "desktop";
 
   useEffect(() => {
     if (user) {

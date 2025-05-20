@@ -20,8 +20,8 @@ const MarketplacePostInterface: React.FC<MarketplacePostInterfaceProps> = ({ mar
   const { user, profile } = useSupabase();
   const { isMarketplaceMember } = useMarketplace();
   const [isMember, setIsMember] = useState(false);
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const breakpointState = useBreakpoint();
+  const isMobile = breakpointState.breakpoint === "mobile";
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [postText, setPostText] = useState('');
   

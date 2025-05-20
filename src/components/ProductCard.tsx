@@ -24,8 +24,8 @@ const ProductCard = ({ product, isAdmin, onProductUpdated }: ProductCardProps) =
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
   const { user } = useSupabase();
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const breakpointState = useBreakpoint();
+  const isMobile = breakpointState.breakpoint === "mobile";
 
   const formatPrice = (price: number | null) => {
     if (price === null) return 'Contact for price';

@@ -56,6 +56,7 @@ const LiveStreams: React.FC = () => {
           id: stream.id,
           roomCode: stream.stream_key,
           title: stream.title || 'Untitled Stream',
+          // Fix: Check if profiles exists and access username safely
           hostName: stream.profiles?.username || 'Anonymous',
           viewers: stream.viewer_count || 0,
           thumbnail: undefined,
