@@ -36,8 +36,22 @@ const Live: React.FC = () => {
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyCallObject, setDailyCallObject] = useState<any>(null);
   const dailyScriptLoaded = useRef(false);
+  const dailyInitialized = useRef(false);
   
   useEffect(() => {
+    // Clear any existing listeners to prevent duplicates
+    if (dailyCallObject) {
+      try {
+        dailyCallObject.destroy();
+        setDailyCallObject(null);
+      } catch (error) {
+        console.error('Error cleaning up previous Daily.co instance:', error);
+      }
+    }
+    
+    // Reset initialization flag
+    dailyInitialized.current = false;
+    
     // Handle direct navigation to /live/new
     if (roomCode === 'new') {
       // Generate a random room code
@@ -145,7 +159,13 @@ const Live: React.FC = () => {
     // Cleanup function
     return () => {
       if (dailyCallObject) {
-        dailyCallObject.destroy();
+        try {
+          console.log("Cleaning up Daily call object on component unmount");
+          dailyCallObject.destroy();
+        } catch (error) {
+          console.error('Error destroying Daily.co instance:', error);
+        }
+        setDailyCallObject(null);
       }
     };
   }, [roomCode, isHost, navigate]);
@@ -169,6 +189,7 @@ const Live: React.FC = () => {
   const endStream = () => {
     if (dailyCallObject) {
       dailyCallObject.destroy();
+      setDailyCallObject(null);
     }
     toast.info('Ending stream...');
     setTimeout(() => {
@@ -195,18 +216,28 @@ const Live: React.FC = () => {
   };
   
   const handleDailyInit = (callObject: any) => {
+    if (dailyInitialized.current) {
+      console.log("Daily already initialized, skipping duplicate initialization");
+      return;
+    }
+    
+    console.log("Daily call object initialized", callObject);
     setDailyCallObject(callObject);
+    dailyInitialized.current = true;
     
     // Set up event handlers for Daily.co events
     callObject.on('participant-joined', (event: any) => {
+      console.log("Participant joined:", event);
       setViewers(prev => Math.min(prev + 1, 25)); // Cap at 25 viewers for UI
     });
     
     callObject.on('participant-left', (event: any) => {
+      console.log("Participant left:", event);
       setViewers(prev => Math.max(prev - 1, 1)); // Ensure at least 1 viewer (the host)
     });
     
     callObject.on('app-message', (event: any) => {
+      console.log("Received app message:", event);
       if (event.data.type === 'chat') {
         const newMessage = {
           id: Math.random().toString(),

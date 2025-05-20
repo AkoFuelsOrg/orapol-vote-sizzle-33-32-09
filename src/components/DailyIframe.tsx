@@ -20,6 +20,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
   const { user } = useSupabase();
   const [permissionsChecked, setPermissionsChecked] = useState(false);
   const [deviceError, setDeviceError] = useState<string | null>(null);
+  const [iframeCreated, setIframeCreated] = useState(false);
 
   // Helper function to check and request media permissions
   const checkMediaPermissions = async () => {
@@ -43,9 +44,45 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     }
   };
 
+  // Function to create and attach iframe
+  const createAndAttachIframe = (callObject: any) => {
+    if (!containerRef.current) {
+      console.error("Container ref is null, cannot attach iframe");
+      return false;
+    }
+    
+    try {
+      // Clear the container first
+      containerRef.current.innerHTML = '';
+      
+      // Create the iframe element
+      const iframe = callObject.iframe();
+      
+      if (!iframe) {
+        console.error("Daily iframe element is null");
+        return false;
+      }
+      
+      // Style the iframe
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.border = 'none';
+      
+      // Append the iframe to the container
+      containerRef.current.appendChild(iframe);
+      console.log("Daily iframe attached successfully");
+      setIframeCreated(true);
+      return true;
+    } catch (error) {
+      console.error("Error attaching iframe:", error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     console.log("DailyIframe component mounted, URL:", url);
     let userStream: MediaStream | null = null;
+    let destroyed = false;
     
     // First, check if a global Daily instance already exists
     if (globalDailyInstance) {
@@ -59,10 +96,13 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     }
     
     const initializeDaily = async () => {
+      if (destroyed) return; // Don't continue if component is unmounting
+      
       // Check if Daily.co script is already loaded
       if (!window.DailyIframe) {
         console.error('Daily.co SDK not loaded');
         toast.error('Video call service failed to load');
+        setLoading(false);
         return;
       }
 
@@ -82,6 +122,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       }
       
       try {
+        if (destroyed) return; // Don't continue if component is unmounting
         console.log("Creating Daily call object with URL:", url);
         
         // Create a call object with specific configuration
@@ -150,50 +191,46 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         
         // Join the call
         try {
+          if (destroyed) return; // Don't continue if component is unmounting
           console.log("Attempting to join call");
           await callObject.join(joinOptions);
           console.log("Join call completed");
+          
+          // Create and attach the iframe element
+          const iframeSuccess = createAndAttachIframe(callObject);
+          
+          if (!iframeSuccess) {
+            console.error("Failed to create or attach iframe");
+            toast.error("Failed to create video call interface");
+            setLoading(false);
+            return;
+          }
           
           // Ensure we get access to video after joining (especially important for host)
           if (isHost) {
             console.log("Host ensuring video is turned on");
             setTimeout(async () => {
-              await callObject.setLocalVideo(true);
-              await callObject.setLocalAudio(true);
-              console.log("Local video and audio should now be enabled for host (with delay)");
-            }, 1000); // Add a delay to ensure camera initialization
-          }
-          
-          // Attach the call to our container element
-          if (containerRef.current) {
-            console.log("Container ref is ready for iframe");
-            containerRef.current.innerHTML = ''; // Clear container first
-            
-            // Use appendChild method to add the iframe
-            const iframe = callObject.iframe();
-            if (iframe) {
-              iframe.style.width = '100%';
-              iframe.style.height = '100%';
-              iframe.style.border = 'none';
-              console.log("Attaching Daily iframe to container");
-              containerRef.current.appendChild(iframe);
-              console.log("Daily iframe attached successfully");
-            } else {
-              console.error("Daily iframe element is null");
-              toast.error("Failed to create video call interface");
-            }
-          } else {
-            console.error("Container ref is null, cannot attach iframe");
-            toast.error("Failed to load video call interface");
+              if (!destroyed && callObjectRef.current) {
+                try {
+                  await callObjectRef.current.setLocalVideo(true);
+                  await callObjectRef.current.setLocalAudio(true);
+                  console.log("Local video and audio should now be enabled for host (with delay)");
+                } catch (err) {
+                  console.error("Error enabling camera/mic:", err);
+                }
+              }
+            }, 1500); // Add a delay to ensure camera initialization
           }
           
           onCallObjectReady(callObject);
         } catch (error) {
+          if (destroyed) return; // Don't continue if component is unmounting
           console.error('Error joining Daily.co call:', error);
           toast.error('Failed to join video call');
           setLoading(false);
         }
       } catch (error) {
+        if (destroyed) return; // Don't continue if component is unmounting
         console.error("Error in Daily.co initialization:", error);
         toast.error('Failed to initialize video call');
         setLoading(false);
@@ -202,11 +239,14 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     
     // Delay initialization slightly to ensure any previous instances are fully cleaned up
     const timer = setTimeout(() => {
-      initializeDaily();
-    }, 300);
+      if (!destroyed) {
+        initializeDaily();
+      }
+    }, 500);
     
     return () => {
       console.log("DailyIframe component unmounting");
+      destroyed = true;
       clearTimeout(timer);
       
       if (userStream) {
