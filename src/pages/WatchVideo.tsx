@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar } from '@/components/ui/avatar';
 import VideoCommentSection from '@/components/VideoCommentSection';
 import { Link } from 'react-router-dom';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 const Vibezone: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -30,7 +31,7 @@ const Vibezone: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const isMobile = isBreakpoint(breakpoint, "mobile");
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const scrollPositionRef = useRef(0);
   const [likedVideos, setLikedVideos] = useState<Record<string, boolean>>({});

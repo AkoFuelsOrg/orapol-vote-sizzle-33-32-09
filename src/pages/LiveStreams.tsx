@@ -24,8 +24,6 @@ interface StreamProfile {
   avatar_url?: string;
 }
 
-const validStatuses = ['active', 'ended', 'scheduled'];
-
 const LiveStreams: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);

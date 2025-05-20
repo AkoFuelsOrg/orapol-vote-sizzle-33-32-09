@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import UnfollowDialog from './UnfollowDialog';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { getAvatarUrl } from '../lib/avatar-utils';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 interface UserProfileCardProps {
   userId: string;
@@ -29,7 +30,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   const [canMessage, setCanMessage] = useState<boolean>(false);
   const [showUnfollowDialog, setShowUnfollowDialog] = useState<boolean>(false);
   const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const isMobile = isBreakpoint(breakpoint, "mobile");
   
   useEffect(() => {
     if (user) {

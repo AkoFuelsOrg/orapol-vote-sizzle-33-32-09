@@ -19,6 +19,7 @@ import { useBreakpoint } from '../hooks/use-mobile';
 import { Card } from '@/components/ui/card';
 import PostSkeleton from '../components/PostSkeleton';
 import ReelsSection from '../components/ReelsSection';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 const Index: React.FC = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -31,7 +32,7 @@ const Index: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const { user } = useSupabase();
   const breakpoint = useBreakpoint();
-  const isDesktop = breakpoint === "desktop";
+  const isDesktop = isBreakpoint(breakpoint, "tablet");
   const loaderRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {

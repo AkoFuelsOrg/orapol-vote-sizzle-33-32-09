@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import EditMarketplaceModal from '@/components/EditMarketplaceModal';
 import MarketplaceProducts from '@/components/MarketplaceProducts';
 import { useBreakpoint } from '@/hooks/use-mobile';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 const MarketplaceProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,7 +39,7 @@ const MarketplaceProfile = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const isMobile = isBreakpoint(breakpoint, "mobile");
   
   useEffect(() => {
     if (id) {

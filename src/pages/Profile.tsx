@@ -16,12 +16,13 @@ import UserAvatar from '../components/UserAvatar';
 import { useBreakpoint } from '../hooks/use-mobile';
 import ImageCropper from '../components/ImageCropper';
 import { getAvatarUrl } from '../lib/avatar-utils';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 const Profile: React.FC = () => {
   const { polls, currentUser } = usePollContext();
   const { user, profile, updateProfile, loading: profileLoading, getFollowCounts, updatePassword } = useSupabase();
   const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const isMobile = isBreakpoint(breakpoint, "mobile");
   
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);

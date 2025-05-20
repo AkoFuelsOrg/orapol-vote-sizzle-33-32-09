@@ -19,6 +19,7 @@ import GroupPostInterface from '../components/GroupPostInterface';
 import GroupPosts from '../components/GroupPosts';
 import { useBreakpoint } from '../hooks/use-mobile';
 import { cn } from '../lib/utils';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 const GroupProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +27,7 @@ const GroupProfile: React.FC = () => {
   const { user } = useSupabase();
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const isMobile = isBreakpoint(breakpoint, "mobile");
   
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);

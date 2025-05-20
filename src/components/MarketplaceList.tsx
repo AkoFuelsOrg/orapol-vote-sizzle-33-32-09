@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useMarketplace } from '../context/MarketplaceContext';
 import { useSupabase } from '../context/SupabaseContext';
@@ -19,6 +18,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from './ui/pagination';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 interface MarketplaceListProps {
   showCreateButton?: boolean;
@@ -91,7 +91,7 @@ const MarketplaceList: React.FC<MarketplaceListProps> = ({ showCreateButton = tr
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [userMarketplaceIds, setUserMarketplaceIds] = useState<Set<string>>(new Set());
   const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const isMobile = isBreakpoint(breakpoint, "mobile");
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);

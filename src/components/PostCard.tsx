@@ -540,7 +540,7 @@ const PostCard: React.FC<PostCardProps> = ({
     </div>
   );
 
-  if (breakpoint === 'mobile') {
+  if (isBreakpoint(breakpoint, "mobile")) {
     return (
       <Card className="mb-4 overflow-hidden border shadow-sm hover:shadow-md transition-all duration-300 rounded-xl w-full bg-white">
         <div className="p-4 flex items-center justify-between border-b border-gray-100">

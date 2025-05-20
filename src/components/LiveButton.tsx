@@ -1,3 +1,4 @@
+
 import React, { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -31,7 +32,7 @@ const LiveButton: React.FC = memo(() => {
     try {
       // Generate a random room code
       const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      toast.success('Creating your live stream...');
+      toast.success('Creating your Jitsi Meet live stream...');
       setIsOpen(false);
 
       // Navigate to the live page with the generated room code
@@ -71,7 +72,7 @@ const LiveButton: React.FC = memo(() => {
         
         <DialogContent className="sm:max-w-md bg-gray-900 border-gray-800">
           <DialogHeader>
-            <DialogTitle className="text-center text-white">Go LIVE or Join a Stream</DialogTitle>
+            <DialogTitle className="text-center text-white">Go LIVE with Jitsi Meet</DialogTitle>
           </DialogHeader>
           
           <div className="grid gap-6 py-4">

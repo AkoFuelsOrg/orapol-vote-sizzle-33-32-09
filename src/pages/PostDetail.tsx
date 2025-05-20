@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useBreakpoint } from '@/hooks/use-mobile';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 const PostDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +16,7 @@ const PostDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();
-  const isDesktop = breakpoint === "desktop";
+  const isDesktop = isBreakpoint(breakpoint, "tablet");
 
   useEffect(() => {
     if (!id) {

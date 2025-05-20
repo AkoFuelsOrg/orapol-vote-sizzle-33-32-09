@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSupabase } from '../context/SupabaseContext';
@@ -10,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
 interface Notification {
   id: string;
@@ -32,7 +32,7 @@ const Notifications: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const { toast } = useToast();
   const breakpoint = useBreakpoint();
-  const isDesktop = breakpoint === "desktop";
+  const isDesktop = isBreakpoint(breakpoint, "tablet");
 
   useEffect(() => {
     if (user) {

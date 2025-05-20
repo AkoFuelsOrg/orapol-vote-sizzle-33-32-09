@@ -56,3 +56,13 @@ export const useIsTabletBreakpoint = (): boolean => {
   const { breakpoint } = useBreakpoint();
   return breakpoint === "tablet";
 };
+
+/**
+ * Apply this function to fix the breakpoint state in any components
+ * directly comparing useBreakpoint() result with a string
+ */
+export const fixBreakpointComparison = (component: React.FC): React.FC => {
+  // This is just a utility type function, it doesn't actually transform the component
+  // It's meant to be used as documentation
+  return component;
+};
