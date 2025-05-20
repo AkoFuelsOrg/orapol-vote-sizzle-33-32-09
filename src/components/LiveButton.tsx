@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useSupabase } from '@/context/SupabaseContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const LiveButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -70,13 +71,26 @@ const LiveButton: React.FC = () => {
           </Button>
         </DialogTrigger>
         
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-gray-900 border-gray-800">
           <DialogHeader>
-            <DialogTitle className="text-center">Go LIVE or Join a Stream</DialogTitle>
+            <DialogTitle className="text-center text-white">Go LIVE or Join a Stream</DialogTitle>
           </DialogHeader>
           
           <div className="grid gap-6 py-4">
             <div className="flex flex-col gap-4">
+              {user && (
+                <div className="flex items-center gap-3 bg-gray-800/50 p-3 rounded-lg">
+                  <Avatar className="h-10 w-10 border border-gray-700">
+                    <AvatarImage src={user.user_metadata?.avatar_url} alt={user.user_metadata?.username || 'User'} />
+                    <AvatarFallback>{(user.user_metadata?.username || 'U')[0]}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm text-white font-medium">{user.user_metadata?.username || 'Anonymous'}</p>
+                    <p className="text-xs text-gray-400">Streaming as you</p>
+                  </div>
+                </div>
+              )}
+              
               <Button 
                 onClick={createLiveStream}
                 className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white"
@@ -107,7 +121,7 @@ const LiveButton: React.FC = () => {
                     placeholder="Enter room code"
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value)}
-                    className="flex-1"
+                    className="flex-1 bg-gray-800 border-gray-700 text-white"
                   />
                   <Button 
                     onClick={joinLiveStream}

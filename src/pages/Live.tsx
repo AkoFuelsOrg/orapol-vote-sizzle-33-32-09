@@ -1,15 +1,18 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
 import { Card } from '@/components/ui/card';
-import { Mic, MicOff, Video, VideoOff, Users, MessageCircle } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Users, MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import SplashScreen from '@/components/SplashScreen';
 import DailyIframe from '@/components/DailyIframe';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
-// Daily.co API key - Updated with correct key
+// Daily.co API key
 const DAILY_API_KEY = '2f003ab69d81366c11dde4098ab14bb7bf0092acfb6511c0a3bf8cb13096d6d1';
 
 // Define the global DailyIframe type
@@ -37,6 +40,7 @@ const Live: React.FC = () => {
   const [dailyCallObject, setDailyCallObject] = useState<any>(null);
   const dailyScriptLoaded = useRef(false);
   const dailyInitialized = useRef(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   useEffect(() => {
     // Clear any existing listeners to prevent duplicates
@@ -257,87 +261,102 @@ const Live: React.FC = () => {
   }
   
   return (
-    <div className="container mx-auto pt-14 pb-16 px-4 md:px-8 min-h-screen">
-      <Card className="overflow-hidden rounded-xl shadow-lg border-none bg-gradient-to-br from-gray-900 to-black">
-        <div className="flex flex-col md:flex-row h-[calc(100vh-180px)]">
-          {/* Video area with Daily.co iframe */}
-          <div className="flex-1 relative bg-black">
-            {roomUrl ? (
-              <DailyIframe 
-                url={roomUrl}
-                onCallObjectReady={handleDailyInit}
-                isHost={isHost}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-gray-800 p-8 rounded-full">
-                  <VideoOff size={48} className="text-gray-400" />
-                </div>
-              </div>
-            )}
-            
-            {/* Live indicator and viewers count */}
-            <div className="absolute top-4 left-4 flex items-center gap-3">
-              <div className="bg-red-600 text-white text-sm font-medium px-3 py-1 rounded-md flex items-center gap-1.5">
-                <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>
-                LIVE
-              </div>
-              <div className="bg-black/60 text-white text-sm flex items-center gap-1.5 px-3 py-1 rounded-md">
-                <Users size={14} />
-                {viewers}
-              </div>
-            </div>
-            
-            {/* Room code */}
-            <div className="absolute top-4 right-4 bg-black/60 text-white text-sm px-3 py-1 rounded-md">
-              Room: {roomCode}
-            </div>
-            
-            {/* Controls */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="icon"
-                className={`rounded-full p-3 ${audioEnabled ? 'bg-gray-800/70' : 'bg-red-500'}`}
-                onClick={toggleAudio}
-              >
-                {audioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                className={`rounded-full p-3 ${videoEnabled ? 'bg-gray-800/70' : 'bg-red-500'}`}
-                onClick={toggleVideo}
-              >
-                {videoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-              </Button>
-              
-              {isHost && (
-                <Button
-                  variant="outline"
-                  className="rounded-full bg-red-500 hover:bg-red-600 text-white px-6"
-                  onClick={endStream}
-                >
-                  End Stream
-                </Button>
-              )}
-              
-              {!isHost && (
-                <Button
-                  variant="outline"
-                  className="rounded-full bg-gray-700 hover:bg-gray-600 text-white px-6"
-                  onClick={endStream}
-                >
-                  Leave Stream
-                </Button>
-              )}
+    <div className="h-screen w-screen overflow-hidden bg-black relative">
+      {/* Full screen video area */}
+      <div className="h-full w-full">
+        {roomUrl ? (
+          <DailyIframe 
+            url={roomUrl}
+            onCallObjectReady={handleDailyInit}
+            isHost={isHost}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-gray-800 p-8 rounded-full">
+              <VideoOff size={48} className="text-gray-400" />
             </div>
           </div>
-          
-          {/* Chat area */}
-          <div className="w-full md:w-80 bg-gray-900 flex flex-col border-l border-gray-700">
-            <div className="p-3 border-b border-gray-700">
+        )}
+      </div>
+      
+      {/* Top overlay - Room info and viewers count */}
+      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+        <div className="flex items-center gap-3">
+          <div className="bg-red-600 text-white text-sm font-medium px-3 py-1 rounded-md flex items-center gap-1.5 shadow-lg">
+            <span className="h-2 w-2 bg-white rounded-full animate-pulse"></span>
+            LIVE
+          </div>
+          <div className="bg-black/60 backdrop-blur-sm text-white text-sm flex items-center gap-1.5 px-3 py-1 rounded-md shadow-lg">
+            <Users size={14} />
+            {viewers}
+          </div>
+          <div className="bg-black/60 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-md shadow-lg hidden sm:block">
+            Room: {roomCode}
+          </div>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="bg-black/60 backdrop-blur-sm border-none rounded-full text-white hover:bg-black/80"
+          onClick={() => navigate('/live-streams')}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+      </div>
+      
+      {/* Bottom controls */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 z-10">
+        <Button
+          variant="outline"
+          size="icon"
+          className={`rounded-full h-12 w-12 ${audioEnabled ? 'bg-gray-800/70 backdrop-blur-sm' : 'bg-red-500'}`}
+          onClick={toggleAudio}
+        >
+          {audioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="icon"
+          className={`rounded-full h-12 w-12 ${videoEnabled ? 'bg-gray-800/70 backdrop-blur-sm' : 'bg-red-500'}`}
+          onClick={toggleVideo}
+        >
+          {videoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+        </Button>
+        
+        {isHost ? (
+          <Button
+            variant="outline"
+            className="rounded-full bg-red-500 hover:bg-red-600 text-white px-6 py-5"
+            onClick={endStream}
+          >
+            End Stream
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            className="rounded-full bg-gray-700/80 backdrop-blur-sm hover:bg-gray-600 text-white px-6 py-5"
+            onClick={endStream}
+          >
+            Leave Stream
+          </Button>
+        )}
+      </div>
+      
+      {/* Chat panel as a side drawer */}
+      <Sheet open={isChatOpen} onOpenChange={setIsChatOpen}>
+        <SheetTrigger asChild>
+          <Button 
+            className="absolute bottom-8 right-6 rounded-full bg-primary/90 backdrop-blur-sm z-20"
+            size="icon"
+          >
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-gray-900/95 backdrop-blur-md border-gray-800 p-0">
+          <div className="flex flex-col h-full">
+            <div className="p-3 border-b border-gray-800">
               <h3 className="text-white font-medium flex items-center gap-2">
                 <MessageCircle size={16} /> Live Chat
               </h3>
@@ -358,18 +377,18 @@ const Live: React.FC = () => {
               )}
             </div>
             
-            <form onSubmit={sendChatMessage} className="p-3 border-t border-gray-700 flex gap-2">
+            <form onSubmit={sendChatMessage} className="p-3 border-t border-gray-800 flex gap-2">
               <Input
                 className="bg-gray-800 border-gray-700 text-white"
                 placeholder="Type a message..."
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
               />
-              <Button type="submit" size="sm">Send</Button>
+              <Button type="submit" size="sm" className="bg-primary">Send</Button>
             </form>
           </div>
-        </div>
-      </Card>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

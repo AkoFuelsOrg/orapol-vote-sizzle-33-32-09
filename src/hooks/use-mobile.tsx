@@ -1,52 +1,24 @@
 
-import * as React from "react"
+import { useState, useEffect } from 'react';
 
-const MOBILE_BREAKPOINT = 768
-const TABLET_BREAKPOINT = 1024
+export const useBreakpoint = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
-export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+      setIsDesktop(window.innerWidth >= 1024);
+    };
 
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
-  }, [])
-
-  return !!isMobile
-}
-
-export function useBreakpoint() {
-  const [breakpoint, setBreakpoint] = React.useState<"mobile" | "tablet" | "desktop" | undefined>(
-    undefined
-  )
-
-  React.useEffect(() => {
-    const updateBreakpoint = () => {
-      const width = window.innerWidth
-      if (width < MOBILE_BREAKPOINT) {
-        setBreakpoint("mobile")
-      } else if (width < TABLET_BREAKPOINT) {
-        setBreakpoint("tablet")
-      } else {
-        setBreakpoint("desktop")
-      }
-    }
-
-    // Initial breakpoint check
-    updateBreakpoint()
+    window.addEventListener('resize', handleResize);
     
-    // Add resize event listener
-    window.addEventListener("resize", updateBreakpoint)
-
     return () => {
-      window.removeEventListener("resize", updateBreakpoint)
-    }
-  }, [])
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
-  return breakpoint
-}
+  return { isMobile, isTablet, isDesktop };
+};

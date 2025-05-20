@@ -63,10 +63,15 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         return false;
       }
       
-      // Style the iframe
+      // Style the iframe for full screen experience
       iframe.style.width = '100%';
       iframe.style.height = '100%';
       iframe.style.border = 'none';
+      iframe.style.position = 'absolute';
+      iframe.style.top = '0';
+      iframe.style.left = '0';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
       
       // Append the iframe to the container
       containerRef.current.appendChild(iframe);
@@ -125,12 +130,21 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         if (destroyed) return; // Don't continue if component is unmounting
         console.log("Creating Daily call object with URL:", url);
         
-        // Create a call object with specific configuration
+        // Create a call object with enhanced configuration for better quality
         const callObject = window.DailyIframe.createCallObject({
           url: url,
           dailyConfig: {
             experimentalChromeVideoMuteLightOff: true,
-            preferredVideoCodecs: { allow: ['h264', 'vp8', 'vp9'] }
+            preferredVideoCodecs: { allow: ['h264', 'vp8', 'vp9'] },
+            // Enhanced video quality settings
+            videoSendSettings: {
+              encodings: [
+                {
+                  maxBitrate: 1200000, // 1.2 Mbps
+                  maxFramerate: 30
+                }
+              ]
+            }
           }
         });
         
@@ -138,10 +152,15 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         callObjectRef.current = callObject;
         globalDailyInstance = callObject;
         
-        // Configure join options
+        // Configure join options with enhanced UX settings
         const joinOptions: any = {
           url: url,
           showLeaveButton: false,
+          showFullscreenButton: true,
+          activeSpeakerMode: !isHost,
+          receiveSettings: {
+            video: { max: isHost ? 2160 : 1080 }, // Higher quality for host (4K), viewer (1080p)
+          }
         };
         
         if (isHost) {
@@ -298,7 +317,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       <div 
         id="daily-container"
         ref={containerRef}
-        className="w-full h-full"
+        className="w-full h-full absolute inset-0"
       />
     </div>
   );
