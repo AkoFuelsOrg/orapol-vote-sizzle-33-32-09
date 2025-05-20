@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Video, Users, Eye } from 'lucide-react';
@@ -9,14 +9,16 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useBreakpoint } from '@/hooks/use-mobile';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 
-const LiveButton: React.FC = () => {
+const LiveButton: React.FC = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const { user } = useSupabase();
   const navigate = useNavigate();
-  const { isMobile } = useBreakpoint();
+  const breakpointState = useBreakpoint();
+  const isMobile = isBreakpoint(breakpointState, "mobile");
 
   const createLiveStream = async () => {
     if (!user) {
@@ -140,6 +142,6 @@ const LiveButton: React.FC = () => {
       </Dialog>
     </div>
   );
-};
+});
 
 export default LiveButton;

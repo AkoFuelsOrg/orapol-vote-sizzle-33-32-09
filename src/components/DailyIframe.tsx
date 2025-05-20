@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, memo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useSupabase } from '@/context/SupabaseContext';
 import { toast } from 'sonner';
@@ -19,22 +19,29 @@ declare global {
   }
 }
 
-const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHost }) => {
+const CHAT_ICON_URL = 'https://cdn.jsdelivr.net/npm/lucide-static/icons/message-square.svg';
+
+const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, isHost }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [deviceError, setDeviceError] = useState<string | null>(null);
   const { user } = useSupabase();
   const frameRef = useRef<any>(null);
+  const scriptLoadedRef = useRef(false);
+  const isMountedRef = useRef(true);
   
+  // Only load the script once when the component mounts
   useEffect(() => {
+    isMountedRef.current = true;
     console.log("DailyIframe component mounted, URL:", url);
-    let isDestroyed = false;
     
-    // Load Daily.co script if not already loaded
     const loadDailyScript = async () => {
+      if (!isMountedRef.current) return;
+      
       if (window.DailyIframe) {
         console.log("Daily.co script already loaded");
-        await initializeDaily();
+        scriptLoadedRef.current = true;
+        initializeDaily();
         return;
       }
       
@@ -45,132 +52,21 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       
       script.onload = async () => {
         console.log("Daily.co script loaded successfully");
-        if (!isDestroyed) {
+        if (isMountedRef.current) {
+          scriptLoadedRef.current = true;
           await initializeDaily();
         }
       };
       
       script.onerror = () => {
         console.error("Failed to load Daily.co script");
-        toast.error("Failed to load video call service");
-        setLoading(false);
+        if (isMountedRef.current) {
+          toast.error("Failed to load video call service");
+          setLoading(false);
+        }
       };
       
       document.body.appendChild(script);
-    };
-    
-    // Check for media permissions
-    const checkMediaPermissions = async () => {
-      try {
-        console.log("Checking media permissions...");
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
-        stream.getTracks().forEach(track => track.stop()); // Release devices
-        return true;
-      } catch (error: any) {
-        console.error("Media permission error:", error);
-        setDeviceError(error.message || "Camera or microphone access denied");
-        toast.error(`Camera/microphone error: ${error.message || "Access denied"}`);
-        return false;
-      }
-    };
-    
-    // Create the Daily iframe
-    const initializeDaily = async () => {
-      if (isDestroyed || !window.DailyIframe) return;
-      
-      // Check permissions first
-      const hasPermissions = await checkMediaPermissions();
-      if (!hasPermissions) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        // Destroy any existing frame to prevent duplicates
-        if (frameRef.current) {
-          try {
-            frameRef.current.destroy();
-            frameRef.current = null;
-          } catch (e) {
-            console.error("Error destroying previous Daily frame:", e);
-          }
-        }
-        
-        // Create Daily frame with embedded UI
-        const callFrame = window.DailyIframe.createFrame(containerRef.current, {
-          url: url,
-          showLeaveButton: true,
-          showFullscreenButton: true,
-          iframeStyle: {
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            borderRadius: '0',
-          },
-          userName: user?.user_metadata?.username || 'Anonymous',
-          // Use Daily.co's embedded UI
-          customTrayButtons: {
-            chat: {
-              label: 'Chat',
-              tooltip: 'Toggle chat',
-              iconPath: 'https://www.svgrepo.com/show/509166/message-square.svg',
-            },
-          },
-        });
-        
-        // Store the call frame reference
-        frameRef.current = callFrame;
-        
-        callFrame.on('loaded', () => {
-          console.log('Daily iframe loaded');
-        });
-        
-        callFrame.on('joining-meeting', () => {
-          console.log('Joining meeting...');
-        });
-        
-        callFrame.on('joined-meeting', () => {
-          console.log('Successfully joined meeting!');
-          setLoading(false);
-          
-          // Pass call object to parent
-          if (onCallObjectReady) {
-            onCallObjectReady(callFrame);
-          }
-        });
-        
-        callFrame.on('camera-error', (event: any) => {
-          console.error('Camera error:', event);
-          toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
-        });
-        
-        callFrame.on('error', (error: any) => {
-          console.error('Daily.co error:', error);
-          toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
-        });
-        
-        // Set initial audio based on host status
-        if (!isHost) {
-          callFrame.setLocalAudio(false);
-        }
-        
-        console.log("Joining call with options:", {
-          url: url,
-          showLeaveButton: true,
-          showFullscreenButton: true,
-          startVideoOff: false,
-          startAudioOff: !isHost,
-        });
-        
-        // Join the call
-        callFrame.join();
-        
-      } catch (error: any) {
-        console.error("Error in Daily.co initialization:", error);
-        toast.error(`Failed to initialize video call: ${error.message || 'Unknown error'}`);
-        setLoading(false);
-      }
     };
     
     loadDailyScript();
@@ -178,7 +74,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     // Clean up on unmount
     return () => {
       console.log("DailyIframe component unmounting");
-      isDestroyed = true;
+      isMountedRef.current = false;
       
       if (frameRef.current) {
         try {
@@ -189,7 +85,133 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         }
       }
     };
-  }, [url, isHost, user, onCallObjectReady]);
+  }, [url]);
+  
+  // Check for media permissions
+  const checkMediaPermissions = async () => {
+    if (!isMountedRef.current) return false;
+    
+    try {
+      console.log("Checking media permissions...");
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
+      stream.getTracks().forEach(track => track.stop()); // Release devices
+      return true;
+    } catch (error: any) {
+      console.error("Media permission error:", error);
+      if (isMountedRef.current) {
+        setDeviceError(error.message || "Camera or microphone access denied");
+        toast.error(`Camera/microphone error: ${error.message || "Access denied"}`);
+      }
+      return false;
+    }
+  };
+  
+  // Create the Daily iframe
+  const initializeDaily = async () => {
+    if (!isMountedRef.current || !window.DailyIframe) return;
+    
+    // Check permissions first
+    const hasPermissions = await checkMediaPermissions();
+    if (!hasPermissions) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      // Destroy any existing frame to prevent duplicates
+      if (frameRef.current) {
+        try {
+          frameRef.current.destroy();
+          frameRef.current = null;
+        } catch (e) {
+          console.error("Error destroying previous Daily frame:", e);
+        }
+      }
+      
+      // Create Daily frame with embedded UI
+      const callFrame = window.DailyIframe.createFrame(containerRef.current, {
+        url: url,
+        showLeaveButton: true,
+        showFullscreenButton: true,
+        iframeStyle: {
+          width: '100%',
+          height: '100%',
+          border: 'none',
+          borderRadius: '0',
+        },
+        userName: user?.user_metadata?.username || 'Anonymous',
+        // Use Daily.co's embedded UI
+        customTrayButtons: {
+          chat: {
+            label: 'Chat',
+            tooltip: 'Toggle chat',
+            iconPath: CHAT_ICON_URL,
+          },
+        },
+      });
+      
+      // Store the call frame reference
+      frameRef.current = callFrame;
+      
+      callFrame.on('loaded', () => {
+        if (isMountedRef.current) console.log('Daily iframe loaded');
+      });
+      
+      callFrame.on('joining-meeting', () => {
+        if (isMountedRef.current) console.log('Joining meeting...');
+      });
+      
+      callFrame.on('joined-meeting', () => {
+        if (isMountedRef.current) {
+          console.log('Successfully joined meeting!');
+          setLoading(false);
+          
+          // Pass call object to parent
+          if (onCallObjectReady) {
+            onCallObjectReady(callFrame);
+          }
+        }
+      });
+      
+      callFrame.on('camera-error', (event: any) => {
+        console.error('Camera error:', event);
+        if (isMountedRef.current) {
+          toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
+        }
+      });
+      
+      callFrame.on('error', (error: any) => {
+        console.error('Daily.co error:', error);
+        if (isMountedRef.current) {
+          toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
+        }
+      });
+      
+      // Set initial audio based on host status
+      if (!isHost) {
+        callFrame.setLocalAudio(false);
+      }
+      
+      console.log("Joining call with options:", {
+        url: url,
+        showLeaveButton: true,
+        showFullscreenButton: true,
+        startVideoOff: false,
+        startAudioOff: !isHost,
+      });
+      
+      // Join the call
+      callFrame.join();
+      
+    } catch (error: any) {
+      console.error("Error in Daily.co initialization:", error);
+      if (isMountedRef.current) {
+        toast.error(`Failed to initialize video call: ${error.message || 'Unknown error'}`);
+        setLoading(false);
+      }
+    }
+  };
   
   return (
     <div className="w-full h-full relative">
@@ -219,6 +241,6 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       />
     </div>
   );
-};
+});
 
 export default DailyIframe;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -17,6 +18,8 @@ interface LiveStream {
   thumbnail?: string;
   startedAt: Date;
 }
+
+const validStatuses = ['active', 'ended', 'scheduled'];
 
 const LiveStreams: React.FC = () => {
   const [loading, setLoading] = useState(true);

@@ -21,7 +21,7 @@ interface LiveStream {
   created_at?: string;
   viewer_count?: number;
   ended_at?: string;
-  status?: string;
+  status: 'active' | 'ended' | 'scheduled';
   thumbnail_url?: string;
   playback_url?: string;
 }
@@ -52,6 +52,7 @@ const Live: React.FC = () => {
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyCallObject, setDailyCallObject] = useState<any>(null);
   const [liveStreamId, setLiveStreamId] = useState<string | null>(null);
+  const dailyInitializedRef = useRef(false);
   
   useEffect(() => {
     // Clear any existing listeners to prevent duplicates
@@ -85,6 +86,7 @@ const Live: React.FC = () => {
         // If host, create a room
         if (isHost) {
           try {
+            // First check if room exists to prevent redundant API calls
             const response = await fetch(`https://api.daily.co/v1/rooms/${roomCode}`, {
               method: 'GET',
               headers: {
@@ -125,32 +127,45 @@ const Live: React.FC = () => {
             
             // If we're the host, record the live stream in our database
             if (user) {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('username')
-                .eq('id', user.id)
-                .single();
-                
-              const hostName = profileData?.username || user.user_metadata?.username || 'Anonymous';
-              
-              // Store the live stream in our database
-              const { data: liveData, error: liveError } = await supabase
+              // First check if livestream already exists for this room
+              const { data: existingStream } = await supabase
                 .from('lives')
-                .insert({
-                  title: `${hostName}'s Stream`,
-                  description: 'Live stream',
-                  user_id: user.id,
-                  stream_key: roomCode,
-                  viewer_count: 1,
-                  status: 'active'
-                } as LiveStream)
-                .select()
-                .single();
+                .select('id')
+                .eq('stream_key', roomCode)
+                .eq('status', 'active')
+                .maybeSingle();
+              
+              if (existingStream) {
+                console.log('Stream already exists, using existing record:', existingStream);
+                setLiveStreamId(existingStream.id);
+              } else {
+                const { data: profileData } = await supabase
+                  .from('profiles')
+                  .select('username')
+                  .eq('id', user.id)
+                  .single();
+                  
+                const hostName = profileData?.username || user.user_metadata?.username || 'Anonymous';
                 
-              if (liveError) {
-                console.error('Error storing live stream:', liveError);
-              } else if (liveData) {
-                setLiveStreamId(liveData.id);
+                // Store the live stream in our database
+                const { data: liveData, error: liveError } = await supabase
+                  .from('lives')
+                  .insert({
+                    title: `${hostName}'s Stream`,
+                    description: 'Live stream',
+                    user_id: user.id,
+                    stream_key: roomCode,
+                    viewer_count: 1,
+                    status: 'active'
+                  } as LiveStream)
+                  .select()
+                  .single();
+                  
+                if (liveError) {
+                  console.error('Error storing live stream:', liveError);
+                } else if (liveData) {
+                  setLiveStreamId(liveData.id);
+                }
               }
             }
             
@@ -248,16 +263,20 @@ const Live: React.FC = () => {
   
   const handleDailyInit = (callObject: any) => {
     console.log("Daily call object initialized", callObject);
-    setDailyCallObject(callObject);
-    
-    // You can still add custom event handlers if needed
-    callObject.on('participant-joined', (event: any) => {
-      console.log("Participant joined:", event);
-    });
-    
-    callObject.on('participant-left', (event: any) => {
-      console.log("Participant left:", event);
-    });
+    // Only set if not already initialized to prevent rerender cycle
+    if (!dailyInitializedRef.current) {
+      dailyInitializedRef.current = true;
+      setDailyCallObject(callObject);
+      
+      // You can still add custom event handlers if needed
+      callObject.on('participant-joined', (event: any) => {
+        console.log("Participant joined:", event);
+      });
+      
+      callObject.on('participant-left', (event: any) => {
+        console.log("Participant left:", event);
+      });
+    }
   };
   
   if (loading) {
