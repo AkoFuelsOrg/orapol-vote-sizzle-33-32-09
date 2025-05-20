@@ -1,7 +1,13 @@
 
 import { useState, useEffect } from 'react';
 
-export const useBreakpoint = () => {
+export interface BreakpointState {
+  isMobile: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
+}
+
+export const useBreakpoint = (): BreakpointState => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
@@ -24,7 +30,7 @@ export const useBreakpoint = () => {
 };
 
 // For backward compatibility with components using the old format
-export const useIsMobile = () => {
+export const useIsMobile = (): boolean => {
   const { isMobile } = useBreakpoint();
   return isMobile;
 };

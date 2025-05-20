@@ -30,11 +30,6 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
       
-      // Don't stop tracks if we're the host - let Daily.co use these
-      if (!isHost) {
-        stream.getTracks().forEach(track => track.stop()); // Clean up
-      }
-      
       return { success: true, stream };
     } catch (error: any) {
       console.error("Media permission error:", error);
@@ -111,7 +106,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         return;
       }
 
-      // Pre-check permissions for hosts and participants (enable for all)
+      // Check permissions for both hosts and participants
       if (!permissionsChecked) {
         console.log("Checking camera permissions for user");
         const { success, stream } = await checkMediaPermissions();
@@ -135,16 +130,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           url: url,
           dailyConfig: {
             experimentalChromeVideoMuteLightOff: true,
-            preferredVideoCodecs: { allow: ['h264', 'vp8', 'vp9'] },
-            // Enhanced video quality settings
-            videoSendSettings: {
-              encodings: [
-                {
-                  maxBitrate: 1200000, // 1.2 Mbps
-                  maxFramerate: 30
-                }
-              ]
-            }
+            preferredVideoCodecs: { allow: ['h264', 'vp8', 'vp9'] }
           }
         });
         
@@ -157,14 +143,14 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           url: url,
           showLeaveButton: false,
           showFullscreenButton: true,
-          activeSpeakerMode: !isHost,
+          activeSpeakerMode: false,
           receiveSettings: {
-            video: { max: isHost ? 2160 : 1080 }, // Higher quality for host (4K), viewer (1080p)
+            video: { max: 720 }, // 720p quality for everyone
           }
         };
         
         // Important: Enable video for both host and viewers by default
-        joinOptions.startVideoOff = false; // Changed from isHost logic
+        joinOptions.startVideoOff = false;
         joinOptions.startAudioOff = !isHost; // Only host has audio enabled by default
         
         // If we have a stream already, try to use it

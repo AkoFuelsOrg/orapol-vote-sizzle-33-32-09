@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
-import { Card } from '@/components/ui/card';
 import { Mic, MicOff, Video, VideoOff, Users, MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,8 +119,17 @@ const Live: React.FC = () => {
                   start_video_off: false,
                   enable_screenshare: true,
                   enable_chat: true,
-                  // Ensure both the host and participants can be seen
-                  max_participants: 20
+                  signaling_impl: 'ws', // Use WebSocket signaling for better reliability
+                  exp: Math.floor(Date.now() / 1000) + 3600, // Room expires in 1 hour
+                  eject_at_room_exp: true,
+                  max_participants: 20,
+                  // Enable all participant videos to be visible
+                  enable_people_ui: true,
+                  enable_pip_ui: true,
+                  enable_network_ui: true,
+                  enable_video_processing_ui: true,
+                  // Better video quality settings
+                  enable_prejoin_ui: false
                 }
               })
             });
