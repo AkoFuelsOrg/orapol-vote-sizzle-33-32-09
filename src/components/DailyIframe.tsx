@@ -10,6 +10,9 @@ interface DailyIframeProps {
   isHost: boolean;
 }
 
+// Global variable to track if a Daily instance exists
+let globalDailyInstance: any = null;
+
 const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHost }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const callObjectRef = useRef<any>(null);
@@ -43,6 +46,17 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
   useEffect(() => {
     console.log("DailyIframe component mounted, URL:", url);
     let userStream: MediaStream | null = null;
+    
+    // First, check if a global Daily instance already exists
+    if (globalDailyInstance) {
+      console.log("Destroying existing Daily instance before creating a new one");
+      try {
+        globalDailyInstance.destroy();
+      } catch (err) {
+        console.error("Error destroying existing Daily instance:", err);
+      }
+      globalDailyInstance = null;
+    }
     
     const initializeDaily = async () => {
       // Check if Daily.co script is already loaded
@@ -79,7 +93,9 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           }
         });
         
+        // Store in both component ref and global variable
         callObjectRef.current = callObject;
+        globalDailyInstance = callObject;
         
         // Configure join options
         const joinOptions: any = {
@@ -141,9 +157,11 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           // Ensure we get access to video after joining (especially important for host)
           if (isHost) {
             console.log("Host ensuring video is turned on");
-            await callObject.setLocalVideo(true);
-            await callObject.setLocalAudio(true);
-            console.log("Local video and audio should now be enabled for host");
+            setTimeout(async () => {
+              await callObject.setLocalVideo(true);
+              await callObject.setLocalAudio(true);
+              console.log("Local video and audio should now be enabled for host (with delay)");
+            }, 1000); // Add a delay to ensure camera initialization
           }
           
           // Attach the call to our container element
@@ -182,17 +200,36 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       }
     };
     
-    initializeDaily();
+    // Delay initialization slightly to ensure any previous instances are fully cleaned up
+    const timer = setTimeout(() => {
+      initializeDaily();
+    }, 300);
     
     return () => {
       console.log("DailyIframe component unmounting");
+      clearTimeout(timer);
+      
       if (userStream) {
         userStream.getTracks().forEach(track => track.stop());
         console.log("Cleaned up user media stream");
       }
+      
+      // Clean up the call object
       if (callObjectRef.current) {
-        callObjectRef.current.destroy();
-        console.log("Daily call object destroyed");
+        console.log("Destroying Daily call object on unmount");
+        
+        try {
+          callObjectRef.current.destroy();
+        } catch (err) {
+          console.error("Error during Daily cleanup:", err);
+        }
+        
+        // Also clear the global reference
+        if (globalDailyInstance === callObjectRef.current) {
+          globalDailyInstance = null;
+        }
+        
+        callObjectRef.current = null;
       }
     };
   }, [url, isHost, onCallObjectReady, user, permissionsChecked]);
