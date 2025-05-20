@@ -19,6 +19,7 @@ const DAILY_API_KEY = '2f003ab69d81366c11dde4098ab14bb7bf0092acfb6511c0a3bf8cb13
 declare global {
   interface Window {
     DailyIframe?: {
+      createFrame: (container: HTMLElement, options: any) => any;
       createCallObject: (options: any) => any;
     }
   }

@@ -10,260 +10,19 @@ interface DailyIframeProps {
   isHost: boolean;
 }
 
-// Global variable to track if a Daily instance exists
-let globalDailyInstance: any = null;
-
 const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHost }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const callObjectRef = useRef<any>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useSupabase();
-  const [permissionsChecked, setPermissionsChecked] = useState(false);
   const [deviceError, setDeviceError] = useState<string | null>(null);
-  const [iframeCreated, setIframeCreated] = useState(false);
-
-  // Helper function to check and request media permissions
-  const checkMediaPermissions = async () => {
-    try {
-      console.log("Checking media permissions...");
-      // Try to get user media to trigger permission prompt if needed
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
-      
-      return { success: true, stream };
-    } catch (error: any) {
-      console.error("Media permission error:", error);
-      setDeviceError(error.message || "Camera or microphone access denied");
-      toast.error(`Camera/microphone error: ${error.message || "Access denied"}`);
-      return { success: false, error };
-    }
-  };
-
-  // Function to create and attach iframe
-  const createAndAttachIframe = (callObject: any) => {
-    if (!containerRef.current) {
-      console.error("Container ref is null, cannot attach iframe");
-      return false;
-    }
-    
-    try {
-      // Clear the container first
-      containerRef.current.innerHTML = '';
-      
-      // Create the iframe element
-      const iframe = callObject.iframe();
-      
-      if (!iframe) {
-        console.error("Daily iframe element is null");
-        return false;
-      }
-      
-      // Style the iframe for full screen experience
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-      iframe.style.border = 'none';
-      iframe.style.position = 'absolute';
-      iframe.style.top = '0';
-      iframe.style.left = '0';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      
-      // Append the iframe to the container
-      containerRef.current.appendChild(iframe);
-      console.log("Daily iframe attached successfully");
-      setIframeCreated(true);
-      return true;
-    } catch (error) {
-      console.error("Error attaching iframe:", error);
-      return false;
-    }
-  };
-
+  const { user } = useSupabase();
+  
   useEffect(() => {
     console.log("DailyIframe component mounted, URL:", url);
-    let userStream: MediaStream | null = null;
     let destroyed = false;
     
-    // First, check if a global Daily instance already exists
-    if (globalDailyInstance) {
-      console.log("Destroying existing Daily instance before creating a new one");
-      try {
-        globalDailyInstance.destroy();
-      } catch (err) {
-        console.error("Error destroying existing Daily instance:", err);
-      }
-      globalDailyInstance = null;
-    }
-    
-    const initializeDaily = async () => {
-      if (destroyed) return; // Don't continue if component is unmounting
-      
-      // Check if Daily.co script is already loaded
-      if (!window.DailyIframe) {
-        console.error('Daily.co SDK not loaded');
-        toast.error('Video call service failed to load');
-        setLoading(false);
-        return;
-      }
-
-      // Check permissions for both hosts and participants
-      if (!permissionsChecked) {
-        console.log("Checking camera permissions for user");
-        const { success, stream } = await checkMediaPermissions();
-        setPermissionsChecked(true);
-        
-        if (success && stream) {
-          userStream = stream;
-          console.log("Successfully acquired camera stream");
-        } else {
-          setLoading(false);
-          return;
-        }
-      }
-      
-      try {
-        if (destroyed) return; // Don't continue if component is unmounting
-        console.log("Creating Daily call object with URL:", url);
-        
-        // Create a call object with optimized configuration
-        const callObject = window.DailyIframe.createCallObject({
-          url: url,
-          dailyConfig: {
-            experimentalChromeVideoMuteLightOff: true,
-            preferredVideoCodecs: { allow: ['h264', 'vp8', 'vp9'] },
-            // Add better video quality settings
-            videoSendSettings: {
-              encodings: [
-                {
-                  maxBitrate: 1500000, // 1.5 Mbps for better video quality
-                  maxFramerate: 30
-                }
-              ]
-            }
-          }
-        });
-        
-        // Store in both component ref and global variable
-        callObjectRef.current = callObject;
-        globalDailyInstance = callObject;
-        
-        // Configure join options with improved settings
-        const joinOptions: any = {
-          url: url,
-          showLeaveButton: false,
-          showFullscreenButton: true,
-          activeSpeakerMode: false,
-          receiveSettings: {
-            video: { max: 720 }, // 720p quality for everyone
-          }
-        };
-        
-        // Enable video for both host and viewers by default
-        joinOptions.startVideoOff = false;
-        joinOptions.startAudioOff = !isHost; // Only host has audio enabled by default
-        
-        // If we have a stream already, try to use it
-        if (userStream) {
-          joinOptions.videoSource = userStream.getVideoTracks()[0];
-          joinOptions.audioSource = userStream.getAudioTracks()[0];
-          console.log("Using pre-acquired media tracks:", {
-            video: userStream.getVideoTracks().length > 0,
-            audio: userStream.getAudioTracks().length > 0
-          });
-        }
-        
-        // Set username from authenticated user if available
-        if (user) {
-          joinOptions.userName = user.user_metadata?.username || 'Anonymous';
-        }
-        
-        console.log("Joining call with options:", joinOptions);
-        
-        // Set up event listeners before joining
-        callObject.on('joining-meeting', () => {
-          console.log('Joining meeting event fired...');
-        });
-        
-        callObject.on('joined-meeting', () => {
-          console.log('Successfully joined meeting!');
-          
-          // Ensure video and audio state is set correctly after joining
-          setTimeout(async () => {
-            if (!destroyed && callObjectRef.current) {
-              try {
-                // Make sure viewers have video enabled but audio disabled
-                if (!isHost) {
-                  await callObjectRef.current.setLocalVideo(true);
-                  await callObjectRef.current.setLocalAudio(false);
-                  console.log("Viewer camera enabled, microphone disabled");
-                } else {
-                  // Host should have both enabled
-                  await callObjectRef.current.setLocalVideo(true);
-                  await callObjectRef.current.setLocalAudio(true);
-                  console.log("Host camera and microphone enabled");
-                }
-              } catch (err) {
-                console.error("Error setting initial media state:", err);
-              }
-            }
-          }, 1000);
-          
-          setLoading(false);
-        });
-        
-        callObject.on('camera-error', (event: any) => {
-          console.error('Camera error:', event);
-          toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
-        });
-        
-        callObject.on('error', (error: any) => {
-          console.error('Daily.co error:', error);
-          toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
-        });
-        
-        callObject.on('participant-joined', (event: any) => {
-          console.log('Participant joined:', event);
-        });
-        
-        callObject.on('participant-left', (event: any) => {
-          console.log('Participant left:', event);
-        });
-        
-        // Join the call
-        try {
-          if (destroyed) return; // Don't continue if component is unmounting
-          console.log("Attempting to join call");
-          await callObject.join(joinOptions);
-          console.log("Join call completed");
-          
-          // Create and attach the iframe element
-          const iframeSuccess = createAndAttachIframe(callObject);
-          
-          if (!iframeSuccess) {
-            console.error("Failed to create or attach iframe");
-            toast.error("Failed to create video call interface");
-            setLoading(false);
-            return;
-          }
-          
-          onCallObjectReady(callObject);
-        } catch (error) {
-          if (destroyed) return; // Don't continue if component is unmounting
-          console.error('Error joining Daily.co call:', error);
-          toast.error('Failed to join video call');
-          setLoading(false);
-        }
-      } catch (error) {
-        if (destroyed) return; // Don't continue if component is unmounting
-        console.error("Error in Daily.co initialization:", error);
-        toast.error('Failed to initialize video call');
-        setLoading(false);
-      }
-    };
-    
-    // Load Daily script if not already loaded
+    // Check if Daily.co script is already loaded
     const loadDailyScript = () => {
-      if (window.DailyIframe || document.querySelector('script[src*="daily-js"]')) {
+      if (window.DailyIframe) {
         console.log("Daily.co script already loaded");
         initializeDaily();
         return;
@@ -288,6 +47,112 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       document.body.appendChild(script);
     };
     
+    // Helper function to check and request media permissions
+    const checkMediaPermissions = async () => {
+      try {
+        console.log("Checking media permissions...");
+        // Try to get user media to trigger permission prompt if needed
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
+        
+        return { success: true, stream };
+      } catch (error: any) {
+        console.error("Media permission error:", error);
+        setDeviceError(error.message || "Camera or microphone access denied");
+        toast.error(`Camera/microphone error: ${error.message || "Access denied"}`);
+        return { success: false, error };
+      }
+    };
+    
+    const initializeDaily = async () => {
+      if (destroyed || !containerRef.current) return;
+      
+      // Check permissions first
+      const { success } = await checkMediaPermissions();
+      if (!success) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        // Clear any existing content
+        containerRef.current.innerHTML = '';
+        
+        // Use Daily's built-in iframe approach which handles duplicate instances
+        const callFrame = window.DailyIframe.createFrame(containerRef.current, {
+          showLeaveButton: false,
+          showFullscreenButton: true,
+          iframeStyle: {
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            borderRadius: '0',
+          }
+        });
+        
+        // Configure and join
+        const joinOptions: any = {
+          url: url,
+          showLeaveButton: false,
+          showFullscreenButton: true
+        };
+        
+        // Set different defaults for host vs viewer
+        if (isHost) {
+          joinOptions.startVideoOff = false;
+          joinOptions.startAudioOff = false;
+        } else {
+          joinOptions.startVideoOff = false;
+          joinOptions.startAudioOff = true; // Only host has audio enabled by default
+        }
+        
+        // Set username from authenticated user if available
+        if (user) {
+          joinOptions.userName = user.user_metadata?.username || 'Anonymous';
+        }
+        
+        console.log("Joining call with options:", joinOptions);
+        
+        // Add event listeners
+        callFrame
+          .on('joining-meeting', () => {
+            console.log('Joining meeting event fired...');
+          })
+          .on('joined-meeting', () => {
+            console.log('Successfully joined meeting!');
+            setLoading(false);
+            
+            // Notify parent component that call is ready
+            if (onCallObjectReady) {
+              onCallObjectReady(callFrame);
+            }
+          })
+          .on('camera-error', (event: any) => {
+            console.error('Camera error:', event);
+            toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
+          })
+          .on('error', (error: any) => {
+            console.error('Daily.co error:', error);
+            toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
+          })
+          .on('participant-joined', (event: any) => {
+            console.log('Participant joined:', event);
+          })
+          .on('participant-left', (event: any) => {
+            console.log('Participant left:', event);
+          });
+        
+        // Join the call
+        await callFrame.join(joinOptions);
+        console.log("Join call completed");
+        
+      } catch (error) {
+        console.error("Error in Daily.co initialization:", error);
+        toast.error("Failed to initialize video call");
+        setLoading(false);
+      }
+    };
+    
     // Start loading Daily
     loadDailyScript();
     
@@ -295,30 +160,10 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       console.log("DailyIframe component unmounting");
       destroyed = true;
       
-      if (userStream) {
-        userStream.getTracks().forEach(track => track.stop());
-        console.log("Cleaned up user media stream");
-      }
-      
-      // Clean up the call object
-      if (callObjectRef.current) {
-        console.log("Destroying Daily call object on unmount");
-        
-        try {
-          callObjectRef.current.destroy();
-        } catch (err) {
-          console.error("Error during Daily cleanup:", err);
-        }
-        
-        // Also clear the global reference
-        if (globalDailyInstance === callObjectRef.current) {
-          globalDailyInstance = null;
-        }
-        
-        callObjectRef.current = null;
-      }
+      // Clean up will be handled by Daily's built-in cleanup
+      // when the component unmounts
     };
-  }, [url, isHost, onCallObjectReady, user, permissionsChecked]);
+  }, [url, isHost, user, onCallObjectReady]);
 
   return (
     <div className="w-full h-full relative">
