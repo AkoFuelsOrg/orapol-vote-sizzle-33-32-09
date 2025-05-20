@@ -155,6 +155,9 @@ const Live: React.FC = () => {
                   
                 const hostName = profileData?.username || user.user_metadata?.username || 'Anonymous';
                 
+                // Validate status to ensure it matches the enum
+                const validStatus: LiveStream['status'] = 'active';
+                
                 // Store the live stream in our database
                 const { data: liveData, error: liveError } = await supabase
                   .from('lives')
@@ -164,7 +167,7 @@ const Live: React.FC = () => {
                     user_id: user.id,
                     stream_key: roomCode,
                     viewer_count: 1,
-                    status: 'active'
+                    status: validStatus
                   } as LiveStream)
                   .select()
                   .single();

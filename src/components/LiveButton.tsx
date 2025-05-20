@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useBreakpoint } from '@/hooks/use-mobile';
 import { isBreakpoint } from '@/utils/breakpoint-utils';
+
 const LiveButton: React.FC = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const [joinCode, setJoinCode] = useState('');
@@ -19,6 +20,7 @@ const LiveButton: React.FC = memo(() => {
   const navigate = useNavigate();
   const breakpointState = useBreakpoint();
   const isMobile = isBreakpoint(breakpointState, "mobile");
+  
   const createLiveStream = async () => {
     if (!user) {
       toast.error('You need to be logged in to start a live stream');
@@ -41,6 +43,7 @@ const LiveButton: React.FC = memo(() => {
       setIsCreating(false);
     }
   };
+  
   const joinLiveStream = () => {
     if (!joinCode.trim()) {
       toast.error('Please enter a valid room code');
@@ -50,10 +53,12 @@ const LiveButton: React.FC = memo(() => {
     // Navigate to the live page with the provided room code
     navigate(`/live/${joinCode.trim().toUpperCase()}`);
   };
+  
   const browseLiveStreams = () => {
     setIsOpen(false);
     navigate('/live-streams');
   };
+  
   return <div>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
@@ -109,4 +114,5 @@ const LiveButton: React.FC = memo(() => {
       </Dialog>
     </div>;
 });
+
 export default LiveButton;

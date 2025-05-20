@@ -47,7 +47,7 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
       
       const script = document.createElement('script');
       // Use the specific version of the script to avoid potential breaking changes
-      script.src = 'https://unpkg.com/@daily-co/daily-js@0.50.0/dist/daily-iframe.js';
+      script.src = 'https://unpkg.com/@daily-co/daily-js@0.52.0/dist/daily-iframe.js';
       script.crossOrigin = 'anonymous';
       
       script.onload = async () => {
@@ -120,9 +120,12 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
       
       console.log("Creating new Daily frame with container:", containerRef.current);
       
+      // Ensure URL starts with https
+      const secureUrl = url.startsWith('https://') ? url : url.replace('http://', 'https://');
+      
       // Create Daily frame with embedded UI
       const callFrame = window.DailyIframe.createFrame(containerRef.current, {
-        url: url,
+        url: secureUrl,
         showLeaveButton: true,
         showFullscreenButton: true,
         iframeStyle: {
@@ -194,7 +197,7 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
         callFrame.setLocalAudio(false);
       }
       
-      console.log("Joining call with URL:", url);
+      console.log("Joining call with URL:", secureUrl);
       
       // Join the call
       callFrame.join();

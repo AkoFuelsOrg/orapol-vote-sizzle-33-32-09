@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Button } from '../components/ui/button';
 import UserAvatar from '../components/UserAvatar';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { isBreakpoint } from '../utils/breakpoint-utils';
 import { toast } from "sonner";
 
 const UserProfile: React.FC = () => {
@@ -28,8 +29,8 @@ const UserProfile: React.FC = () => {
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [canSendMessage, setCanSendMessage] = useState(false);
   const [activeTab, setActiveTab] = useState("content");
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const breakpointState = useBreakpoint();
+  const isMobile = isBreakpoint(breakpointState, "mobile");
   
   useEffect(() => {
     if (id) {
