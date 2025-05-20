@@ -12,14 +12,14 @@ export interface BreakpointState {
 
 export const useBreakpoint = (): BreakpointState => {
   const [breakpointState, setBreakpointState] = useState<BreakpointState>({
-    isMobile: window.innerWidth < 768,
-    isTablet: window.innerWidth >= 768 && window.innerWidth < 1024,
-    isDesktop: window.innerWidth >= 1024,
-    breakpoint: window.innerWidth < 768 ? "mobile" : 
-               window.innerWidth < 1024 ? "tablet" : "desktop"
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    breakpoint: "desktop"
   });
 
   useEffect(() => {
+    // Initialize with current window size
     const handleResize = () => {
       const width = window.innerWidth;
       const isMobile = width < 768;
@@ -35,6 +35,9 @@ export const useBreakpoint = (): BreakpointState => {
       });
     };
 
+    // Call once immediately to set initial state
+    handleResize();
+    
     window.addEventListener('resize', handleResize);
     
     return () => {

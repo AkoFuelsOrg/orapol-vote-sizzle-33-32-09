@@ -10,22 +10,31 @@ interface DailyIframeProps {
   isHost: boolean;
 }
 
+// Define the global DailyIframe type
+declare global {
+  interface Window {
+    DailyIframe?: {
+      createFrame: (container: HTMLElement, options: any) => any;
+    }
+  }
+}
+
 const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHost }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [deviceError, setDeviceError] = useState<string | null>(null);
   const { user } = useSupabase();
-  const callFrameRef = useRef<any>(null);
+  const frameRef = useRef<any>(null);
   
   useEffect(() => {
     console.log("DailyIframe component mounted, URL:", url);
-    let destroyed = false;
+    let isDestroyed = false;
     
-    // Check if Daily.co script is already loaded
+    // Load Daily.co script if not already loaded
     const loadDailyScript = () => {
       if (window.DailyIframe) {
         console.log("Daily.co script already loaded");
-        initializeDaily();
+        createDailyIframe();
         return;
       }
       
@@ -36,8 +45,8 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       
       script.onload = () => {
         console.log("Daily.co script loaded successfully");
-        if (!destroyed) {
-          initializeDaily();
+        if (!isDestroyed) {
+          createDailyIframe();
         }
       };
       
@@ -50,29 +59,29 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       document.body.appendChild(script);
     };
     
-    // Helper function to check and request media permissions
+    // Check for media permissions
     const checkMediaPermissions = async () => {
       try {
         console.log("Checking media permissions...");
-        // Try to get user media to trigger permission prompt if needed
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
-        
-        return { success: true, stream };
+        stream.getTracks().forEach(track => track.stop()); // Release devices
+        return true;
       } catch (error: any) {
         console.error("Media permission error:", error);
         setDeviceError(error.message || "Camera or microphone access denied");
         toast.error(`Camera/microphone error: ${error.message || "Access denied"}`);
-        return { success: false, error };
+        return false;
       }
     };
     
-    const initializeDaily = async () => {
-      if (destroyed || !window.DailyIframe) return;
+    // Create the Daily iframe
+    const createDailyIframe = async () => {
+      if (isDestroyed || !window.DailyIframe) return;
       
       // Check permissions first
-      const { success } = await checkMediaPermissions();
-      if (!success) {
+      const hasPermissions = await checkMediaPermissions();
+      if (!hasPermissions) {
         setLoading(false);
         return;
       }
@@ -84,20 +93,22 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           return;
         }
         
-        // Destroy any existing call frame to prevent duplicates
-        if (callFrameRef.current) {
+        // Destroy any existing frame to prevent duplicates
+        if (frameRef.current) {
           try {
-            callFrameRef.current.destroy();
+            frameRef.current.destroy();
           } catch (e) {
-            console.error("Error destroying previous call frame:", e);
+            console.error("Error destroying previous Daily frame:", e);
           }
-          callFrameRef.current = null;
+          frameRef.current = null;
         }
         
-        // Create a new call frame
+        // Create Daily frame with embedded UI
         const callFrame = window.DailyIframe.createFrame(containerRef.current, {
-          showLeaveButton: false,
+          url: url,
+          showLeaveButton: true,
           showFullscreenButton: true,
+          userName: user?.user_metadata?.username || 'Anonymous',
           iframeStyle: {
             width: '100%',
             height: '100%',
@@ -106,97 +117,76 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           }
         });
         
-        callFrameRef.current = callFrame;
+        frameRef.current = callFrame;
         
-        // Configure and join
-        const joinOptions: any = {
-          url: url,
-          showLeaveButton: false,
-          showFullscreenButton: true
-        };
+        callFrame.on('loaded', () => {
+          console.log('Daily iframe loaded');
+        });
         
-        // Set different defaults for host vs viewer
-        if (isHost) {
-          joinOptions.startVideoOff = false;
-          joinOptions.startAudioOff = false;
-        } else {
-          joinOptions.startVideoOff = false;
-          joinOptions.startAudioOff = true; // Only host has audio enabled by default
+        callFrame.on('joining-meeting', () => {
+          console.log('Joining meeting...');
+        });
+        
+        callFrame.on('joined-meeting', () => {
+          console.log('Successfully joined meeting!');
+          setLoading(false);
+          
+          // Pass call object to parent
+          if (onCallObjectReady) {
+            onCallObjectReady(callFrame);
+          }
+        });
+        
+        callFrame.on('camera-error', (event: any) => {
+          console.error('Camera error:', event);
+          toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
+        });
+        
+        callFrame.on('error', (error: any) => {
+          console.error('Daily.co error:', error);
+          toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
+        });
+        
+        // Join with audio based on host status
+        if (!isHost) {
+          callFrame.setLocalAudio(false);
         }
         
-        // Set username from authenticated user if available
-        if (user) {
-          joinOptions.userName = user.user_metadata?.username || 'Anonymous';
-        }
+        callFrame.join();
+        console.log("Join call initiated");
         
-        console.log("Joining call with options:", joinOptions);
-        
-        // Add event listeners
-        callFrame
-          .on('joining-meeting', () => {
-            console.log('Joining meeting event fired...');
-          })
-          .on('joined-meeting', () => {
-            console.log('Successfully joined meeting!');
-            setLoading(false);
-            
-            // Notify parent component that call is ready
-            if (onCallObjectReady) {
-              onCallObjectReady(callFrame);
-            }
-          })
-          .on('camera-error', (event: any) => {
-            console.error('Camera error:', event);
-            toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
-          })
-          .on('error', (error: any) => {
-            console.error('Daily.co error:', error);
-            toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
-          })
-          .on('participant-joined', (event: any) => {
-            console.log('Participant joined:', event);
-          })
-          .on('participant-left', (event: any) => {
-            console.log('Participant left:', event);
-          });
-        
-        // Join the call
-        await callFrame.join(joinOptions);
-        console.log("Join call completed");
-        
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error in Daily.co initialization:", error);
-        toast.error("Failed to initialize video call");
+        toast.error(`Failed to initialize video call: ${error.message || 'Unknown error'}`);
         setLoading(false);
       }
     };
     
-    // Start loading Daily
     loadDailyScript();
     
+    // Clean up on unmount
     return () => {
       console.log("DailyIframe component unmounting");
-      destroyed = true;
+      isDestroyed = true;
       
-      // Clean up call frame on unmount
-      if (callFrameRef.current) {
+      if (frameRef.current) {
         try {
-          callFrameRef.current.destroy();
+          frameRef.current.destroy();
         } catch (e) {
-          console.error("Error destroying callFrame:", e);
+          console.error("Error destroying Daily frame:", e);
         }
-        callFrameRef.current = null;
+        frameRef.current = null;
       }
     };
   }, [url, isHost, user, onCallObjectReady]);
-
+  
   return (
     <div className="w-full h-full relative">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-white text-sm">{isHost ? 'Setting up your camera...' : 'Joining stream...'}</p>
+            <p className="text-white text-sm">{isHost ? 'Setting up your call...' : 'Joining call...'}</p>
           </div>
         </div>
       )}
@@ -206,7 +196,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           <div className="bg-red-500/10 border border-red-500 p-4 rounded-lg max-w-md">
             <h3 className="text-lg font-semibold text-white mb-2">Camera/Microphone Error</h3>
             <p className="text-white/80 mb-4">{deviceError}</p>
-            <p className="text-white/80 text-sm">Please ensure your browser has permission to access your camera and microphone. Check your browser settings and try again.</p>
+            <p className="text-white/80 text-sm">Please ensure your browser has permission to access your camera and microphone.</p>
           </div>
         </div>
       )}
@@ -214,7 +204,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       <div 
         id="daily-container"
         ref={containerRef}
-        className="w-full h-full absolute inset-0"
+        className="w-full h-full"
       />
     </div>
   );

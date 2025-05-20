@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -40,7 +39,7 @@ const LiveStreams: React.FC = () => {
             user_id,
             viewer_count,
             created_at,
-            profiles (username, avatar_url)
+            profiles:user_id (username, avatar_url)
           `)
           .eq('status', 'active')
           .order('viewer_count', { ascending: false });
@@ -53,10 +52,10 @@ const LiveStreams: React.FC = () => {
         const activeStreams: LiveStream[] = data.map(stream => ({
           id: stream.id,
           roomCode: stream.stream_key,
-          title: stream.title || `${stream.profiles?.username || 'Anonymous'}'s Stream`,
+          title: stream.title || 'Untitled Stream',
           hostName: stream.profiles?.username || 'Anonymous',
           viewers: stream.viewer_count || 0,
-          thumbnail: undefined, // We don't have thumbnails yet, this could be added later
+          thumbnail: undefined,
           startedAt: new Date(stream.created_at)
         }));
         
