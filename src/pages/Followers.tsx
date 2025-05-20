@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 
 const Followers: React.FC = () => {
   const { user } = useSupabase();
-  const breakpoint = useBreakpoint();
+  const { breakpoint } = useBreakpoint();
   const isMobile = breakpoint === "mobile";
 
   return (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Search, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -70,7 +71,7 @@ const GifSelector: React.FC<GifSelectorProps> = ({ onSelectGif, onClose, isVisib
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [gifs, setGifs] = useState(sampleGifs);
-  const breakpoint = useBreakpoint();
+  const { breakpoint } = useBreakpoint();
 
   // Reset gifs when visibility changes
   useEffect(() => {

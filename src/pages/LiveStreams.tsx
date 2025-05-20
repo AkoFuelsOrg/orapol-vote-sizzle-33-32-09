@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -65,6 +66,9 @@ const LiveStreams: React.FC = () => {
         console.error('Error fetching live streams:', error);
         toast.error('Failed to load live streams');
         setLoading(false);
+        
+        // Set empty array as fallback
+        setLiveStreams([]);
       }
     };
     

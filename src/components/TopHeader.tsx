@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '../hooks/use-mobile';
@@ -10,7 +11,7 @@ import SearchSuggestions from './SearchSuggestions';
 import { addToSearchHistory } from '@/lib/search-history';
 
 const TopHeader: React.FC = () => {
-  const breakpoint = useBreakpoint();
+  const { breakpoint } = useBreakpoint();
   const navigate = useNavigate();
   const { user, profile } = useSupabase();
   const isDesktop = breakpoint === "desktop";
