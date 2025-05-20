@@ -16,6 +16,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
   const [loading, setLoading] = useState(true);
   const { user } = useSupabase();
   const [permissionsChecked, setPermissionsChecked] = useState(false);
+  const [deviceError, setDeviceError] = useState<string | null>(null);
 
   // Helper function to check and request media permissions
   const checkMediaPermissions = async () => {
@@ -23,18 +24,25 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       console.log("Checking media permissions...");
       // Try to get user media to trigger permission prompt if needed
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      console.log("Media permissions granted!", stream.getTracks());
-      stream.getTracks().forEach(track => track.stop()); // Clean up
-      return true;
-    } catch (error) {
+      console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
+      
+      // Don't stop tracks if we're the host - let Daily.co use these
+      if (!isHost) {
+        stream.getTracks().forEach(track => track.stop()); // Clean up
+      }
+      
+      return { success: true, stream };
+    } catch (error: any) {
       console.error("Media permission error:", error);
-      toast.error("Camera or microphone access denied. Please allow access in your browser settings.");
-      return false;
+      setDeviceError(error.message || "Camera or microphone access denied");
+      toast.error(`Camera/microphone error: ${error.message || "Access denied"}`);
+      return { success: false, error };
     }
   };
 
   useEffect(() => {
     console.log("DailyIframe component mounted, URL:", url);
+    let userStream: MediaStream | null = null;
     
     const initializeDaily = async () => {
       // Check if Daily.co script is already loaded
@@ -46,16 +54,22 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
 
       // Pre-check permissions for hosts
       if (isHost && !permissionsChecked) {
-        const hasPermissions = await checkMediaPermissions();
+        console.log("Host needs to check permissions");
+        const { success, stream } = await checkMediaPermissions();
         setPermissionsChecked(true);
-        if (!hasPermissions) {
+        
+        if (success && stream) {
+          userStream = stream;
+          console.log("Successfully acquired camera stream for host");
+        } else {
           setLoading(false);
           return;
         }
       }
       
       try {
-        console.log("Creating Daily call object");
+        console.log("Creating Daily call object with URL:", url);
+        
         // Create a call object with specific configuration
         const callObject = window.DailyIframe.createCallObject({
           url: url,
@@ -76,6 +90,16 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         if (isHost) {
           joinOptions.startVideoOff = false;
           joinOptions.startAudioOff = false;
+          
+          // If we have a stream already, try to use it
+          if (userStream) {
+            joinOptions.videoSource = userStream.getVideoTracks()[0];
+            joinOptions.audioSource = userStream.getAudioTracks()[0];
+            console.log("Using pre-acquired media tracks:", {
+              video: userStream.getVideoTracks().length > 0,
+              audio: userStream.getAudioTracks().length > 0
+            });
+          }
         } else {
           joinOptions.startVideoOff = true;
           joinOptions.startAudioOff = true;
@@ -90,12 +114,17 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         
         // Set up event listeners before joining
         callObject.on('joining-meeting', () => {
-          console.log('Joining meeting...');
+          console.log('Joining meeting event fired...');
         });
         
         callObject.on('joined-meeting', () => {
           console.log('Successfully joined meeting!');
           setLoading(false);
+        });
+        
+        callObject.on('camera-error', (event: any) => {
+          console.error('Camera error:', event);
+          toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
         });
         
         callObject.on('error', (error: any) => {
@@ -109,15 +138,26 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           await callObject.join(joinOptions);
           console.log("Join call completed");
           
+          // Ensure we get access to video after joining (especially important for host)
+          if (isHost) {
+            console.log("Host ensuring video is turned on");
+            await callObject.setLocalVideo(true);
+            await callObject.setLocalAudio(true);
+            console.log("Local video and audio should now be enabled for host");
+          }
+          
           // Attach the call to our container element
           if (containerRef.current) {
+            console.log("Container ref is ready for iframe");
+            containerRef.current.innerHTML = ''; // Clear container first
+            
+            // Use appendChild method to add the iframe
             const iframe = callObject.iframe();
             if (iframe) {
               iframe.style.width = '100%';
               iframe.style.height = '100%';
               iframe.style.border = 'none';
               console.log("Attaching Daily iframe to container");
-              containerRef.current.innerHTML = ''; // Clear container first
               containerRef.current.appendChild(iframe);
               console.log("Daily iframe attached successfully");
             } else {
@@ -146,6 +186,10 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     
     return () => {
       console.log("DailyIframe component unmounting");
+      if (userStream) {
+        userStream.getTracks().forEach(track => track.stop());
+        console.log("Cleaned up user media stream");
+      }
       if (callObjectRef.current) {
         callObjectRef.current.destroy();
         console.log("Daily call object destroyed");
@@ -163,6 +207,17 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
           </div>
         </div>
       )}
+      
+      {deviceError && !loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-10">
+          <div className="bg-red-500/10 border border-red-500 p-4 rounded-lg max-w-md">
+            <h3 className="text-lg font-semibold text-white mb-2">Camera/Microphone Error</h3>
+            <p className="text-white/80 mb-4">{deviceError}</p>
+            <p className="text-white/80 text-sm">Please ensure your browser has permission to access your camera and microphone. Check your browser settings and try again.</p>
+          </div>
+        </div>
+      )}
+      
       <div 
         id="daily-container"
         ref={containerRef}
