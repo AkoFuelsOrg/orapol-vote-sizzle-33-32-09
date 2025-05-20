@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useGroup } from '../context/GroupContext';
 import { Link } from 'react-router-dom';
@@ -15,6 +14,7 @@ import { useSupabase } from '../context/SupabaseContext';
 import { Loader2, Users, Plus, UserCircle, Lock, Globe, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { isBreakpoint } from '../utils/breakpoint-utils';
 
 const CreateGroupForm: React.FC<{
   onSuccess?: () => void;
@@ -234,8 +234,8 @@ const Groups: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [groupMemberships, setGroupMemberships] = useState<Record<string, boolean>>({});
   const [loadingMemberships, setLoadingMemberships] = useState(true);
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const breakpointState = useBreakpoint();
+  const isMobile = isBreakpoint(breakpointState, "mobile");
   
   React.useEffect(() => {
     if (user && groups.length > 0) {

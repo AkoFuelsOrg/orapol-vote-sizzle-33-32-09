@@ -13,6 +13,7 @@ import { Message } from '../lib/types';
 import EmojiPicker from './EmojiPicker';
 import GifSelector from './GifSelector';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { isBreakpoint } from '../utils/breakpoint-utils';
 
 interface Profile {
   id: string;
@@ -36,9 +37,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ userId, onBack }) => {
   const [showGifSelector, setShowGifSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
-  const isDesktop = breakpoint === "desktop";
+  const breakpointState = useBreakpoint();
+  const isMobile = isBreakpoint(breakpointState, "mobile");
+  const isDesktop = isBreakpoint(breakpointState, "desktop");
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', userId],

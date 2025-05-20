@@ -32,3 +32,27 @@ export const getBreakpoint = (): BreakpointType => {
   const { breakpoint } = useBreakpoint();
   return breakpoint;
 };
+
+/**
+ * Helper function to check if the current breakpoint is mobile
+ */
+export const useIsMobileBreakpoint = (): boolean => {
+  const { breakpoint } = useBreakpoint();
+  return breakpoint === "mobile";
+};
+
+/**
+ * Helper function to check if the current breakpoint is desktop
+ */
+export const useIsDesktopBreakpoint = (): boolean => {
+  const { breakpoint } = useBreakpoint();
+  return breakpoint === "desktop";
+};
+
+/**
+ * Helper function to check if the current breakpoint is tablet
+ */
+export const useIsTabletBreakpoint = (): boolean => {
+  const { breakpoint } = useBreakpoint();
+  return breakpoint === "tablet";
+};

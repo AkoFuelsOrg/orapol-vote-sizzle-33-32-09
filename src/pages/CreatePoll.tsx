@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Plus, ImagePlus, Loader2, Upload } from 'lucide-react';
@@ -10,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PollOption } from '../lib/types';
 import { Json } from '@/integrations/supabase/types';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { isBreakpoint } from '../utils/breakpoint-utils';
 
 interface OptionWithImage {
   text: string;
@@ -28,7 +28,8 @@ const CreatePoll: React.FC = () => {
   const [uploadingOptionImage, setUploadingOptionImage] = useState<number | null>(null);
   const { user } = useSupabase();
   const navigate = useNavigate();
-  const breakpoint = useBreakpoint();
+  const breakpointState = useBreakpoint();
+  const isDesktop = isBreakpoint(breakpointState, "desktop");
   
   const handleAddOption = () => {
     if (options.length >= 6) return;
@@ -178,8 +179,6 @@ const CreatePoll: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-
-  const isDesktop = breakpoint === "desktop";
 
   return (
     <div className="min-h-screen bg-gray-50">

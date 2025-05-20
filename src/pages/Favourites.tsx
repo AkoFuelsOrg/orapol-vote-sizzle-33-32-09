@@ -6,6 +6,7 @@ import PostCard from '../components/PostCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { useBreakpoint } from '../hooks/use-mobile';
+import { isBreakpoint } from '../utils/breakpoint-utils';
 import PostSkeleton from '../components/PostSkeleton';
 
 const Favourites = () => {
@@ -15,8 +16,8 @@ const Favourites = () => {
   const [sharedPosts, setSharedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('liked');
-  const breakpoint = useBreakpoint();
-  const isMobile = breakpoint === "mobile";
+  const breakpointState = useBreakpoint();
+  const isMobile = isBreakpoint(breakpointState, "mobile");
 
   useEffect(() => {
     const fetchFavouritePosts = async () => {
