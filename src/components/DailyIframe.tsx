@@ -46,9 +46,9 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
       }
       
       const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@daily-co/daily-js';
-      //script.async = true;
-      script.crossOrigin = 'true';
+      // Use the specific version of the script to avoid potential breaking changes
+      script.src = 'https://unpkg.com/@daily-co/daily-js@0.50.0/dist/daily-iframe.js';
+      script.crossOrigin = 'anonymous';
       
       script.onload = async () => {
         console.log("Daily.co script loaded successfully");
@@ -58,8 +58,8 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
         }
       };
       
-      script.onerror = () => {
-        console.error("Failed to load Daily.co script");
+      script.onerror = (e) => {
+        console.error("Failed to load Daily.co script:", e);
         if (isMountedRef.current) {
           toast.error("Failed to load video call service");
           setLoading(false);
@@ -89,10 +89,10 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
   
   // Create the Daily iframe
   const initializeDaily = async () => {
-    if (!isMountedRef.current || !window.DailyIframe) return;
-    
-    // Skip device enumeration and permission check
-    // Instead, we'll let Daily.co handle permissions when joining
+    if (!isMountedRef.current || !window.DailyIframe) {
+      console.error("Daily.co script not loaded or component unmounted");
+      return;
+    }
     
     try {
       // Check if we already have a frame instance for this URL
@@ -118,6 +118,8 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
         }
       }
       
+      console.log("Creating new Daily frame with container:", containerRef.current);
+      
       // Create Daily frame with embedded UI
       const callFrame = window.DailyIframe.createFrame(containerRef.current, {
         url: url,
@@ -139,6 +141,8 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
           },
         },
       });
+      
+      console.log("Daily frame created:", callFrame);
       
       // Store the call frame reference
       frameRef.current = callFrame;
@@ -163,17 +167,25 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
         }
       });
       
+      callFrame.on('left-meeting', () => {
+        if (isMountedRef.current) console.log('Left meeting');
+      });
+      
       callFrame.on('camera-error', (event: any) => {
         console.error('Camera error:', event);
         if (isMountedRef.current) {
-          toast.error(`Camera error: ${event?.errorMsg || 'Unknown error'}`);
+          const errorMsg = event?.errorMsg || 'Unknown camera error';
+          console.log('Camera error message:', errorMsg);
+          toast.error(`Camera error: ${errorMsg}`);
         }
       });
       
       callFrame.on('error', (error: any) => {
         console.error('Daily.co error:', error);
         if (isMountedRef.current) {
-          toast.error(`Video call error: ${error?.errorMsg || 'Unknown error'}`);
+          const errorMsg = error?.errorMsg || 'Unknown error';
+          console.log('Daily error message:', errorMsg);
+          toast.error(`Video call error: ${errorMsg}`);
         }
       });
       
@@ -182,13 +194,7 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
         callFrame.setLocalAudio(false);
       }
       
-      console.log("Joining call with options:", {
-        url: url,
-        showLeaveButton: true,
-        showFullscreenButton: true,
-        startVideoOff: false,
-        startAudioOff: !isHost,
-      });
+      console.log("Joining call with URL:", url);
       
       // Join the call
       callFrame.join();
@@ -198,6 +204,7 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
       if (isMountedRef.current) {
         toast.error(`Failed to initialize video call: ${error.message || 'Unknown error'}`);
         setLoading(false);
+        setDeviceError(error.message || "Could not connect to video call");
       }
     }
   };
@@ -216,7 +223,7 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
       {deviceError && !loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/90 z-10">
           <div className="bg-red-500/10 border border-red-500 p-4 rounded-lg max-w-md">
-            <h3 className="text-lg font-semibold text-white mb-2">Camera/Microphone Error</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">Video Call Error</h3>
             <p className="text-white/80 mb-4">{deviceError}</p>
             <p className="text-white/80 text-sm">Please ensure your browser has permission to access your camera and microphone.</p>
           </div>
@@ -227,10 +234,10 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
         id="daily-container"
         ref={containerRef}
         className="w-full h-full"
+        data-testid="daily-container"
       />
     </div>
   );
 });
 
 export default DailyIframe;
-

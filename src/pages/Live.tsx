@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -97,6 +96,8 @@ const Live: React.FC = () => {
 
             // If room doesn't exist, create it
             if (response.status === 404) {
+              console.log("Room doesn't exist, creating new room:", roomCode);
+              
               const createResponse = await fetch(`https://api.daily.co/v1/rooms`, {
                 method: 'POST',
                 headers: {
@@ -111,7 +112,10 @@ const Live: React.FC = () => {
                     enable_chat: true,
                     start_video_off: false,
                     start_audio_off: false,
-                    owner_only_broadcast: false
+                    owner_only_broadcast: false,
+                    enable_knocking: false,
+                    enable_prejoin_ui: true,
+                    enable_people_ui: true
                   }
                 })
               });
@@ -120,9 +124,13 @@ const Live: React.FC = () => {
                 const errorData = await createResponse.json();
                 throw new Error(errorData.info?.msg || 'Failed to create room');
               }
+              
+              console.log("Room created successfully");
             } else if (!response.ok) {
               const errorData = await response.json();
               throw new Error(errorData.info?.msg || 'Error checking room existence');
+            } else {
+              console.log("Room already exists, joining:", roomCode);
             }
             
             // If we're the host, record the live stream in our database
@@ -200,8 +208,9 @@ const Live: React.FC = () => {
           }
         }
         
-        // Room URL to join with token
+        // Room URL to join - ensure proper https format
         const url = `https://tuwaye.daily.co/${roomCode}`;
+        console.log("Setting room URL:", url);
         setRoomUrl(url);
         
       } catch (error: any) {
