@@ -59,7 +59,8 @@ const LiveButton: React.FC = memo(() => {
     navigate('/live-streams');
   };
   
-  return <div>
+  return (
+    <div>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" className="flex items-center gap-2 text-white rounded-lg p-2 w-full transition-all bg-emerald-400 hover:bg-emerald-300">
@@ -112,7 +113,8 @@ const LiveButton: React.FC = memo(() => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 });
 
 export default LiveButton;

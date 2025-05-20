@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -5,6 +6,7 @@ import { toast } from 'sonner';
 import SplashScreen from '@/components/SplashScreen';
 import DailyIframe from '@/components/DailyIframe';
 import { useBreakpoint } from '@/hooks/use-mobile';
+import { isBreakpoint } from '@/utils/breakpoint-utils';
 import { supabase } from '@/integrations/supabase/client';
 
 // Daily.co API key
@@ -46,7 +48,8 @@ const Live: React.FC = () => {
   const isHost = searchParams.get('host') === 'true';
   const { user } = useSupabase();
   const navigate = useNavigate();
-  const { breakpoint } = useBreakpoint();
+  const breakpointState = useBreakpoint();
+  const isMobile = isBreakpoint(breakpointState, "mobile");
   const [loading, setLoading] = useState(true);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyCallObject, setDailyCallObject] = useState<any>(null);

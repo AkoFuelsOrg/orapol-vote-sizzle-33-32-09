@@ -19,6 +19,11 @@ interface LiveStream {
   startedAt: Date;
 }
 
+interface StreamProfile {
+  username?: string;
+  avatar_url?: string;
+}
+
 const validStatuses = ['active', 'ended', 'scheduled'];
 
 const LiveStreams: React.FC = () => {
@@ -52,18 +57,20 @@ const LiveStreams: React.FC = () => {
         }
         
         // Transform the data
-        const activeStreams: LiveStream[] = data.map(stream => ({
-          id: stream.id,
-          roomCode: stream.stream_key,
-          title: stream.title || 'Untitled Stream',
-          // Fix: Check if profiles exists and access username safely
-          hostName: stream.profiles && typeof stream.profiles === 'object' && 'username' in stream.profiles 
-            ? (stream.profiles.username as string) || 'Anonymous'
-            : 'Anonymous',
-          viewers: stream.viewer_count || 0,
-          thumbnail: undefined,
-          startedAt: new Date(stream.created_at)
-        }));
+        const activeStreams: LiveStream[] = data.map(stream => {
+          // Safely access profiles data with proper type checking
+          const profile = stream.profiles as StreamProfile | null;
+          
+          return {
+            id: stream.id,
+            roomCode: stream.stream_key,
+            title: stream.title || 'Untitled Stream',
+            hostName: profile?.username || 'Anonymous',
+            viewers: stream.viewer_count || 0,
+            thumbnail: undefined,
+            startedAt: new Date(stream.created_at)
+          };
+        });
         
         setLiveStreams(activeStreams);
         setLoading(false);
