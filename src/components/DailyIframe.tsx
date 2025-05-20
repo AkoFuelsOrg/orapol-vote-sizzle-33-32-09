@@ -87,38 +87,27 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
     };
   }, [url]);
   
-  // Check for media permissions
-  const checkMediaPermissions = async () => {
-    if (!isMountedRef.current) return false;
-    
-    try {
-      console.log("Checking media permissions...");
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      console.log("Media permissions granted!", stream.getTracks().map(t => `${t.kind} (${t.label})`));
-      stream.getTracks().forEach(track => track.stop()); // Release devices
-      return true;
-    } catch (error: any) {
-      console.error("Media permission error:", error);
-      if (isMountedRef.current) {
-        setDeviceError(error.message || "Camera or microphone access denied");
-        toast.error(`Camera/microphone error: ${error.message || "Access denied"}`);
-      }
-      return false;
-    }
-  };
-  
   // Create the Daily iframe
   const initializeDaily = async () => {
     if (!isMountedRef.current || !window.DailyIframe) return;
     
-    // Check permissions first
-    const hasPermissions = await checkMediaPermissions();
-    if (!hasPermissions) {
-      setLoading(false);
-      return;
-    }
+    // Skip device enumeration and permission check
+    // Instead, we'll let Daily.co handle permissions when joining
     
     try {
+      // Check if we already have a frame instance for this URL
+      const existingFrame = document.querySelector('iframe[src*="daily.co"]');
+      if (existingFrame && frameRef.current) {
+        console.log("Reusing existing Daily frame");
+        setLoading(false);
+        
+        // Pass call object to parent
+        if (onCallObjectReady) {
+          onCallObjectReady(frameRef.current);
+        }
+        return;
+      }
+      
       // Destroy any existing frame to prevent duplicates
       if (frameRef.current) {
         try {
@@ -244,3 +233,4 @@ const DailyIframe: React.FC<DailyIframeProps> = memo(({ url, onCallObjectReady, 
 });
 
 export default DailyIframe;
+
