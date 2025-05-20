@@ -19,6 +19,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
   useEffect(() => {
     console.log("DailyIframe component mounted, URL:", url);
     let destroyed = false;
+    let callFrame: any = null;
     
     // Check if Daily.co script is already loaded
     const loadDailyScript = () => {
@@ -35,7 +36,9 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       
       script.onload = () => {
         console.log("Daily.co script loaded successfully");
-        initializeDaily();
+        if (!destroyed) {
+          initializeDaily();
+        }
       };
       
       script.onerror = () => {
@@ -65,7 +68,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
     };
     
     const initializeDaily = async () => {
-      if (destroyed || !containerRef.current) return;
+      if (destroyed || !containerRef.current || !window.DailyIframe) return;
       
       // Check permissions first
       const { success } = await checkMediaPermissions();
@@ -79,7 +82,7 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
         containerRef.current.innerHTML = '';
         
         // Use Daily's built-in iframe approach which handles duplicate instances
-        const callFrame = window.DailyIframe.createFrame(containerRef.current, {
+        callFrame = window.DailyIframe.createFrame(containerRef.current, {
           showLeaveButton: false,
           showFullscreenButton: true,
           iframeStyle: {
@@ -160,8 +163,14 @@ const DailyIframe: React.FC<DailyIframeProps> = ({ url, onCallObjectReady, isHos
       console.log("DailyIframe component unmounting");
       destroyed = true;
       
-      // Clean up will be handled by Daily's built-in cleanup
-      // when the component unmounts
+      // Only destroy if we created the callFrame
+      if (callFrame) {
+        try {
+          callFrame.destroy();
+        } catch (e) {
+          console.error("Error destroying callFrame:", e);
+        }
+      }
     };
   }, [url, isHost, user, onCallObjectReady]);
 

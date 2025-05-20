@@ -7,18 +7,29 @@ export interface BreakpointState {
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
+  breakpoint: BreakpointType;
 }
 
-export const useBreakpoint = (): BreakpointState & { breakpoint: BreakpointType } => {
+export const useBreakpoint = (): BreakpointState => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+  const [breakpoint, setBreakpoint] = useState<BreakpointType>(
+    window.innerWidth < 768 ? "mobile" : 
+    window.innerWidth < 1024 ? "tablet" : "desktop"
+  );
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
-      setIsDesktop(window.innerWidth >= 1024);
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+      setIsDesktop(width >= 1024);
+      
+      setBreakpoint(
+        width < 768 ? "mobile" : 
+        width < 1024 ? "tablet" : "desktop"
+      );
     };
 
     window.addEventListener('resize', handleResize);
@@ -27,9 +38,6 @@ export const useBreakpoint = (): BreakpointState & { breakpoint: BreakpointType 
       window.removeEventListener('resize', handleResize);
     };
   }, []);
-
-  // Add a breakpoint string to make comparisons easier
-  const breakpoint: BreakpointType = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
   
   return { isMobile, isTablet, isDesktop, breakpoint };
 };

@@ -35,15 +35,14 @@ const LiveStreams: React.FC = () => {
           .from('lives')
           .select(`
             id, 
-            room_code,
+            stream_key,
             title,
-            host_name,
+            user_id,
             viewer_count,
-            started_at,
-            host_id,
-            profiles(avatar_url)
+            created_at,
+            profiles(username, avatar_url)
           `)
-          .eq('is_active', true)
+          .eq('status', 'active')
           .order('viewer_count', { ascending: false });
         
         if (error) {
@@ -53,12 +52,12 @@ const LiveStreams: React.FC = () => {
         // Transform the data
         const activeStreams: LiveStream[] = data.map(stream => ({
           id: stream.id,
-          roomCode: stream.room_code,
-          title: stream.title || `${stream.host_name}'s Stream`,
-          hostName: stream.host_name,
+          roomCode: stream.stream_key,
+          title: stream.title || `${stream.profiles?.username || 'Anonymous'}'s Stream`,
+          hostName: stream.profiles?.username || 'Anonymous',
           viewers: stream.viewer_count || 0,
           thumbnail: undefined, // We don't have thumbnails yet, this could be added later
-          startedAt: new Date(stream.started_at)
+          startedAt: new Date(stream.created_at)
         }));
         
         setLiveStreams(activeStreams);

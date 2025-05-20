@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSupabase } from '../context/SupabaseContext';
@@ -23,6 +24,38 @@ declare global {
       createCallObject: (options: any) => any;
     }
   }
+}
+
+// Define interfaces for our database tables
+interface LiveStream {
+  id?: string;
+  title: string;
+  description?: string;
+  user_id: string;
+  stream_key: string;
+  created_at?: string;
+  viewer_count?: number;
+  ended_at?: string;
+  status?: string;
+  thumbnail_url?: string;
+  playback_url?: string;
+}
+
+interface LiveViewer {
+  id?: string;
+  live_id: string;
+  user_id: string;
+  joined_at: string;
+  left_at?: string;
+}
+
+interface LiveMessage {
+  id?: string;
+  room_code: string;
+  user_id: string;
+  content: string;
+  username?: string;
+  created_at?: string;
 }
 
 const Live: React.FC = () => {
@@ -126,17 +159,14 @@ const Live: React.FC = () => {
               // Store the live stream in our database
               const { error: liveError } = await supabase
                 .from('lives')
-                .insert([
-                  { 
-                    room_code: roomCode,
-                    title: `${hostName}'s Stream`,
-                    host_id: user.id,
-                    host_name: hostName,
-                    started_at: new Date().toISOString(),
-                    viewer_count: 1,
-                    is_active: true
-                  }
-                ]);
+                .insert({
+                  title: `${hostName}'s Stream`,
+                  description: 'Live stream',
+                  user_id: user.id,
+                  stream_key: roomCode, // Using room code as stream key
+                  viewer_count: 1,
+                  status: 'active'
+                } as LiveStream);
                 
               if (liveError) {
                 console.error('Error storing live stream:', liveError);
@@ -152,19 +182,18 @@ const Live: React.FC = () => {
         } else {
           toast.success('Joined the live stream!');
           
-          // If not host, increment viewer count in database
-          const { error: viewerError } = await supabase
-            .from('live_viewers')
-            .insert([
-              {
-                live_id: roomCode,
-                user_id: user?.id || 'anonymous',
-                joined_at: new Date().toISOString()
-              }
-            ]);
-            
-          if (viewerError) {
-            console.error('Error recording viewer:', viewerError);
+          // If not host, record viewer in your database
+          if (user) {
+            // Using a direct query without a table that might not exist
+            const { error } = await supabase
+              .rpc('add_live_viewer', { 
+                p_live_id: roomCode, 
+                p_user_id: user.id 
+              });
+                
+            if (error) {
+              console.error('Error recording viewer:', error);
+            }
           }
         }
         
@@ -192,10 +221,12 @@ const Live: React.FC = () => {
           
           // Update the database when leaving (if viewer)
           if (!isHost && user) {
+            // Using RPC instead of direct table access
             supabase
-              .from('live_viewers')
-              .update({ left_at: new Date().toISOString() })
-              .match({ live_id: roomCode, user_id: user.id })
+              .rpc('update_live_viewer_exit', { 
+                p_live_id: roomCode, 
+                p_user_id: user.id 
+              })
               .then(({ error }) => {
                 if (error) console.error('Error updating viewer exit time:', error);
               });
@@ -206,10 +237,10 @@ const Live: React.FC = () => {
             supabase
               .from('lives')
               .update({ 
-                is_active: false,
+                status: 'ended',
                 ended_at: new Date().toISOString()
               })
-              .eq('room_code', roomCode)
+              .eq('stream_key', roomCode)
               .then(({ error }) => {
                 if (error) console.error('Error ending live stream in database:', error);
               });
@@ -259,20 +290,21 @@ const Live: React.FC = () => {
           const { error } = await supabase
             .from('lives')
             .update({ 
-              is_active: false,
+              status: 'ended',
               ended_at: new Date().toISOString()
             })
-            .eq('room_code', roomCode);
+            .eq('stream_key', roomCode);
             
           if (error) {
             console.error('Error ending stream in database:', error);
           }
         } else if (!isHost && user) {
-          // Update viewer left time
+          // Update viewer left time using RPC
           const { error } = await supabase
-            .from('live_viewers')
-            .update({ left_at: new Date().toISOString() })
-            .match({ live_id: roomCode, user_id: user.id });
+            .rpc('update_live_viewer_exit', { 
+              p_live_id: roomCode, 
+              p_user_id: user.id 
+            });
             
           if (error) {
             console.error('Error updating viewer exit time:', error);
@@ -310,14 +342,12 @@ const Live: React.FC = () => {
     if (user) {
       supabase
         .from('live_messages')
-        .insert([
-          {
-            room_code: roomCode,
-            user_id: user.id,
-            content: chatMessage,
-            username: user.user_metadata?.username || 'Anonymous'
-          }
-        ])
+        .insert({
+          room_code: roomCode,
+          user_id: user.id,
+          content: chatMessage,
+          username: user.user_metadata?.username || 'Anonymous'
+        } as LiveMessage)
         .then(({ error }) => {
           if (error) console.error('Error storing chat message:', error);
         });
@@ -393,7 +423,7 @@ const Live: React.FC = () => {
           } else if (data) {
             const oldMessages = data.map(msg => ({
               id: Math.random().toString(),
-              user: msg.username,
+              user: msg.username || 'Anonymous',
               message: msg.content
             }));
             setChatMessages(oldMessages);
